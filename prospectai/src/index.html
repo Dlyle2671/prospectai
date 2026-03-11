@@ -1,3 +1,10 @@
+      if (stage === 0) {
+        var indBtns = INDUSTRIES.map(function(ind) { var a=state.selectedIndustries.indexOf(ind.value)>=0; return '<button class="btn-pill'+(a?' active':'')+'" onclick="state.selectedIndustries=toggleFilter(state.selectedIndustries,\''+ind.value+'\');render()">'+ind.label+'</button>'; }).join('');
+        var empBtns = EMP_RANGES.map(function(r) { var a=state.selectedEmployeeRanges.indexOf(r)>=0; return '<button class="btn-pill'+(a?' active':'')+'" onclick="state.selectedEmployeeRanges=toggleFilter(state.selectedEmployeeRanges,\''+r+'\');render()">'+r+'</button>'; }).join('');
+        var techBtns = TECH_OPTIONS.map(function(t) { var a=state.selectedTechStack.indexOf(t)>=0; return '<button class="btn-pill'+(a?' active':'')+'" onclick="state.selectedTechStack=toggleFilter(state.selectedTechStack,\''+t.replace(/'/g,&quot;\\'&quot;)+'\');render()">'+t+'</button>'; }).join('');
+        var progHtml = searching ? '<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span id="prog-label" style="font-size:12px;color:#506070;animation:pulse 1.5s infinite">Scanning Apollo...</span><span style="font-size:12px;color:#00ffc8">'+Math.round(searchProgress)+'%</span></div><div class="progress-track"><div class="progress-fill" id="prog-bar" style="width:'+searchProgress+'%"></div></div></div>' : '';
+        var resHtml = filtered.length > 0 ? '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:13px;color:#506070">'+filtered.length+' prospects found</span><button class="btn-primary" onclick="setStage(1)"'+((!selectedLead)?' disabled style="background:rgba(255,255,255,0.05);color:#405060;cursor:not-allowed"':'')+'>Craft Outreach &rarr;</button></div>'+filtered.map(function(l){return leadCard(l,selectedLead&&selectedLead.id===l.id);}).join('') : (!searching ? '<div class="empty"><div class="empty-icon">&#127919;</div><div style="font-size:14px;margin-bottom:6px">Ready to find your next customers</div><div style="font-size:12px">Select filters above and hit Search</div></div>' : '');
+        el.innerHTML = '<div class="fade-up"><div class="section-title">Find Leads</div><div class="section-sub">Filter companies — AWS tech stack always included.</div><div class="card" style="margin-bottom:16px"><div style="margin-bottom:16px"><div class="micro-label" style="margin-bottom:8px">INDUSTRY</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+indBtns+'</div></div><div style="margin-bottom:16px"><div class="micro-label" style="margin-bottom:8px">COMPANY SIZE (# OF EMPLOYEES)</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+empBtns+'</div></div><div style="margin-bottom:16px"><div class="micro-label" style="margin-bottom:8px">TECH STACK</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+techBtns+'</div></div><div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)"><span style="font-size:12px;color:#506070;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:#00ffc8;display:inline-block"></span>AWS always active</span><button class="btn-primary" onclick="doSearch()"'+(searching?' disabled':'')+' id="search-btn">'+(searching?'Scanning...':'Search')+'</button></div></div>'+progHtml+resHtml+'</div>';
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -136,6 +143,7 @@ let state = {
   emailContent: '',
   selectedIndustries: [],
   selectedEmployeeRanges: [],
+  selectedTechStack: [],
   minScore: 0,
   sourceFilter: 'all',
   searching: false,
@@ -143,21 +151,20 @@ let state = {
 };
 
 const INDUSTRIES = [
-  { label: 'Technology', value: '5567cd4773696439b10b0000' },
-  { label: 'Software', value: '5567cd4773696439b10c0000' },
-  { label: 'Healthcare', value: '5567cd4773696439b1110000' },
-  { label: 'Finance & Banking', value: '5567cd4773696439b10e0000' },
-  { label: 'E-commerce & Retail', value: '5567cd4773696439b1120000' },
-  { label: 'Education', value: '5567cd4773696439b1130000' },
-  { label: 'Media & Entertainment', value: '5567cd4773696439b1160000' },
-  { label: 'Manufacturing', value: '5567cd4773696439b1140000' },
-  { label: 'Real Estate', value: '5567cd4773696439b1180000' },
-  { label: 'Marketing & Advertising', value: '5567cd4773696439b1150000' },
+  {label:'Information Technology',value:'5567cd4773696439b10b0000'},
+  {label:'Software & SaaS',value:'5567cd4773696439b10c0000'},
+  {label:'Healthcare',value:'5567cd4773696439b1110000'},
+  {label:'Finance & Banking',value:'5567cd4773696439b10e0000'},
+  {label:'E-commerce & Retail',value:'5567cd4773696439b1120000'},
+  {label:'Education',value:'5567cd4773696439b1130000'},
+  {label:'Media & Entertainment',value:'5567cd4773696439b1160000'},
+  {label:'Manufacturing',value:'5567cd4773696439b1140000'},
+  {label:'Real Estate',value:'5567cd4773696439b1180000'},
+  {label:'Marketing & Advertising',value:'5567cd4773696439b1150000'},
 ];
-
-const EMPLOYEE_RANGES = [
-  '1-10', '11-50', '51-200', '201-500', '501-1000', '1001-5000', '5001+'
-];
+const EMP_RANGES = ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001+'];
+const TECH_OPTIONS = ['Amazon Web Services','Salesforce','HubSpot','Slack','Zoom','Microsoft Azure','Google Cloud','Shopify','Stripe','Twilio'];
+function toggleFilter(arr, val) { return arr.indexOf(val) >= 0 ? arr.filter(function(x){return x!==val;}) : arr.concat([val]); }
 
 const STATUS_COLORS = { new: '#00ffc8', contacted: '#f0c040', replied: '#60a0ff', meeting: '#c060ff', declined: '#ff5060' };
 const STATUS_LABELS = { new: 'New', contacted: 'Contacted', replied: 'Replied', meeting: 'Meeting Booked', declined: 'Declined' };
@@ -299,22 +306,16 @@ async function doSearch() {
   }, 200);
 
   try {
-    const titles = state.searchQuery.trim() ? [state.searchQuery.trim()] : ['VP of Sales'];
-
-    // ── CHANGE THIS URL after deploying to Vercel ──────────────────────────
-    const API_URL = '/api/apollo';
-    // ──────────────────────────────────────────────────────────────────────
-
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await fetch('/api/apollo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           industry: state.selectedIndustries,
           employee_ranges: state.selectedEmployeeRanges,
-          page: 1,
-          per_page: 25,
+          tech_stack: state.selectedTechStack,
+          page: 1, per_page: 25,
         }),
-    });
+      });
 
     clearInterval(interval);
 
@@ -364,34 +365,22 @@ function render() {
   });
 
   if (stage === 0) {
-      // ── FIND LEADS ─────────────────────────────────────────────────────────
-      const selIndustries = state.selectedIndustries;
-      const selEmployees = state.selectedEmployeeRanges;
-      function toggleItem(arr, val) {
-        return arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val];
-      }
-      el.innerHTML = '<div class="fade-up">' +
-        '<div class="section-title">Find Leads</div>' +
-        '<div class="section-sub">Filter by company profile — results always filtered to AWS tech stack.</div>' +
-        '<div class="card">' +
-          '<div style="margin-bottom:18px">' +
-            '<div class="micro-label" style="margin-bottom:8px">INDUSTRY</div>' +
-            '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
-              INDUSTRIES.map(ind => '<button class="btn-pill ' + (selIndustries.includes(ind.value) ? 'active' : '') + '" onclick="state.selectedIndustries=(state.selectedIndustries.includes(\'' + ind.value + '\')?state.selectedIndustries.filter(x=>x!==\'' + ind.value + '\'):[...state.selectedIndustries,\'' + ind.value + '\']);render()">' + ind.label + '</button>').join('') +
-            '</div>' +
-          '</div>' +
-          '<div style="margin-bottom:18px">' +
-            '<div class="micro-label" style="margin-bottom:8px">COMPANY SIZE</div>' +
-            '<div style="display:flex;flex-wrap:wrap;gap:6px">' +
-              EMPLOYEE_RANGES.map(r => '<button class="btn-pill ' + (selEmployees.includes(r) ? 'active' : '') + '" onclick="state.selectedEmployeeRanges=(state.selectedEmployeeRanges.includes(\'' + r + '\')?state.selectedEmployeeRanges.filter(x=>x!==\'' + r + '\'):[...state.selectedEmployeeRanges,\'' + r + '\']);render()">' + r + '</button>').join('') +
-            '</div>' +
-          '</div>' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)">' +
-            '<span style="font-size:12px;color:#506070;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:#00ffc8;display:inline-block"></span>AWS tech stack always active</span>' +
-            '<button class="btn-primary" onclick="doSearch()" ' + (searching ? 'disabled' : '') + ' id="search-btn">' + (searching ? 'Scanning...' : 'Search') + '</button>' +
-          '</div>' +
-        '</div>' +
-${searching ? `<div style="margin-bottom:16px">
+    // ── FIND LEADS ─────────────────────────────────────────────────────────
+    el.innerHTML = `<div class="fade-up">
+      <div class="section-title">Find Leads</div>
+      <div class="section-sub">Search Apollo for high-fit prospects matching your ICP.</div>
+      <div class="card">
+        <div class="search-row">
+          <input class="search-input" id="q-input" placeholder="e.g. VP of Sales, Head of Growth, CRO..." value="${state.searchQuery}" oninput="state.searchQuery=this.value" onkeydown="if(event.key==='Enter')doSearch()" />
+          <button class="btn-primary" onclick="doSearch()" ${searching?'disabled':''} id="search-btn">${searching?'Scanning...':'Search'}</button>
+        </div>
+        <div class="filter-row">
+          <span style="font-size:12px;color:#506070">Min score:</span>
+          <input type="range" min="0" max="90" value="${minScore}" oninput="state.minScore=+this.value;render()" style="width:80px;accent-color:#00ffc8" />
+          <span style="font-size:12px;color:#00ffc8;width:24px">${minScore}</span>
+        </div>
+      </div>
+      ${searching ? `<div style="margin-bottom:16px">
         <div style="display:flex;justify-content:space-between;margin-bottom:6px">
           <span id="prog-label" style="font-size:12px;color:#506070;animation:pulse 1.5s infinite">🔍 Scanning Apollo database...</span>
           <span style="font-size:12px;color:#00ffc8">${Math.round(searchProgress)}%</span>
