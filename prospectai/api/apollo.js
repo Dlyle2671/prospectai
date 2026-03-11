@@ -17,7 +17,7 @@ export default async function handler(req, res) {
       ),
     };
 
-    if (industry.length > 0) body.organization_industry_tag_ids = industry;
+    if (industry.length > 0) body.q_organization_industry_tag_ids = industry;
     if (titles.length > 0) body.person_titles = titles;
 
     if (employee_ranges.length > 0) {
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
     }
 
-    const response = await fetch("https://api.apollo.io/api/v1/mixed_people/search", {
+    const response = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
       id: p.id,
       first_name: p.first_name || "",
       last_name: p.last_name || "",
-      name: p.name || (p.first_name + " " + p.last_name).trim(),
+      name: p.name || ((p.first_name || "") + " " + (p.last_name || "")).trim(),
       title: p.title || "",
       email: p.email || "",
       linkedin_url: p.linkedin_url || "",
