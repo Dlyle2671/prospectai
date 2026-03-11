@@ -1,518 +1,262 @@
-      if (stage === 0) {
-        var indBtns = INDUSTRIES.map(function(ind) { var a=state.selectedIndustries.indexOf(ind.value)>=0; return '<button class="btn-pill'+(a?' active':'')+'" onclick="state.selectedIndustries=toggleFilter(state.selectedIndustries,\''+ind.value+'\');render()">'+ind.label+'</button>'; }).join('');
-        var empBtns = EMP_RANGES.map(function(r) { var a=state.selectedEmployeeRanges.indexOf(r)>=0; return '<button class="btn-pill'+(a?' active':'')+'" onclick="state.selectedEmployeeRanges=toggleFilter(state.selectedEmployeeRanges,\''+r+'\');render()">'+r+'</button>'; }).join('');
-        var techBtns = TECH_OPTIONS.map(function(t) { var a=state.selectedTechStack.indexOf(t)>=0; return '<button class="btn-pill'+(a?' active':'')+'" onclick="state.selectedTechStack=toggleFilter(state.selectedTechStack,\''+t.replace(/'/g,&quot;\\'&quot;)+'\');render()">'+t+'</button>'; }).join('');
-        var progHtml = searching ? '<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span id="prog-label" style="font-size:12px;color:#506070;animation:pulse 1.5s infinite">Scanning Apollo...</span><span style="font-size:12px;color:#00ffc8">'+Math.round(searchProgress)+'%</span></div><div class="progress-track"><div class="progress-fill" id="prog-bar" style="width:'+searchProgress+'%"></div></div></div>' : '';
-        var resHtml = filtered.length > 0 ? '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="font-size:13px;color:#506070">'+filtered.length+' prospects found</span><button class="btn-primary" onclick="setStage(1)"'+((!selectedLead)?' disabled style="background:rgba(255,255,255,0.05);color:#405060;cursor:not-allowed"':'')+'>Craft Outreach &rarr;</button></div>'+filtered.map(function(l){return leadCard(l,selectedLead&&selectedLead.id===l.id);}).join('') : (!searching ? '<div class="empty"><div class="empty-icon">&#127919;</div><div style="font-size:14px;margin-bottom:6px">Ready to find your next customers</div><div style="font-size:12px">Select filters above and hit Search</div></div>' : '');
-        el.innerHTML = '<div class="fade-up"><div class="section-title">Find Leads</div><div class="section-sub">Filter companies — AWS tech stack always included.</div><div class="card" style="margin-bottom:16px"><div style="margin-bottom:16px"><div class="micro-label" style="margin-bottom:8px">INDUSTRY</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+indBtns+'</div></div><div style="margin-bottom:16px"><div class="micro-label" style="margin-bottom:8px">COMPANY SIZE (# OF EMPLOYEES)</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+empBtns+'</div></div><div style="margin-bottom:16px"><div class="micro-label" style="margin-bottom:8px">TECH STACK</div><div style="display:flex;flex-wrap:wrap;gap:6px">'+techBtns+'</div></div><div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid rgba(255,255,255,0.05)"><span style="font-size:12px;color:#506070;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:#00ffc8;display:inline-block"></span>AWS always active</span><button class="btn-primary" onclick="doSearch()"'+(searching?' disabled':'')+' id="search-btn">'+(searching?'Scanning...':'Search')+'</button></div></div>'+progHtml+resHtml+'</div>';
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ProspectAI</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #080c14; color: #c8d4e8; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-    @keyframes pulse { 0%,100%{opacity:0.5} 50%{opacity:1} }
-    .fade-up { animation: fadeUp 0.4s ease; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #1a2535; border-radius: 2px; }
-    button { font-family: 'DM Sans', sans-serif; cursor: pointer; }
-    input, textarea { font-family: 'DM Sans', sans-serif; }
-    textarea { resize: none; }
-
-    /* Layout */
-    #app { display: flex; flex-direction: column; min-height: 100vh; }
-    header { padding: 18px 32px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
-    nav { padding: 0 32px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; }
-    main { padding: 28px 32px; flex: 1; }
-
-    /* Header */
-    .logo { display: flex; align-items: center; gap: 12px; }
-    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #00ffc8, #0080ff); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-    .logo-name { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; color: #e8edf5; letter-spacing: -0.5px; }
-    .logo-sub { font-size: 11px; color: #405060; }
-    .stats { display: flex; gap: 28px; }
-    .stat { text-align: center; }
-    .stat-value { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
-    .stat-label { font-size: 10px; color: #405060; letter-spacing: 0.5px; }
-
-    /* Nav */
-    .nav-btn { padding: 14px 20px; background: transparent; border: none; border-bottom: 2px solid transparent; color: #506070; font-size: 13px; font-weight: 400; transition: all 0.2s; letter-spacing: 0.2px; }
-    .nav-btn.active { color: #00ffc8; border-bottom-color: #00ffc8; font-weight: 600; }
-
-    /* Cards */
-    .card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-    .lead-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; }
-    .lead-card:hover { border-color: rgba(255,255,255,0.12); }
-    .lead-card.selected { background: rgba(0,255,200,0.05); border-color: rgba(0,255,200,0.3); }
-
-    /* Score bar */
-    .score-wrap { display: flex; align-items: center; gap: 8px; }
-    .score-track { flex: 1; height: 4px; background: #1a1f2e; border-radius: 2px; overflow: hidden; }
-    .score-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
-
-    /* Buttons */
-    .btn-primary { background: linear-gradient(135deg, #00ffc8, #00b8a0); border: none; border-radius: 8px; padding: 10px 22px; color: #001a14; font-weight: 700; font-size: 13px; transition: opacity 0.2s; }
-    .btn-primary:hover { opacity: 0.9; }
-    .btn-primary:disabled { background: rgba(0,255,200,0.1); color: #00ffc8; cursor: not-allowed; }
-    .btn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 18px; color: #506070; font-size: 13px; transition: all 0.15s; }
-    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); color: #c8d4e8; }
-    .btn-pill { background: transparent; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 5px 12px; color: #506070; font-size: 12px; transition: all 0.15s; }
-    .btn-pill.active { background: rgba(0,255,200,0.08); border-color: #00ffc8; color: #00ffc8; }
-    .btn-action { background: rgba(0,255,200,0.05); border: 1px solid rgba(0,255,200,0.2); border-radius: 20px; padding: 4px 12px; color: #00ffc8; font-size: 11px; }
-
-    /* Progress */
-    .progress-track { height: 4px; background: #0d1520; border-radius: 2px; overflow: hidden; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #00ffc8, #0080ff); border-radius: 2px; transition: width 0.2s ease; }
-
-    /* Status badge */
-    .badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; letter-spacing: 0.3px; }
-
-    /* Grid layouts */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .grid-outreach { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
-
-    /* Search row */
-    .search-row { display: flex; gap: 12px; margin-bottom: 14px; }
-    .search-input { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px 14px; color: #c8d4e8; font-size: 13px; outline: none; }
-    .search-input::placeholder { color: #405060; }
-    .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-    /* Section heading */
-    .section-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: #e8edf5; margin-bottom: 6px; }
-    .section-sub { color: #506070; font-size: 14px; margin-bottom: 24px; }
-    .micro-label { font-size: 11px; color: #405060; letter-spacing: 0.8px; margin-bottom: 10px; }
-
-    /* Textarea */
-    .email-area { width: 100%; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; color: #c8d4e8; font-size: 13px; line-height: 1.65; outline: none; }
-
-    /* Empty state */
-    .empty { text-align: center; padding: 48px 24px; color: #304050; }
+    .fade-up { animation: fadeUp .35s ease both; }
+    nav { display: flex; align-items: center; padding: 18px 32px; border-bottom: 1px solid #1a2540; background: rgba(8,12,20,.92); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
+    .nav-logo { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -.4px; margin-right: auto; }
+    .nav-logo span { color: #4f8ef7; }
+    .nav-tabs { display: flex; gap: 4px; }
+    .nav-tab { padding: 7px 18px; border-radius: 8px; border: none; background: transparent; color: #6b7a99; font-size: 14px; font-family: inherit; cursor: pointer; transition: all .2s; }
+    .nav-tab:hover { color: #c8d4e8; background: #111827; }
+    .nav-tab.active { background: #1a2540; color: #fff; }
+    main { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+    .section-title { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .section-sub { font-size: 14px; color: #6b7a99; margin-bottom: 28px; }
+    .filter-group { margin-bottom: 20px; }
+    .filter-label { font-size: 12px; font-weight: 600; color: #6b7a99; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill { padding: 6px 14px; border-radius: 20px; border: 1px solid #1a2540; background: #111827; color: #6b7a99; font-size: 13px; font-family: inherit; cursor: pointer; transition: all .2s; }
+    .pill:hover { border-color: #4f8ef7; color: #c8d4e8; }
+    .pill.active { background: #1a3a7a; border-color: #4f8ef7; color: #fff; }
+    .pill.locked { background: #1a3a7a; border-color: #4f8ef7; color: #fff; opacity: .7; cursor: default; }
+    .search-btn { margin-top: 28px; padding: 12px 32px; border-radius: 10px; border: none; background: linear-gradient(135deg,#4f8ef7,#2563eb); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .2s; }
+    .search-btn:hover { opacity: .88; }
+    .search-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .results-count { font-size: 13px; color: #6b7a99; margin-bottom: 16px; }
+    .card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 22px 24px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 18px; transition: border-color .2s; }
+    .card:hover { border-color: #2d3f6b; }
+    .card-logo { width: 46px; height: 46px; border-radius: 10px; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .card-body { flex: 1; }
+    .card-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 3px; }
+    .card-domain { font-size: 13px; color: #4f8ef7; margin-bottom: 8px; }
+    .card-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .meta-tag { font-size: 12px; color: #6b7a99; background: #111827; padding: 3px 10px; border-radius: 6px; border: 1px solid #1a2540; }
+    .card-desc { font-size: 13px; color: #8a9bb8; line-height: 1.55; }
+    .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
+    .btn-sm:hover { border-color: #4f8ef7; color: #fff; }
+    .btn-hs { background: #ff7a59; border-color: #ff7a59; color: #fff; }
+    .btn-hs:hover { background: #ff6240; }
+    .btn-hs.sent { background: #1a5c38; border-color: #22c55e; color: #22c55e; cursor: default; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #6b7a99; }
     .empty-icon { font-size: 40px; margin-bottom: 12px; }
-
-    /* Status colors */
-    :root {
-      --new: #00ffc8;
-      --contacted: #f0c040;
-      --replied: #60a0ff;
-      --meeting: #c060ff;
-      --declined: #ff5060;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .settings-card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 28px; margin-bottom: 16px; }
+    .settings-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+    .form-row { margin-bottom: 14px; }
+    .form-label { font-size: 12px; color: #6b7a99; margin-bottom: 6px; font-weight: 500; }
+    .form-input { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
+    .form-input:focus { border-color: #4f8ef7; }
+    .save-btn { padding: 9px 22px; border-radius: 8px; border: none; background: #4f8ef7; color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
+    .save-btn:hover { background: #2563eb; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
   </style>
 </head>
 <body>
-<div id="app">
-  <header>
-    <div class="logo">
-      <div class="logo-icon">⚡</div>
-      <div>
-        <div class="logo-name">ProspectAI</div>
-        <div class="logo-sub">Automated Sales Intelligence</div>
-      </div>
-    </div>
-    <div class="stats">
-      <div class="stat"><div class="stat-value" id="stat-found" style="color:#00ffc8">0</div><div class="stat-label">LEADS FOUND</div></div>
-      <div class="stat"><div class="stat-value" id="stat-contacted" style="color:#f0c040">0</div><div class="stat-label">CONTACTED</div></div>
-      <div class="stat"><div class="stat-value" id="stat-replied" style="color:#60a0ff">0</div><div class="stat-label">REPLIED</div></div>
-      <div class="stat"><div class="stat-value" id="stat-meetings" style="color:#c060ff">0</div><div class="stat-label">MEETINGS</div></div>
-    </div>
-  </header>
   <nav>
-    <button class="nav-btn active" onclick="setStage(0)">Find Leads</button>
-    <button class="nav-btn" onclick="setStage(1)">Craft Outreach</button>
-    <button class="nav-btn" onclick="setStage(2)">Follow Up</button>
-    <button class="nav-btn" onclick="setStage(3)">Pipeline</button>
+    <div class="nav-logo">Prospect<span>AI</span></div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('leads')">Find Leads</button>
+      <button class="nav-tab" onclick="showTab('saved')">Saved</button>
+      <button class="nav-tab" onclick="showTab('settings')">Settings</button>
+    </div>
   </nav>
-  <main id="main-content"></main>
-</div>
-
-<script>
-// ── State ──────────────────────────────────────────────────────────────────
-let state = {
-  stage: 0,
-  leads: [],
-  selectedLead: null,
-  hubspotPushed: {},
-  emailType: 'initial',
-  emailContent: '',
-  selectedIndustries: [],
-  selectedEmployeeRanges: [],
-  selectedTechStack: [],
-  minScore: 0,
-  sourceFilter: 'all',
-  searching: false,
-  searchProgress: 0,
-};
-
-const INDUSTRIES = [
-  {label:'Information Technology',value:'5567cd4773696439b10b0000'},
-  {label:'Software & SaaS',value:'5567cd4773696439b10c0000'},
-  {label:'Healthcare',value:'5567cd4773696439b1110000'},
-  {label:'Finance & Banking',value:'5567cd4773696439b10e0000'},
-  {label:'E-commerce & Retail',value:'5567cd4773696439b1120000'},
-  {label:'Education',value:'5567cd4773696439b1130000'},
-  {label:'Media & Entertainment',value:'5567cd4773696439b1160000'},
-  {label:'Manufacturing',value:'5567cd4773696439b1140000'},
-  {label:'Real Estate',value:'5567cd4773696439b1180000'},
-  {label:'Marketing & Advertising',value:'5567cd4773696439b1150000'},
-];
-const EMP_RANGES = ['1-10','11-50','51-200','201-500','501-1000','1001-5000','5001+'];
-const TECH_OPTIONS = ['Amazon Web Services','Salesforce','HubSpot','Slack','Zoom','Microsoft Azure','Google Cloud','Shopify','Stripe','Twilio'];
-function toggleFilter(arr, val) { return arr.indexOf(val) >= 0 ? arr.filter(function(x){return x!==val;}) : arr.concat([val]); }
-
-const STATUS_COLORS = { new: '#00ffc8', contacted: '#f0c040', replied: '#60a0ff', meeting: '#c060ff', declined: '#ff5060' };
-const STATUS_LABELS = { new: 'New', contacted: 'Contacted', replied: 'Replied', meeting: 'Meeting Booked', declined: 'Declined' };
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-function scoreColor(s) { return s > 89 ? '#00ffc8' : s > 75 ? '#f0c040' : '#ff7040'; }
-
-function scoreBar(score) {
-  return `<div class="score-wrap">
-    <div class="score-track"><div class="score-fill" style="width:${score}%;background:${scoreColor(score)}"></div></div>
-    <span style="font-size:12px;color:#7080a0;width:28px;text-align:right">${score}</span>
-  </div>`;
-}
-
-function badge(status) {
-  return `<span class="badge" style="background:${STATUS_COLORS[status]}18;color:${STATUS_COLORS[status]}">${STATUS_LABELS[status]}</span>`;
-}
-
-function leadCard(lead, selected) {
-  const statusBtns = ['contacted','replied','meeting','declined'].map(s =>
-    `<button onclick="event.stopPropagation();setStatus('${lead.id}','${s}')" style="font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid ${STATUS_COLORS[s]}40;background:${lead.status===s?STATUS_COLORS[s]+'20':'transparent'};color:${lead.status===s?STATUS_COLORS[s]:'#506070'};cursor:pointer;transition:all 0.15s">${STATUS_LABELS[s]}</button>`
-  ).join('');
-  const hsPushed = state.hubspotPushed[lead.id];
-  const hsBtn = `<button id="hs-btn-${lead.id}" onclick="event.stopPropagation();sendToHubspot('${lead.id}')" style="font-size:10px;padding:2px 10px;border-radius:20px;border:1px solid ${hsPushed?'#00ffc840':'#ff8c0040'};background:${hsPushed?'rgba(0,255,200,0.1)':'rgba(255,140,0,0.08)'};color:${hsPushed?'#00ffc8':'#ff8c00'};cursor:${hsPushed?'default':'pointer'}" ${hsPushed?'disabled':''}>${hsPushed?'✓ In HubSpot':'⬆ HubSpot'}</button>`;
-  return `<div class="lead-card ${selected?'selected':''}" onclick="selectLead('${lead.id}')">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-      <div>
-        <div style="font-weight:600;color:#e8edf5;font-size:14px">${lead.name}</div>
-        <div style="font-size:12px;color:#7080a0;margin-top:2px">${lead.title} · ${lead.company}${lead.location?' · '+lead.location:''}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        ${badge(lead.status)}
-        <span style="font-size:10px;color:#506070">${lead.source}</span>
+  <main>
+    <div id="tab-leads" class="tab-content active">
+      <div id="app"></div>
+    </div>
+    <div id="tab-saved" class="tab-content">
+      <div class="fade-up">
+        <div class="section-title">Saved Leads</div>
+        <div class="section-sub">Companies you have bookmarked for follow-up.</div>
+        <div id="saved-list"><div class="empty-state"><div class="empty-icon">&#128203;</div><div>No saved leads yet.</div></div></div>
       </div>
     </div>
-    ${scoreBar(lead.score)}
-    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">${statusBtns}<span style="flex:1"></span>${hsBtn}</div>
-  </div>`;
-}
+    <div id="tab-settings" class="tab-content">
+      <div class="fade-up">
+        <div class="section-title">Settings</div>
+        <div class="section-sub">Configure your integrations.</div>
+        <div class="settings-card">
+          <div class="settings-title">&#9679; Integrations</div>
+          <div class="form-row"><div class="form-label">Apollo API Key</div><input class="form-input" type="password" placeholder="Stored in environment" disabled /></div>
+          <div class="form-row"><div class="form-label">HubSpot Access Token</div><input class="form-input" type="password" placeholder="Stored in environment" disabled /></div>
+          <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>
+        </div>
+      </div>
+    </div>
+  </main>
 
-function generateEmail(lead, type) {
-  const fn = lead.name.split(' ')[0];
-  const isSales = lead.title.includes('Sales')||lead.title.includes('Revenue')||lead.title.includes('CRO')||lead.title.includes('Growth');
-  const fundingNote = lead.funding && lead.funding !== 'Unknown' ? `the ${lead.funding}` : 'your growth';
-  if (type === 'initial') return `Subject: Quick question for ${lead.company}\n\nHi ${fn},\n\nI came across ${lead.company} while researching high-growth companies in your space — congrats on ${fundingNote}.\n\nI work with ${isSales?'revenue teams':'growth leaders'} who are trying to [specific pain point] without [common friction].\n\nWould it be worth a 15-minute call this week to see if there's a fit?\n\nBest,\n[Your Name]`;
-  if (type === 'followup') return `Subject: Re: Quick question for ${lead.company}\n\nHi ${fn},\n\nFollowing up on my note from last week — I know your inbox is busy.\n\nI wanted to share one quick thing: [specific result/case study relevant to ${lead.company}].\n\nStill worth a quick chat?\n\nBest,\n[Your Name]`;
-  return `Subject: Closing the loop\n\nHi ${fn},\n\nI'll stop following up after this — I don't want to be a nuisance.\n\nIf the timing ever changes and [pain point] becomes a priority, I'm here.\n\nWishing ${lead.company} continued success.\n\nBest,\n[Your Name]`;
-}
+  <script>
+    var INDUSTRIES = [
+      'Technology','Software','SaaS','Cloud Computing','Cybersecurity',
+      'Fintech','Healthcare','Biotech','E-commerce','Marketing',
+      'Real Estate','Education','Manufacturing','Logistics','Media'
+    ];
+    var EMP_RANGES = [
+      {label:'1-10',val:'1,10'},
+      {label:'11-50',val:'11,50'},
+      {label:'51-200',val:'51,200'},
+      {label:'201-500',val:'201,500'},
+      {label:'501-1000',val:'501,1000'},
+      {label:'1001-5000',val:'1001,5000'},
+      {label:'5001+',val:'5001,10000000'}
+    ];
+    var TECH_OPTIONS = ['AWS','Salesforce','HubSpot','Stripe','Twilio','Slack','Zendesk','Shopify','Snowflake','Databricks'];
 
-function updateStats() {
-  const s = { found: state.leads.length, contacted: 0, replied: 0, meetings: 0 };
-  state.leads.forEach(l => {
-    if (['contacted','replied','meeting'].includes(l.status)) s.contacted++;
-    if (['replied','meeting'].includes(l.status)) s.replied++;
-    if (l.status === 'meeting') s.meetings++;
-  });
-  document.getElementById('stat-found').textContent = s.found;
-  document.getElementById('stat-contacted').textContent = s.contacted;
-  document.getElementById('stat-replied').textContent = s.replied;
-  document.getElementById('stat-meetings').textContent = s.meetings;
-}
+    var state = {
+      stage: 0,
+      searching: false,
+      results: [],
+      filtered: [],
+      selectedIndustries: [],
+      selectedEmployeeRanges: [],
+      selectedTechStack: ['AWS'],
+      saved: []
+    };
 
-// ── Actions ────────────────────────────────────────────────────────────────
-function setStage(n) {
-  state.stage = n;
-  document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i===n));
-  render();
-}
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.nav-tab').forEach(function(el) { el.classList.remove('active'); });
+      document.getElementById('tab-' + name).classList.add('active');
+      event.target.classList.add('active');
+      if (name === 'leads') render();
+    }
 
-function selectLead(id) {
-  state.selectedLead = state.leads.find(l => l.id === id) || null;
-  state.emailContent = '';
-  render();
-}
+    function toggleFilter(type, val) {
+      var arr;
+      if (type === 'industry') arr = state.selectedIndustries;
+      else if (type === 'emp') arr = state.selectedEmployeeRanges;
+      else arr = state.selectedTechStack;
+      if (type === 'tech' && val === 'AWS') return;
+      var idx = arr.indexOf(val);
+      if (idx >= 0) arr.splice(idx, 1); else arr.push(val);
+      render();
+    }
 
-function setStatus(id, status) {
-  state.leads = state.leads.map(l => l.id === id ? {...l, status} : l);
-  updateStats();
-  render();
-}
-
-function setEmailType(t) {
-  state.emailType = t;
-  state.emailContent = '';
-  render();
-}
-
-function generateAndShow() {
-  if (!state.selectedLead) return;
-  state.emailContent = generateEmail(state.selectedLead, state.emailType);
-  render();
-}
-
-async function sendToHubspot(id) {
-  const lead = state.leads.find(l => l.id === id);
-  if (!lead) return;
-  const btn = document.getElementById('hs-btn-' + id);
-  if (btn) { btn.textContent = '⏳ Sending...'; btn.disabled = true; }
-  try {
-    const res = await fetch('/api/hubspot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: lead.name, email: lead.email, title: lead.title, company: lead.company, linkedin: lead.linkedin }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'HubSpot error');
-    state.hubspotPushed[id] = true;
-    render();
-  } catch (err) {
-    if (btn) { btn.textContent = '✕ Failed'; btn.style.color = '#ff5060'; btn.disabled = false; }
-    alert('HubSpot error: ' + err.message);
-  }
-}
-function copyEmail() {
-  navigator.clipboard.writeText(state.emailContent);
-  const btn = document.getElementById('copy-btn');
-  if (btn) { btn.textContent = '✓ Copied'; btn.style.color = '#00ffc8'; setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = '#506070'; }, 1800); }
-}
-
-async function doSearch() {
-  if (state.searching) return;
-  state.searching = true;
-  state.searchProgress = 0;
-  render();
-
-  let prog = 0;
-  const interval = setInterval(() => {
-    prog += Math.random() * 8 + 2;
-    if (prog < 85) {
-      state.searchProgress = Math.min(prog, 85);
-      const bar = document.getElementById('prog-bar');
-      const label = document.getElementById('prog-label');
-      if (bar) bar.style.width = state.searchProgress + '%';
-      if (label) {
-        const p = state.searchProgress;
-        label.textContent = p < 30 ? '🔍 Scanning Apollo database...' : p < 60 ? '📊 Pulling company data...' : p < 85 ? '✨ Scoring & ranking leads...' : '⚡ Almost done...';
+    function render() {
+      var el = document.getElementById('app');
+      if (!el) return;
+      if (state.stage === 0) {
+        var indBtns = INDUSTRIES.map(function(ind) {
+          var a = state.selectedIndustries.indexOf(ind) >= 0;
+          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(' + "'industry','"+ind+"')" + '">' + ind + '</button>';
+        }).join('');
+        var empBtns = EMP_RANGES.map(function(r) {
+          var a = state.selectedEmployeeRanges.indexOf(r.val) >= 0;
+          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(' + "'emp','"+r.val+"')" + '">' + r.label + '</button>';
+        }).join('');
+        var techBtns = TECH_OPTIONS.map(function(t) {
+          var locked = t === 'AWS';
+          var a = state.selectedTechStack.indexOf(t) >= 0;
+          var cls = 'pill' + (locked ? ' locked' : (a ? ' active' : ''));
+          var handler = locked ? '' : ' onclick="toggleFilter(' + "'tech','"+t+"')" + '"';
+          return '<button class="' + cls + '"' + handler + '>' + t + (locked ? ' (always on)' : '') + '</button>';
+        }).join('');
+        el.innerHTML = '<div class="fade-up">'
+          + '<div class="section-title">Find Leads</div>'
+          + '<div class="section-sub">Filter companies by industry, size, and tech stack. Results are enriched via Apollo.</div>'
+          + '<div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">' + indBtns + '</div></div>'
+          + '<div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">' + empBtns + '</div></div>'
+          + '<div class="filter-group"><div class="filter-label">Tech Stack</div><div class="pill-row">' + techBtns + '</div></div>'
+          + '<button class="search-btn" onclick="doSearch()">Search Leads</button>'
+          + '</div>';
+      } else if (state.stage === 1) {
+        el.innerHTML = '<div class="fade-up" style="text-align:center;padding:60px 0;">'
+          + '<div class="spinner"></div><div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching Apollo...</div>'
+          + '</div>';
+      } else {
+        var filtered = state.results;
+        var cards = filtered.length ? filtered.map(function(c, i) {
+          var logo = c.logo_url ? '<img src="' + c.logo_url + '" style="width:38px;height:38px;border-radius:8px;object-fit:contain;" onerror="this.style.display='none'" />' : '&#127970;';
+          var tech = (c.technologies || []).slice(0,5).map(function(t) { return '<span class="meta-tag">' + t + '</span>'; }).join('');
+          return '<div class="card fade-up" style="animation-delay:' + (i*0.05) + 's">'
+            + '<div class="card-logo">' + logo + '</div>'
+            + '<div class="card-body">'
+            + '<div class="card-name">' + (c.name || 'Unknown') + '</div>'
+            + '<div class="card-domain">' + (c.primary_domain || '') + '</div>'
+            + '<div class="card-meta"><span class="meta-tag">&#128101; ' + (c.estimated_num_employees || '?') + '</span>'
+            + (c.industry ? '<span class="meta-tag">' + c.industry + '</span>' : '')
+            + (c.country ? '<span class="meta-tag">&#127760; ' + c.country + '</span>' : '')
+            + tech + '</div>'
+            + '<div class="card-desc">' + (c.short_description || '') + '</div>'
+            + '<div class="card-actions">'
+            + '<button class="btn-sm btn-hs" id="hs-' + i + '" onclick="sendToHubspot(' + i + ')">&#8679; HubSpot</button>'
+            + '</div>'
+            + '</div></div>';
+        }).join('') : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No results found. Try adjusting your filters.</div></div>';
+        el.innerHTML = '<div class="fade-up">'
+          + '<button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;render()">&#8592; Back to filters</button>'
+          + '<div class="results-count">' + filtered.length + ' companies found</div>'
+          + cards + '</div>';
       }
     }
-  }, 200);
 
-  try {
-    const res = await fetch('/api/apollo', {
+    function doSearch() {
+      state.stage = 1;
+      state.searching = true;
+      render();
+      var body = {
+        industry: state.selectedIndustries,
+        employee_ranges: state.selectedEmployeeRanges,
+        tech_stack: state.selectedTechStack
+      };
+      fetch('/api/apollo', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          industry: state.selectedIndustries,
-          employee_ranges: state.selectedEmployeeRanges,
-          tech_stack: state.selectedTechStack,
-          page: 1, per_page: 25,
-        }),
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        state.results = Array.isArray(data) ? data : (data.organizations || data.companies || []);
+        state.filtered = state.results;
+        state.stage = 2;
+        state.searching = false;
+        render();
+      })
+      .catch(function(err) {
+        state.stage = 0;
+        state.searching = false;
+        render();
+        alert('Search failed: ' + err.message);
       });
-
-    clearInterval(interval);
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || `HTTP ${res.status}`);
     }
 
-    const data = await res.json();
-    const people = data.people || [];
+    function sendToHubspot(i) {
+      var c = state.results[i];
+      if (!c) return;
+      var btn = document.getElementById('hs-' + i);
+      if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+      fetch('/api/hubspot', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          company: c.name,
+          domain: c.primary_domain,
+          industry: c.industry,
+          employees: c.estimated_num_employees
+        })
+      })
+      .then(function(r) { return r.json(); })
+      .then(function() {
+        if (btn) { btn.textContent = 'In HubSpot'; btn.classList.add('sent'); btn.disabled = true; }
+      })
+      .catch(function() {
+        if (btn) { btn.textContent = 'Failed'; btn.disabled = false; }
+      });
+    }
 
-    state.leads = people.map((p, i) => ({
-      id: p.id || String(i),
-      name: `${p.first_name||''} ${p.last_name||''}`.trim() || 'Unknown',
-      title: p.title || 'Unknown Title',
-      company: p.organization?.name || p.employment_history?.[0]?.organization_name || 'Unknown',
-      source: 'Apollo',
-      funding: p.organization?.latest_funding_stage || 'Unknown',
-      status: 'new',
-      email: p.email || '—',
-      score: Math.min(99, 60 + (p.email ? 20 : 0) + (p.organization?.estimated_num_employees > 10 ? 10 : 0) + Math.floor(Math.random()*12)),
-      linkedin: p.linkedin_url || '',
-      location: [p.city, p.state, p.country].filter(Boolean).join(', '),
-    }));
-
-    state.searchProgress = 100;
-    state.searching = false;
-    updateStats();
     render();
-  } catch (err) {
-    clearInterval(interval);
-    state.searching = false;
-    render();
-    alert('Search failed: ' + err.message);
-  }
-}
-
-// ── Render ─────────────────────────────────────────────────────────────────
-function render() {
-  const el = document.getElementById('main-content');
-  const { stage, leads, selectedLead, emailType, emailContent, searching, searchProgress, sourceFilter, minScore } = state;
-
-  const filtered = leads.filter(l => {
-    if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
-    if (l.score < minScore) return false;
-    return true;
-  });
-
-  if (stage === 0) {
-    // ── FIND LEADS ─────────────────────────────────────────────────────────
-    el.innerHTML = `<div class="fade-up">
-      <div class="section-title">Find Leads</div>
-      <div class="section-sub">Search Apollo for high-fit prospects matching your ICP.</div>
-      <div class="card">
-        <div class="search-row">
-          <input class="search-input" id="q-input" placeholder="e.g. VP of Sales, Head of Growth, CRO..." value="${state.searchQuery}" oninput="state.searchQuery=this.value" onkeydown="if(event.key==='Enter')doSearch()" />
-          <button class="btn-primary" onclick="doSearch()" ${searching?'disabled':''} id="search-btn">${searching?'Scanning...':'Search'}</button>
-        </div>
-        <div class="filter-row">
-          <span style="font-size:12px;color:#506070">Min score:</span>
-          <input type="range" min="0" max="90" value="${minScore}" oninput="state.minScore=+this.value;render()" style="width:80px;accent-color:#00ffc8" />
-          <span style="font-size:12px;color:#00ffc8;width:24px">${minScore}</span>
-        </div>
-      </div>
-      ${searching ? `<div style="margin-bottom:16px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-          <span id="prog-label" style="font-size:12px;color:#506070;animation:pulse 1.5s infinite">🔍 Scanning Apollo database...</span>
-          <span style="font-size:12px;color:#00ffc8">${Math.round(searchProgress)}%</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" id="prog-bar" style="width:${searchProgress}%"></div></div>
-      </div>` : ''}
-      ${filtered.length > 0 ? `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <span style="font-size:13px;color:#506070">${filtered.length} prospects found</span>
-          <button class="btn-primary" onclick="setStage(1)" ${!selectedLead?'disabled':''} style="${!selectedLead?'background:rgba(255,255,255,0.05);color:#405060;cursor:not-allowed':''}">Craft Outreach →</button>
-        </div>
-        ${filtered.map(l => leadCard(l, selectedLead?.id===l.id)).join('')}
-      ` : (!searching ? `<div class="empty"><div class="empty-icon">🎯</div><div style="font-size:14px;margin-bottom:6px">Ready to find your next customers</div><div style="font-size:12px">Enter a job title above and hit Search</div></div>` : '')}
-    </div>`;
-
-  } else if (stage === 1) {
-    // ── CRAFT OUTREACH ─────────────────────────────────────────────────────
-    const typeLabels = [['initial','First Touch'],['followup','Follow Up'],['breakup','Break-up']];
-    el.innerHTML = `<div class="fade-up">
-      <div class="section-title">Craft Outreach</div>
-      <div class="section-sub">Generate personalized emails for each prospect.</div>
-      <div class="grid-outreach">
-        <div>
-          <div class="micro-label">SELECT PROSPECT</div>
-          ${leads.length === 0 ? `<div style="padding:16px;background:rgba(255,255,255,0.02);border-radius:10px;font-size:13px;color:#405060;text-align:center">No leads yet — go to Find Leads first</div>` : leads.map(l => leadCard(l, selectedLead?.id===l.id)).join('')}
-        </div>
-        <div>
-          ${selectedLead ? `
-            <div class="card" style="margin-bottom:14px">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <div><span style="font-size:13px;font-weight:600;color:#e8edf5">${selectedLead.name}</span><span style="font-size:12px;color:#506070"> · ${selectedLead.company}</span></div>
-                <div style="display:flex;gap:6px">
-                  ${typeLabels.map(([v,l]) => `<button class="btn-pill ${emailType===v?'active':''}" onclick="setEmailType('${v}')">${l}</button>`).join('')}
-                </div>
-              </div>
-              <div style="display:flex;gap:8px">
-                <div style="flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;font-size:12px"><span style="color:#405060">Email: </span><span style="color:#8090b0">${selectedLead.email}</span></div>
-                <div style="flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;font-size:12px"><span style="color:#405060">Funding: </span><span style="color:#8090b0">${selectedLead.funding}</span></div>
-                ${selectedLead.linkedin ? `<div style="flex:1;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px 12px;font-size:12px"><a href="${selectedLead.linkedin}" target="_blank" style="color:#60a0ff;text-decoration:none">View LinkedIn ↗</a></div>` : ''}
-              </div>
-            </div>
-            <div style="display:flex;gap:10px;margin-bottom:12px">
-              <button class="btn-primary" style="flex:1" onclick="generateAndShow()">⚡ Generate Email</button>
-              ${emailContent ? `<button class="btn-ghost" id="copy-btn" onclick="copyEmail()">Copy</button>` : ''}
-            </div>
-            ${emailContent ? `<textarea class="email-area" rows="14" oninput="state.emailContent=this.value">${emailContent}</textarea>` : `<div style="background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.08);border-radius:12px;padding:32px;text-align:center;color:#405060"><div style="font-size:28px;margin-bottom:10px">✉️</div><div style="font-size:13px">Click Generate Email to create a personalized message</div></div>`}
-          ` : `<div style="background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.08);border-radius:12px;padding:48px;text-align:center;color:#405060"><div style="font-size:36px;margin-bottom:12px">👈</div><div style="font-size:14px">Select a prospect to generate outreach</div></div>`}
-        </div>
-      </div>
-    </div>`;
-
-  } else if (stage === 2) {
-    // ── FOLLOW UP ──────────────────────────────────────────────────────────
-    const groups = { new: [], contacted: [], replied: [], meeting: [] };
-    leads.forEach(l => { if (groups[l.status]) groups[l.status].push(l); });
-    const cols = [
-      { key:'new', label:'🎯 New Leads', desc:'Not yet contacted' },
-      { key:'contacted', label:'📤 Contacted', desc:'Awaiting reply' },
-      { key:'replied', label:'💬 Replied', desc:'In conversation' },
-      { key:'meeting', label:'📅 Meeting Booked', desc:'Ready to close' },
-    ];
-    el.innerHTML = `<div class="fade-up">
-      <div class="section-title">Follow Up</div>
-      <div class="section-sub">Manage your follow-up sequence and track who needs attention.</div>
-      ${leads.length === 0 ? `<div class="empty"><div class="empty-icon">📬</div><div style="font-size:14px">No leads to follow up with yet</div></div>` : `
-      <div class="grid-2">
-        ${cols.map(c => `
-          <div class="card">
-            <div style="margin-bottom:12px">
-              <div style="font-size:14px;font-weight:600;color:#e8edf5;margin-bottom:2px">${c.label}</div>
-              <div style="font-size:12px;color:#506070">${c.desc} · ${groups[c.key].length} leads</div>
-            </div>
-            ${groups[c.key].length === 0 ? `<div style="font-size:12px;color:#304050;padding:12px 0;text-align:center">None here yet</div>` :
-              groups[c.key].map(l => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,0.04)">
-                <div><div style="font-size:13px;color:#c8d4e8">${l.name}</div><div style="font-size:11px;color:#506070">${l.company}</div></div>
-                <button class="btn-action" onclick="selectLead('${l.id}');state.emailType='${c.key==='new'?'initial':c.key==='contacted'?'followup':'initial'}';setStage(1)">Draft →</button>
-              </div>`).join('')}
-          </div>
-        `).join('')}
-      </div>`}
-    </div>`;
-
-  } else if (stage === 3) {
-    // ── PIPELINE ───────────────────────────────────────────────────────────
-    const s = { found: leads.length, contacted: 0, replied: 0, meetings: 0 };
-    leads.forEach(l => {
-      if (['contacted','replied','meeting'].includes(l.status)) s.contacted++;
-      if (['replied','meeting'].includes(l.status)) s.replied++;
-      if (l.status === 'meeting') s.meetings++;
-    });
-    const kpis = [
-      {label:'Leads Found', value:s.found, color:'#00ffc8', icon:'🎯'},
-      {label:'Contacted', value:s.contacted, color:'#f0c040', icon:'📤'},
-      {label:'Replied', value:s.replied, color:'#60a0ff', icon:'💬'},
-      {label:'Meetings', value:s.meetings, color:'#c060ff', icon:'📅'},
-    ];
-    el.innerHTML = `<div class="fade-up">
-      <div class="section-title">Pipeline</div>
-      <div class="section-sub">Full overview of your prospecting funnel.</div>
-      <div class="grid-4" style="margin-bottom:28px">
-        ${kpis.map(k => `<div class="card" style="text-align:center;border-color:${k.color}20">
-          <div style="font-size:28px;margin-bottom:8px">${k.icon}</div>
-          <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${k.color}">${k.value}</div>
-          <div style="font-size:12px;color:#506070;margin-top:4px">${k.label}</div>
-          ${k.value > 0 && s.found > 0 ? `<div style="font-size:11px;color:${k.color}80;margin-top:4px">${Math.round(k.value/s.found*100)}% of leads</div>` : ''}
-        </div>`).join('')}
-      </div>
-      ${leads.length === 0 ? `<div class="empty"><div class="empty-icon">📊</div><div style="font-size:14px">Start by finding leads to build your pipeline</div></div>` : `
-        <div class="micro-label">ALL PROSPECTS</div>
-        ${leads.map(l => `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-          <div style="display:flex;align-items:center;gap:14px">
-            <div style="width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,${STATUS_COLORS[l.status]}30,${STATUS_COLORS[l.status]}10);display:flex;align-items:center;justify-content:center;font-size:16px">
-              ${{new:'🎯',contacted:'📤',replied:'💬',meeting:'📅',declined:'❌'}[l.status]}
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#e8edf5">${l.name}</div>
-              <div style="font-size:12px;color:#506070">${l.title} · ${l.company}</div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px">
-            <div style="width:80px">${scoreBar(l.score)}</div>
-            ${badge(l.status)}
-            <button class="btn-ghost" style="font-size:11px;padding:5px 12px" onclick="selectLead('${l.id}');setStage(1)">Draft Email</button>
-          </div>
-        </div>`).join('')}
-      `}
-    </div>`;
-  }
-}
-
-// Init
-render();
-</script>
+  </script>
 </body>
 </html>
