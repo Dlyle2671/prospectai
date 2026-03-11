@@ -29,20 +29,23 @@
     .pill.locked { background: #1a3a7a; border-color: #4f8ef7; color: #fff; opacity: .7; cursor: default; }
     .search-btn { margin-top: 28px; padding: 12px 32px; border-radius: 10px; border: none; background: linear-gradient(135deg,#4f8ef7,#2563eb); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .2s; }
     .search-btn:hover { opacity: .88; }
-    .search-btn:disabled { opacity: .5; cursor: not-allowed; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .results-count { font-size: 13px; color: #6b7a99; margin-bottom: 16px; }
-    .card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 22px 24px; margin-bottom: 14px; display: flex; align-items: flex-start; gap: 18px; transition: border-color .2s; }
+    .card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 20px 22px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 16px; transition: border-color .2s; }
     .card:hover { border-color: #2d3f6b; }
-    .card-logo { width: 46px; height: 46px; border-radius: 10px; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-    .card-body { flex: 1; }
-    .card-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 3px; }
-    .card-domain { font-size: 13px; color: #4f8ef7; margin-bottom: 8px; }
-    .card-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden; }
+    .avatar img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+    .card-body { flex: 1; min-width: 0; }
+    .person-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+    .person-title { font-size: 13px; color: #4f8ef7; margin-bottom: 6px; }
+    .person-company { font-size: 13px; color: #8a9bb8; margin-bottom: 8px; }
+    .card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
     .meta-tag { font-size: 12px; color: #6b7a99; background: #111827; padding: 3px 10px; border-radius: 6px; border: 1px solid #1a2540; }
-    .card-desc { font-size: 13px; color: #8a9bb8; line-height: 1.55; }
-    .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .meta-tag a { color: #4f8ef7; text-decoration: none; }
+    .meta-tag a:hover { text-decoration: underline; }
+    .email-tag { color: #22c55e; }
+    .card-actions { display: flex; gap: 8px; margin-top: 10px; }
     .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
     .btn-sm:hover { border-color: #4f8ef7; color: #fff; }
     .btn-hs { background: #ff7a59; border-color: #ff7a59; color: #fff; }
@@ -58,8 +61,6 @@
     .form-label { font-size: 12px; color: #6b7a99; margin-bottom: 6px; font-weight: 500; }
     .form-input { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
     .form-input:focus { border-color: #4f8ef7; }
-    .save-btn { padding: 9px 22px; border-radius: 8px; border: none; background: #4f8ef7; color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; }
-    .save-btn:hover { background: #2563eb; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
   </style>
 </head>
@@ -67,21 +68,13 @@
   <nav>
     <div class="nav-logo">Prospect<span>AI</span></div>
     <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showTab('leads')">Find Leads</button>
-      <button class="nav-tab" onclick="showTab('saved')">Saved</button>
-      <button class="nav-tab" onclick="showTab('settings')">Settings</button>
+      <button class="nav-tab active" onclick="showTab('leads', event)">Find Leads</button>
+      <button class="nav-tab" onclick="showTab('settings', event)">Settings</button>
     </div>
   </nav>
   <main>
     <div id="tab-leads" class="tab-content active">
       <div id="app"></div>
-    </div>
-    <div id="tab-saved" class="tab-content">
-      <div class="fade-up">
-        <div class="section-title">Saved Leads</div>
-        <div class="section-sub">Companies you have bookmarked for follow-up.</div>
-        <div id="saved-list"><div class="empty-state"><div class="empty-icon">&#128203;</div><div>No saved leads yet.</div></div></div>
-      </div>
     </div>
     <div id="tab-settings" class="tab-content">
       <div class="fade-up">
@@ -89,8 +82,8 @@
         <div class="section-sub">Configure your integrations.</div>
         <div class="settings-card">
           <div class="settings-title">&#9679; Integrations</div>
-          <div class="form-row"><div class="form-label">Apollo API Key</div><input class="form-input" type="password" placeholder="Stored in environment" disabled /></div>
-          <div class="form-row"><div class="form-label">HubSpot Access Token</div><input class="form-input" type="password" placeholder="Stored in environment" disabled /></div>
+          <div class="form-row"><div class="form-label">Apollo API Key</div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>
+          <div class="form-row"><div class="form-label">HubSpot Access Token</div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>
           <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>
         </div>
       </div>
@@ -104,155 +97,161 @@
       'Real Estate','Education','Manufacturing','Logistics','Media'
     ];
     var EMP_RANGES = [
-      {label:'1-10',val:'1,10'},
-      {label:'11-50',val:'11,50'},
-      {label:'51-200',val:'51,200'},
-      {label:'201-500',val:'201,500'},
-      {label:'501-1000',val:'501,1000'},
-      {label:'1001-5000',val:'1001,5000'},
-      {label:'5001+',val:'5001,10000000'}
+      {label:'1-10',val:'1,10'},{label:'11-50',val:'11,50'},{label:'51-200',val:'51,200'},
+      {label:'201-500',val:'201,500'},{label:'501-1000',val:'501,1000'},
+      {label:'1001-5000',val:'1001,5000'},{label:'5001+',val:'5001,10000000'}
     ];
     var TECH_OPTIONS = ['AWS','Salesforce','HubSpot','Stripe','Twilio','Slack','Zendesk','Shopify','Snowflake','Databricks'];
+    var TITLE_OPTIONS = [
+      'CEO','CTO','CFO','COO','CMO','VP of Sales','VP of Marketing',
+      'VP of Engineering','Director of Sales','Director of Marketing',
+      'Head of Growth','Head of Product','Sales Manager','Account Executive','Founder'
+    ];
 
     var state = {
       stage: 0,
-      searching: false,
       results: [],
-      filtered: [],
       selectedIndustries: [],
       selectedEmployeeRanges: [],
       selectedTechStack: ['AWS'],
-      saved: []
+      selectedTitles: []
     };
 
-    function showTab(name) {
+    function showTab(name, e) {
       document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
       document.querySelectorAll('.nav-tab').forEach(function(el) { el.classList.remove('active'); });
       document.getElementById('tab-' + name).classList.add('active');
-      event.target.classList.add('active');
+      if (e && e.target) e.target.classList.add('active');
       if (name === 'leads') render();
     }
 
     function toggleFilter(type, val) {
-      var arr;
-      if (type === 'industry') arr = state.selectedIndustries;
-      else if (type === 'emp') arr = state.selectedEmployeeRanges;
-      else arr = state.selectedTechStack;
       if (type === 'tech' && val === 'AWS') return;
+      var arr = type === 'industry' ? state.selectedIndustries
+        : type === 'emp' ? state.selectedEmployeeRanges
+        : type === 'tech' ? state.selectedTechStack
+        : state.selectedTitles;
       var idx = arr.indexOf(val);
       if (idx >= 0) arr.splice(idx, 1); else arr.push(val);
       render();
     }
 
+    function pill(label, type, val, locked) {
+      var active = locked || (type === 'industry' ? state.selectedIndustries : type === 'emp' ? state.selectedEmployeeRanges : type === 'tech' ? state.selectedTechStack : state.selectedTitles).indexOf(val) >= 0;
+      var cls = 'pill' + (locked ? ' locked' : active ? ' active' : '');
+      var handler = locked ? '' : ' onclick="toggleFilter(&apos;' + type + '&apos;,&apos;' + val + '&apos;)"';
+      return '<button class="' + cls + '"' + handler + '>' + label + '</button>';
+    }
+
     function render() {
       var el = document.getElementById('app');
       if (!el) return;
+
       if (state.stage === 0) {
-        var indBtns = INDUSTRIES.map(function(ind) {
-          var a = state.selectedIndustries.indexOf(ind) >= 0;
-          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(&apos;industry&apos;,&apos;' + ind + '&apos;)">' + ind + '</button>';
-        }).join('');
-        var empBtns = EMP_RANGES.map(function(r) {
-          var a = state.selectedEmployeeRanges.indexOf(r.val) >= 0;
-          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(&apos;emp&apos;,&apos;' + r.val + '&apos;)">' + r.label + '</button>';
-        }).join('');
-        var techBtns = TECH_OPTIONS.map(function(t) {
-          var locked = t === 'AWS';
-          var a = state.selectedTechStack.indexOf(t) >= 0;
-          var cls = 'pill' + (locked ? ' locked' : (a ? ' active' : ''));
-          var handler = locked ? '' : ' onclick="toggleFilter(&apos;tech&apos;,&apos;' + t + '&apos;)"';
-          return '<button class="' + cls + '"' + handler + '>' + t + (locked ? ' (always on)' : '') + '</button>';
-        }).join('');
+        var indBtns = INDUSTRIES.map(function(v) { return pill(v, 'industry', v, false); }).join('');
+        var empBtns = EMP_RANGES.map(function(r) { return pill(r.label, 'emp', r.val, false); }).join('');
+        var techBtns = TECH_OPTIONS.map(function(t) { return pill(t === 'AWS' ? 'AWS (always on)' : t, 'tech', t, t === 'AWS'); }).join('');
+        var titleBtns = TITLE_OPTIONS.map(function(v) { return pill(v, 'title', v, false); }).join('');
         el.innerHTML = '<div class="fade-up">'
           + '<div class="section-title">Find Leads</div>'
-          + '<div class="section-sub">Filter companies by industry, size, and tech stack. Results are enriched via Apollo.</div>'
+          + '<div class="section-sub">Search for individual contacts via Apollo. AWS is always included in the tech filter.</div>'
+          + '<div class="filter-group"><div class="filter-label">Job Title</div><div class="pill-row">' + titleBtns + '</div></div>'
           + '<div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">' + indBtns + '</div></div>'
           + '<div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">' + empBtns + '</div></div>'
           + '<div class="filter-group"><div class="filter-label">Tech Stack</div><div class="pill-row">' + techBtns + '</div></div>'
-          + '<button class="search-btn" onclick="doSearch()">Search Leads</button>'
+          + '<button class="search-btn" onclick="doSearch()">Search Contacts</button>'
           + '</div>';
+
       } else if (state.stage === 1) {
         el.innerHTML = '<div class="fade-up" style="text-align:center;padding:60px 0;">'
-          + '<div class="spinner"></div><div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching Apollo...</div>'
+          + '<div class="spinner"></div>'
+          + '<div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching Apollo...</div>'
           + '</div>';
+
       } else {
-        var filtered = state.results;
-        var cards = filtered.length ? filtered.map(function(c, i) {
-          var logo = c.logo_url ? '<img src="' + c.logo_url + '" style="width:38px;height:38px;border-radius:8px;object-fit:contain;" />' : '&#127970;';
-          var tech = (c.technologies || []).slice(0,5).map(function(t) { return '<span class="meta-tag">' + t + '</span>'; }).join('');
-          return '<div class="card fade-up" style="animation-delay:' + (i*0.05) + 's">'
-            + '<div class="card-logo">' + logo + '</div>'
+        var people = state.results;
+        var cards = people.length ? people.map(function(p, i) {
+          var avatarHtml = p.photo_url
+            ? '<div class="avatar"><img src="' + p.photo_url + '" /></div>'
+            : '<div class="avatar">&#128100;</div>';
+          var metaTags = '';
+          if (p.email) metaTags += '<span class="meta-tag email-tag">&#9993; ' + p.email + '</span>';
+          if (p.company_size) metaTags += '<span class="meta-tag">&#128101; ' + p.company_size + '</span>';
+          if (p.company_industry) metaTags += '<span class="meta-tag">' + p.company_industry + '</span>';
+          if (p.linkedin_url) metaTags += '<span class="meta-tag"><a href="' + p.linkedin_url + '" target="_blank">LinkedIn</a></span>';
+          return '<div class="card fade-up" style="animation-delay:' + (i * 0.04) + 's">'
+            + avatarHtml
             + '<div class="card-body">'
-            + '<div class="card-name">' + (c.name || 'Unknown') + '</div>'
-            + '<div class="card-domain">' + (c.primary_domain || '') + '</div>'
-            + '<div class="card-meta"><span class="meta-tag">&#128101; ' + (c.estimated_num_employees || '?') + '</span>'
-            + (c.industry ? '<span class="meta-tag">' + c.industry + '</span>' : '')
-            + (c.country ? '<span class="meta-tag">&#127760; ' + c.country + '</span>' : '')
-            + tech + '</div>'
-            + '<div class="card-desc">' + (c.short_description || '') + '</div>'
+            + '<div class="person-name">' + (p.name || 'Unknown') + '</div>'
+            + '<div class="person-title">' + (p.title || '') + '</div>'
+            + '<div class="person-company">' + (p.company_name || '') + (p.company_domain ? ' &middot; ' + p.company_domain : '') + '</div>'
+            + (metaTags ? '<div class="card-meta">' + metaTags + '</div>' : '')
             + '<div class="card-actions">'
             + '<button class="btn-sm btn-hs" id="hs-' + i + '" onclick="sendToHubspot(' + i + ')">&#8679; HubSpot</button>'
             + '</div>'
             + '</div></div>';
-        }).join('') : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No results found. Try adjusting your filters.</div></div>';
+        }).join('')
+        : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts found. Try different filters.</div></div>';
+
         el.innerHTML = '<div class="fade-up">'
           + '<button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;render()">&#8592; Back to filters</button>'
-          + '<div class="results-count">' + filtered.length + ' companies found</div>'
+          + '<div class="results-count">' + people.length + ' contacts found</div>'
           + cards + '</div>';
       }
     }
 
     function doSearch() {
       state.stage = 1;
-      state.searching = true;
       render();
-      var body = {
-        industry: state.selectedIndustries,
-        employee_ranges: state.selectedEmployeeRanges,
-        tech_stack: state.selectedTechStack
-      };
       fetch('/api/apollo', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          industry: state.selectedIndustries,
+          employee_ranges: state.selectedEmployeeRanges,
+          tech_stack: state.selectedTechStack,
+          titles: state.selectedTitles
+        })
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
-        state.results = Array.isArray(data) ? data : (data.organizations || data.companies || []);
-        state.filtered = state.results;
+        if (data.error) throw new Error(data.error);
+        state.results = Array.isArray(data) ? data : [];
         state.stage = 2;
-        state.searching = false;
         render();
       })
       .catch(function(err) {
         state.stage = 0;
-        state.searching = false;
         render();
         alert('Search failed: ' + err.message);
       });
     }
 
     function sendToHubspot(i) {
-      var c = state.results[i];
-      if (!c) return;
+      var p = state.results[i];
+      if (!p) return;
       var btn = document.getElementById('hs-' + i);
       if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
       fetch('/api/hubspot', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-          company: c.name,
-          domain: c.primary_domain,
-          industry: c.industry,
-          employees: c.estimated_num_employees
+          first_name: p.first_name,
+          last_name: p.last_name,
+          email: p.email,
+          title: p.title,
+          company_name: p.company_name,
+          company_domain: p.company_domain,
+          linkedin_url: p.linkedin_url
         })
       })
       .then(function(r) { return r.json(); })
-      .then(function() {
-        if (btn) { btn.textContent = 'In HubSpot'; btn.classList.add('sent'); btn.disabled = true; }
+      .then(function(d) {
+        if (d.error) throw new Error(d.error);
+        if (btn) { btn.textContent = '&#10003; In HubSpot'; btn.classList.add('sent'); btn.disabled = true; }
       })
-      .catch(function() {
-        if (btn) { btn.textContent = 'Failed'; btn.disabled = false; }
+      .catch(function(err) {
+        if (btn) { btn.textContent = 'Failed: ' + err.message.slice(0,20); btn.disabled = false; }
       });
     }
 
