@@ -150,17 +150,17 @@
       if (state.stage === 0) {
         var indBtns = INDUSTRIES.map(function(ind) {
           var a = state.selectedIndustries.indexOf(ind) >= 0;
-          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(' + "'industry','"+ind+"')" + '">' + ind + '</button>';
+          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(&apos;industry&apos;,&apos;' + ind + '&apos;)">' + ind + '</button>';
         }).join('');
         var empBtns = EMP_RANGES.map(function(r) {
           var a = state.selectedEmployeeRanges.indexOf(r.val) >= 0;
-          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(' + "'emp','"+r.val+"')" + '">' + r.label + '</button>';
+          return '<button class="pill' + (a ? ' active' : '') + '" onclick="toggleFilter(&apos;emp&apos;,&apos;' + r.val + '&apos;)">' + r.label + '</button>';
         }).join('');
         var techBtns = TECH_OPTIONS.map(function(t) {
           var locked = t === 'AWS';
           var a = state.selectedTechStack.indexOf(t) >= 0;
           var cls = 'pill' + (locked ? ' locked' : (a ? ' active' : ''));
-          var handler = locked ? '' : ' onclick="toggleFilter(' + "'tech','"+t+"')" + '"';
+          var handler = locked ? '' : ' onclick="toggleFilter(&apos;tech&apos;,&apos;' + t + '&apos;)"';
           return '<button class="' + cls + '"' + handler + '>' + t + (locked ? ' (always on)' : '') + '</button>';
         }).join('');
         el.innerHTML = '<div class="fade-up">'
@@ -178,7 +178,7 @@
       } else {
         var filtered = state.results;
         var cards = filtered.length ? filtered.map(function(c, i) {
-          var logo = c.logo_url ? '<img src="' + c.logo_url + '" style="width:38px;height:38px;border-radius:8px;object-fit:contain;" onerror="this.style.display='none'" />' : '&#127970;';
+          var logo = c.logo_url ? '<img src="' + c.logo_url + '" style="width:38px;height:38px;border-radius:8px;object-fit:contain;" />' : '&#127970;';
           var tech = (c.technologies || []).slice(0,5).map(function(t) { return '<span class="meta-tag">' + t + '</span>'; }).join('');
           return '<div class="card fade-up" style="animation-delay:' + (i*0.05) + 's">'
             + '<div class="card-logo">' + logo + '</div>'
