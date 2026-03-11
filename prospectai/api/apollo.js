@@ -5,30 +5,52 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
-    const { industry = [], employee_ranges = [], tech_stack = [], page = 1, per_page = 25 } = req.body;
-    const empRangeMap = {
-      "1-10":{"min":1,"max":10},"11-50":{"min":11,"max":50},"51-200":{"min":51,"max":200},
-      "201-500":{"min":201,"max":500},"501-1000":{"min":501,"max":1000},
-      "1001-5000":{"min":1001,"max":5000},"5001+":{"min":5001,"max":1000000}
-    };
-    const empRanges = employee_ranges.map(r => empRangeMap[r]).filter(Boolean).map(r => r.min + "," + r.max);
-    const techNames = ["Amazon Web Services"].concat(tech_stack.filter(t => t !== "Amazon Web Services"));
+    const { industry = [], employee_ranges = [], tech_stack = [], page = 1, per_page = 10 } = req.body;
+
     const body = {
       api_key: process.env.APOLLO_API_KEY,
-      page, per_page,
-      contact_email_status: ["verified", "guessed"],
-      organization_technology_names: techNames,
+      page,
+      per_page,
+      organization_technology_names: ["Amazon Web Services"].concat(
+        tech_stack.filter(t => t !== "AWS" && t !== "Amazon Web Services")
+      ),
     };
-    if (industry.length > 0) body.organization_industry_tag_ids = industry;
-    if (empRanges.length > 0) body.organization_num_employees_ranges = empRanges;
-    const response = await fetch("https://api.apollo.io/v1/mixed_people/search", {
+
+    if (industry.length > 0) body.q_organization_industry_tag_ids = industry;
+
+    if (employee_ranges.length > 0) {
+      const map = {
+        "1,10": [1, 10], "11,50": [11, 50], "51,200": [51, 200],
+        "201,500": [201, 500], "501,1000": [501, 1000],
+        "1001,5000": [1001, 5000], "5001,10000000": [5001, 10000000]
+      };
+      const ranges = employee_ranges
+        .map(r => map[r])
+        .filter(Boolean)
+        .map(([min, max]) => min + "," + max);
+      if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
+    }
+
+    const response = await fetch("https://api.apollo.io/api/v1/organizations/search", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
+        "X-Api-Key": process.env.APOLLO_API_KEY
+      },
       body: JSON.stringify(body),
     });
+
     const data = await response.json();
-    if (!response.ok) return res.status(response.status).json({ error: data.message || "Apollo error" });
-    return res.status(200).json(data);
+    if (!response.ok) {
+      return res.status(response.status).json({
+        error: data.message || data.error || JSON.stringify(data)
+      });
+    }
+
+    const orgs = data.organizations || [];
+    return res.status(200).json(orgs);
+
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
