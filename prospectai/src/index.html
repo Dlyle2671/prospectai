@@ -131,6 +131,7 @@ let state = {
   stage: 0,
   leads: [],
   selectedLead: null,
+  hubspotPushed: {},
   emailType: 'initial',
   emailContent: '',
   searchQuery: '',
@@ -161,6 +162,8 @@ function leadCard(lead, selected) {
   const statusBtns = ['contacted','replied','meeting','declined'].map(s =>
     `<button onclick="event.stopPropagation();setStatus('${lead.id}','${s}')" style="font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid ${STATUS_COLORS[s]}40;background:${lead.status===s?STATUS_COLORS[s]+'20':'transparent'};color:${lead.status===s?STATUS_COLORS[s]:'#506070'};cursor:pointer;transition:all 0.15s">${STATUS_LABELS[s]}</button>`
   ).join('');
+  const hsPushed = state.hubspotPushed[lead.id];
+  const hsBtn = `<button id="hs-btn-${lead.id}" onclick="event.stopPropagation();sendToHubspot('${lead.id}')" style="font-size:10px;padding:2px 10px;border-radius:20px;border:1px solid ${hsPushed?'#00ffc840':'#ff8c0040'};background:${hsPushed?'rgba(0,255,200,0.1)':'rgba(255,140,0,0.08)'};color:${hsPushed?'#00ffc8':'#ff8c00'};cursor:${hsPushed?'default':'pointer'}" ${hsPushed?'disabled':''}>${hsPushed?'✓ In HubSpot':'⬆ HubSpot'}</button>`;
   return `<div class="lead-card ${selected?'selected':''}" onclick="selectLead('${lead.id}')">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
       <div>
@@ -173,7 +176,7 @@ function leadCard(lead, selected) {
       </div>
     </div>
     ${scoreBar(lead.score)}
-    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${statusBtns}</div>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">${statusBtns}<span style="flex:1"></span>${hsBtn}</div>
   </div>`;
 }
 
@@ -230,6 +233,26 @@ function generateAndShow() {
   render();
 }
 
+async function sendToHubspot(id) {
+  const lead = state.leads.find(l => l.id === id);
+  if (!lead) return;
+  const btn = document.getElementById('hs-btn-' + id);
+  if (btn) { btn.textContent = '⏳ Sending...'; btn.disabled = true; }
+  try {
+    const res = await fetch('/api/hubspot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: lead.name, email: lead.email, title: lead.title, company: lead.company, linkedin: lead.linkedin }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'HubSpot error');
+    state.hubspotPushed[id] = true;
+    render();
+  } catch (err) {
+    if (btn) { btn.textContent = '✕ Failed'; btn.style.color = '#ff5060'; btn.disabled = false; }
+    alert('HubSpot error: ' + err.message);
+  }
+}
 function copyEmail() {
   navigator.clipboard.writeText(state.emailContent);
   const btn = document.getElementById('copy-btn');
