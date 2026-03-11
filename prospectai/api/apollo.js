@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // Allow requests from any origin (your frontend)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -8,7 +7,37 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { titles, page = 1, per_page = 25 } = req.body;
+    const {
+      industry = [],
+      employee_ranges = [],
+      page = 1,
+      per_page = 25,
+    } = req.body;
+
+    // Build employee count ranges for Apollo
+    const numEmployeesRanges = employee_ranges.map(r => {
+      const map = {
+        "1-10":    { min: 1,    max: 10 },
+        "11-50":   { min: 11,   max: 50 },
+        "51-200":  { min: 51,   max: 200 },
+        "201-500": { min: 201,  max: 500 },
+        "501-1000":{ min: 501,  max: 1000 },
+        "1001-5000":{ min: 1001, max: 5000 },
+        "5001+":   { min: 5001, max: 1000000 },
+      };
+      return map[r] || null;
+    }).filter(Boolean);
+
+    const body = {
+      api_key: process.env.APOLLO_API_KEY,
+      page,
+      per_page,
+      contact_email_status: ["verified", "guessed"],
+      organization_technology_names: ["Amazon Web Services"],
+    };
+
+    if (industry.length > 0) body.organization_industry_tag_ids = industry;
+    if (numEmployeesRanges.length > 0) body.organization_num_employees_ranges = numEmployeesRanges.map(r => `${r.min},${r.max}`);
 
     const response = await fetch("https://api.apollo.io/v1/mixed_people/search", {
       method: "POST",
@@ -16,13 +45,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
       },
-      body: JSON.stringify({
-        api_key: process.env.APOLLO_API_KEY,
-        page,
-        per_page,
-        person_titles: titles || ["VP of Sales"],
-        contact_email_status: ["verified", "guessed"],
-      }),
+      body: JSON.stringify(body),
     });
 
     const data = await response.json();
