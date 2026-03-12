@@ -43,7 +43,7 @@ export default async function handler(req, res) {
       if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
     }
 
-    const response = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
+    const searchResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -53,50 +53,81 @@ export default async function handler(req, res) {
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    const searchData = await searchResp.json();
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data.message || data.error || JSON.stringify(data) });
+    if (!searchResp.ok) {
+      return res.status(searchResp.status).json({ error: searchData.message || searchData.error || JSON.stringify(searchData) });
     }
 
-    // DEBUG: return raw first person fields to diagnose
-    if (req.body._debug && data.people && data.people.length > 0) {
-      const p = data.people[0];
+    const rawPeople = searchData.people || [];
+
+    // DEBUG: return raw first person to inspect has_email/has_direct_phone values
+    if (req.body._debug && rawPeople.length > 0) {
+      const p = rawPeople[0];
+      // Also test enrichment on this person
+      const enrichResp = await fetch("https://api.apollo.io/api/v1/people/match", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
+        body: JSON.stringify({ id: p.id, reveal_personal_emails: false, reveal_phone_number: true }),
+      });
+      const enrichData = await enrichResp.json();
       return res.status(200).json({
-        debug: true,
-        email: p.email,
-        email_status: p.email_status,
-        phone_numbers: p.phone_numbers,
-        sanitized_phone: p.sanitized_phone,
-        raw_keys: Object.keys(p)
+        search_person: {
+          id: p.id,
+          first_name: p.first_name,
+          has_email: p.has_email,
+          has_direct_phone: p.has_direct_phone,
+          all_keys: Object.keys(p)
+        },
+        enrich_status: enrichResp.status,
+        enrich_person: enrichData.person ? {
+          email: enrichData.person.email,
+          phone_numbers: enrichData.person.phone_numbers,
+          all_keys: Object.keys(enrichData.person)
+        } : enrichData
       });
     }
 
-    const people = (data.people || [])
-      .map(p => {
-        const email = p.email || "";
-        const phone = (p.phone_numbers && p.phone_numbers.length > 0)
-          ? p.phone_numbers[0].sanitized_number || p.phone_numbers[0].raw_number || ""
-          : (p.sanitized_phone || "");
-        return {
-          id: p.id,
-          first_name: p.first_name || "",
-          last_name: p.last_name || "",
-          name: p.name || ((p.first_name || "") + " " + (p.last_name || "")).trim(),
-          title: p.title || "",
-          email,
-          phone,
-          linkedin_url: p.linkedin_url || "",
-          photo_url: p.photo_url || "",
-          company_name: (p.organization && p.organization.name) || "",
-          company_domain: (p.organization && p.organization.primary_domain) || "",
-          company_industry: (p.organization && p.organization.industry) || "",
-          company_size: (p.organization && p.organization.estimated_num_employees) || "",
-        };
-      })
-      .filter(p => p.email || p.phone);
+    // Only enrich people flagged as having email or phone
+    const candidates = rawPeople.filter(p => p.has_email || p.has_direct_phone);
 
-    return res.status(200).json(people);
+    const enriched = await Promise.all(
+      candidates.map(async (p) => {
+        try {
+          const enrichResp = await fetch("https://api.apollo.io/api/v1/people/match", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
+            body: JSON.stringify({ id: p.id, reveal_personal_emails: false, reveal_phone_number: true }),
+          });
+          const enrichData = await enrichResp.json();
+          const ep = enrichData.person || {};
+          const email = ep.email || "";
+          const phone = (ep.phone_numbers && ep.phone_numbers.length > 0)
+            ? ep.phone_numbers[0].sanitized_number || ep.phone_numbers[0].raw_number || ""
+            : (ep.sanitized_phone || "");
+          if (!email && !phone) return null;
+          return {
+            id: p.id,
+            first_name: ep.first_name || p.first_name || "",
+            last_name: ep.last_name || "",
+            name: ep.name || p.first_name || "",
+            title: ep.title || p.title || "",
+            email,
+            phone,
+            linkedin_url: ep.linkedin_url || "",
+            photo_url: ep.photo_url || "",
+            company_name: (ep.organization && ep.organization.name) || (p.organization && p.organization.name) || "",
+            company_domain: (ep.organization && ep.organization.primary_domain) || (p.organization && p.organization.primary_domain) || "",
+            company_industry: (ep.organization && ep.organization.industry) || (p.organization && p.organization.industry) || "",
+            company_size: (ep.organization && ep.organization.estimated_num_employees) || (p.organization && p.organization.estimated_num_employees) || "",
+          };
+        } catch (e) {
+          return null;
+        }
+      })
+    );
+
+    return res.status(200).json(enriched.filter(Boolean));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
