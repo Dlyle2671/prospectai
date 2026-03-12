@@ -51,15 +51,12 @@ export default async function handler(req, res) {
       if (company_domain) companyProps.domain = company_domain;
       if (company_domain) companyProps.website = "https://" + company_domain;
       if (company_size) companyProps.numberofemployees = String(company_size);
-      if (annual_revenue) companyProps.annualrevenue = annual_revenue;
       if (company_phone) companyProps.phone = company_phone;
       if (company_city) companyProps.city = company_city;
       if (company_state) companyProps.state = company_state;
       if (company_country) companyProps.country = company_country;
       if (company_street) companyProps.address = company_street;
       if (company_zip) companyProps.zip = company_zip;
-      if (company_founded) companyProps.founded_year = String(company_founded);
-      if (company_linkedin) companyProps.linkedin_company_page = company_linkedin;
       if (company_description) companyProps.description = company_description;
 
       if (existingCompanyId) {
@@ -113,7 +110,6 @@ export default async function handler(req, res) {
     if (company_domain) contactProps.website = "https://" + company_domain;
     if (linkedin_url) contactProps.linkedinbio = linkedin_url;
     if (department) contactProps.department = department;
-    if (seniority) contactProps.seniority = seniority;
     if (city) contactProps.city = city;
     if (state) contactProps.state = state;
     if (country) contactProps.country = country;
