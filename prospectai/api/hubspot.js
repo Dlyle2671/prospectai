@@ -9,12 +9,11 @@ export default async function handler(req, res) {
     const {
       first_name, last_name, email, title,
       company_name, company_domain, linkedin_url,
-      department, seniority, city, state, country,
-      company_size, company_industry, lead_score, score_label,
-      twitter_url, annual_revenue,
+      city, state, country,
+      company_size, score_label, twitter_url,
       company_city, company_state, company_country,
       company_street, company_zip, company_phone,
-      company_founded, company_linkedin, company_description,
+      company_description,
     } = req.body;
 
     const token = process.env.HUBSPOT_ACCESS_TOKEN;
@@ -109,12 +108,10 @@ export default async function handler(req, res) {
     if (company_name) contactProps.company = company_name;
     if (company_domain) contactProps.website = "https://" + company_domain;
     if (linkedin_url) contactProps.linkedinbio = linkedin_url;
-    if (department) contactProps.department = department;
     if (city) contactProps.city = city;
     if (state) contactProps.state = state;
     if (country) contactProps.country = country;
     if (twitter_url) contactProps.twitterhandle = twitter_url;
-    if (lead_score !== undefined && lead_score !== null) contactProps.hubspotscore = String(lead_score);
     if (score_label) contactProps.lifecyclestage = score_label === "hot" ? "salesqualifiedlead" : score_label === "warm" ? "marketingqualifiedlead" : "lead";
 
     if (existingContactId) {
