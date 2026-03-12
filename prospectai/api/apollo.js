@@ -3,6 +3,17 @@ const SENIORITY_SCORE = { 'c_suite': 40, 'founder': 40, 'vp': 35, 'head': 30, 'd
 const TITLE_SCORE = { 'ceo': 40, 'cto': 38, 'coo': 35, 'cfo': 32, 'cmo': 30, 'founder': 40, 'co-founder': 40, 'vp of engineering': 35, 'vp of sales': 33, 'vp of marketing': 30, 'vp of product': 30, 'vp': 28, 'director of engineering': 28, 'director of sales': 26, 'director of marketing': 24, 'director': 22, 'head of engineering': 26, 'head of growth': 24, 'head of product': 24, 'head': 20, 'manager': 12, 'account executive': 8, 'senior': 8 };
 const HIGH_VALUE_INDUSTRIES = [ 'technology', 'software', 'saas', 'cloud computing', 'cybersecurity', 'fintech', 'financial services', 'healthcare', 'biotech' ];
 
+const AWS_PATTERNS = ['amazon', 'aws ', 'aws-', 'amazon s3', 'amazon ec2', 'amazon rds', 'amazon cloudfront', 'amazon lambda', 'amazon dynamodb', 'amazon sns', 'amazon sqs', 'amazon redshift', 'amazon vpc', 'amazon route', 'amazon iam', 'amazon eks', 'amazon ecs', 'amazon elasticache', 'amazon kinesis', 'amazon sagemaker', 'amazon athena', 'amazon glue', 'amazon emr', 'amazon cloudwatch', 'amazon cognito'];
+
+function isAwsService(name) {
+  const lower = (name || '').toLowerCase();
+  return AWS_PATTERNS.some(p => lower.includes(p)) || lower === 'amazon web services';
+}
+
+function cleanAwsName(name) {
+  return name.replace(/^Amazon\s+/i, '').replace(/^AWS\s+/i, '');
+}
+
 function scoreEmployeeCount(count) {
   if (!count) return 0;
   const n = Number(count);
@@ -42,6 +53,7 @@ function calcLeadScore(lead) {
   if (lead.job_postings_count && lead.job_postings_count > 5) score += 2;
   if (lead.twitter_url) score += 1;
   if (lead.hiring_surge) score += 3;
+  if (lead.aws_services && lead.aws_services.length >= 3) score += 3;
   return Math.min(100, Math.round(score));
 }
 
@@ -87,7 +99,6 @@ export default async function handler(req, res) {
       const ranges = employee_ranges.map(r => map[r]).filter(Boolean);
       if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
     }
-    // Geography: filter by where person is located
     if (locations.length > 0) body.person_locations = locations;
 
     const searchResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
@@ -132,9 +143,21 @@ export default async function handler(req, res) {
           const intent_strength = ep.intent_strength || null;
           const persona_tags = (ep.persona_tags || ep.personas || []).slice(0, 3);
 
-          const techStack = (org.technology_names || org.technologies || [])
+          const allTech = (org.technology_names || org.technologies || [])
             .map(t => (typeof t === 'string' ? t : t.name || t.category || ''))
-            .filter(Boolean).slice(0, 8);
+            .filter(Boolean);
+
+          const awsRaw = allTech.filter(t => isAwsService(t));
+          const awsSpecific = awsRaw
+            .filter(t => t.toLowerCase() !== 'amazon web services')
+            .map(t => cleanAwsName(t));
+          const aws_services = awsSpecific.length > 0
+            ? [...new Set(awsSpecific)].slice(0, 15)
+            : (awsRaw.length > 0 ? ['Amazon Web Services'] : []);
+
+          const techStack = allTech
+            .filter(t => !isAwsService(t))
+            .slice(0, 8);
 
           const subindustry = org.subindustry || org.sub_industry || "";
           const market_cap = org.market_cap || null;
@@ -235,6 +258,7 @@ export default async function handler(req, res) {
             market_cap,
             g2_review_count,
             tech_stack: techStack,
+            aws_services,
             funding_stage,
             funding_total,
             funding_round_date,
