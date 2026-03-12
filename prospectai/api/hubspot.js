@@ -11,9 +11,7 @@ export default async function handler(req, res) {
       company_name, company_domain, linkedin_url,
       department, seniority, city, state, country,
       company_size, company_industry, lead_score, score_label,
-      funding_stage, funding_round_date, funding_round_type, top_investors,
-      annual_revenue, linkedin_follower_count, email_status,
-      twitter_url, recently_funded, hiring_surge, aws_services,
+      twitter_url, annual_revenue,
       company_city, company_state, company_country,
       company_street, company_zip, company_phone,
       company_founded, company_linkedin, company_description,
@@ -64,10 +62,6 @@ export default async function handler(req, res) {
       if (company_founded) companyProps.founded_year = String(company_founded);
       if (company_linkedin) companyProps.linkedin_company_page = company_linkedin;
       if (company_description) companyProps.description = company_description;
-      if (funding_stage) companyProps.hs_funding_stage = funding_stage;
-      if (aws_services && aws_services.length > 0) companyProps.aws_services_used = aws_services.join(", ");
-      if (recently_funded !== undefined) companyProps.recently_funded = String(recently_funded);
-      if (hiring_surge !== undefined) companyProps.hiring_surge = String(hiring_surge);
 
       if (existingCompanyId) {
         const updateResp = await fetch(
@@ -124,19 +118,9 @@ export default async function handler(req, res) {
     if (city) contactProps.city = city;
     if (state) contactProps.state = state;
     if (country) contactProps.country = country;
-    if (email_status) contactProps.hs_email_status = email_status;
     if (twitter_url) contactProps.twitterhandle = twitter_url;
     if (lead_score !== undefined && lead_score !== null) contactProps.hubspotscore = String(lead_score);
     if (score_label) contactProps.lifecyclestage = score_label === "hot" ? "salesqualifiedlead" : score_label === "warm" ? "marketingqualifiedlead" : "lead";
-    if (funding_stage) contactProps.funding_stage = funding_stage;
-    if (funding_round_date) contactProps.funding_round_date = funding_round_date;
-    if (funding_round_type) contactProps.funding_round_type = funding_round_type;
-    if (top_investors && top_investors.length > 0) contactProps.top_investors = top_investors.join(", ");
-    if (annual_revenue) contactProps.annual_revenue_fmt = annual_revenue;
-    if (linkedin_follower_count) contactProps.linkedin_follower_count = String(linkedin_follower_count);
-    if (recently_funded !== undefined) contactProps.recently_funded = String(recently_funded);
-    if (hiring_surge !== undefined) contactProps.hiring_surge = String(hiring_surge);
-    if (aws_services && aws_services.length > 0) contactProps.aws_services_used = aws_services.join(", ");
 
     if (existingContactId) {
       const updateResp = await fetch(
