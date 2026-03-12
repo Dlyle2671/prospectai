@@ -1,3 +1,98 @@
+// Maps Apollo/free-text industry strings to HubSpot's required enum values
+function mapIndustry(raw) {
+  if (!raw) return null;
+  const s = raw.toLowerCase().trim();
+  const map = {
+    'technology': 'INFORMATION_TECHNOLOGY_AND_SERVICES',
+    'information technology': 'INFORMATION_TECHNOLOGY_AND_SERVICES',
+    'information technology & services': 'INFORMATION_TECHNOLOGY_AND_SERVICES',
+    'information technology and services': 'INFORMATION_TECHNOLOGY_AND_SERVICES',
+    'it services': 'INFORMATION_TECHNOLOGY_AND_SERVICES',
+    'software': 'COMPUTER_SOFTWARE',
+    'computer software': 'COMPUTER_SOFTWARE',
+    'saas': 'COMPUTER_SOFTWARE',
+    'cloud computing': 'COMPUTER_SOFTWARE',
+    'internet': 'INTERNET',
+    'internet software': 'INTERNET',
+    'online media': 'INTERNET',
+    'cybersecurity': 'COMPUTER_NETWORK_SECURITY',
+    'network security': 'COMPUTER_NETWORK_SECURITY',
+    'computer & network security': 'COMPUTER_NETWORK_SECURITY',
+    'computer and network security': 'COMPUTER_NETWORK_SECURITY',
+    'fintech': 'FINANCIAL_SERVICES',
+    'financial services': 'FINANCIAL_SERVICES',
+    'banking': 'BANKING',
+    'investment banking': 'INVESTMENT_BANKING',
+    'venture capital': 'VENTURE_CAPITAL_AND_PRIVATE_EQUITY',
+    'private equity': 'VENTURE_CAPITAL_AND_PRIVATE_EQUITY',
+    'insurance': 'INSURANCE',
+    'healthcare': 'HOSPITAL_AND_HEALTH_CARE',
+    'hospital & health care': 'HOSPITAL_AND_HEALTH_CARE',
+    'health care': 'HOSPITAL_AND_HEALTH_CARE',
+    'medical': 'MEDICAL_DEVICES',
+    'medical devices': 'MEDICAL_DEVICES',
+    'pharmaceuticals': 'PHARMACEUTICALS',
+    'biotech': 'BIOTECHNOLOGY',
+    'biotechnology': 'BIOTECHNOLOGY',
+    'e-commerce': 'RETAIL',
+    'ecommerce': 'RETAIL',
+    'retail': 'RETAIL',
+    'marketing': 'MARKETING_AND_ADVERTISING',
+    'marketing and advertising': 'MARKETING_AND_ADVERTISING',
+    'advertising': 'MARKETING_AND_ADVERTISING',
+    'media': 'MEDIA_PRODUCTION',
+    'broadcast media': 'BROADCAST_MEDIA',
+    'publishing': 'PUBLISHING',
+    'education': 'EDUCATION_MANAGEMENT',
+    'education management': 'EDUCATION_MANAGEMENT',
+    'e-learning': 'E_LEARNING',
+    'elearning': 'E_LEARNING',
+    'real estate': 'REAL_ESTATE',
+    'manufacturing': 'INDUSTRIAL_AUTOMATION',
+    'industrial automation': 'INDUSTRIAL_AUTOMATION',
+    'logistics': 'LOGISTICS_AND_SUPPLY_CHAIN',
+    'logistics and supply chain': 'LOGISTICS_AND_SUPPLY_CHAIN',
+    'transportation': 'TRANSPORTATION_TRUCKING_RAILROAD',
+    'consulting': 'MANAGEMENT_CONSULTING',
+    'management consulting': 'MANAGEMENT_CONSULTING',
+    'staffing': 'STAFFING_AND_RECRUITING',
+    'recruiting': 'STAFFING_AND_RECRUITING',
+    'telecommunications': 'TELECOMMUNICATIONS',
+    'telecom': 'TELECOMMUNICATIONS',
+    'aerospace': 'AVIATION_AND_AEROSPACE',
+    'aviation': 'AVIATION_AND_AEROSPACE',
+    'automotive': 'AUTOMOTIVE',
+    'construction': 'CONSTRUCTION',
+    'legal': 'LAW_PRACTICE',
+    'law': 'LAW_PRACTICE',
+    'accounting': 'ACCOUNTING',
+    'food': 'FOOD_AND_BEVERAGES',
+    'food & beverages': 'FOOD_AND_BEVERAGES',
+    'energy': 'OIL_AND_ENERGY',
+    'oil and energy': 'OIL_AND_ENERGY',
+    'renewables': 'RENEWABLES_AND_ENVIRONMENT',
+    'environmental': 'RENEWABLES_AND_ENVIRONMENT',
+    'nonprofit': 'NON_PROFIT_ORGANIZATION_MANAGEMENT',
+    'non-profit': 'NON_PROFIT_ORGANIZATION_MANAGEMENT',
+    'government': 'GOVERNMENT_ADMINISTRATION',
+    'defense': 'DEFENSE_AND_SPACE',
+    'research': 'RESEARCH',
+    'architecture': 'ARCHITECTURE_AND_PLANNING',
+    'design': 'GRAPHIC_DESIGN',
+    'entertainment': 'ENTERTAINMENT',
+    'sports': 'SPORTS',
+    'hospitality': 'HOSPITALITY',
+    'travel': 'LEISURE_TRAVEL_AND_TOURISM',
+    'human resources': 'HUMAN_RESOURCES',
+    'hr': 'HUMAN_RESOURCES',
+  };
+  if (map[s]) return map[s];
+  for (const [key, val] of Object.entries(map)) {
+    if (s.includes(key) || key.includes(s)) return val;
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -10,7 +105,7 @@ export default async function handler(req, res) {
       first_name, last_name, email, title,
       company_name, company_domain, linkedin_url,
       city, state, country,
-      company_size, score_label, twitter_url,
+      company_size, company_industry, score_label, twitter_url,
       company_city, company_state, company_country,
       company_street, company_zip, company_phone,
       company_description,
@@ -57,6 +152,8 @@ export default async function handler(req, res) {
       if (company_street) companyProps.address = company_street;
       if (company_zip) companyProps.zip = company_zip;
       if (company_description) companyProps.description = company_description;
+      const mappedIndustry = mapIndustry(company_industry);
+      if (mappedIndustry) companyProps.industry = mappedIndustry;
 
       if (existingCompanyId) {
         const updateResp = await fetch(
