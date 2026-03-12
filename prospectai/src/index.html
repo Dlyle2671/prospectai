@@ -45,6 +45,8 @@
     .meta-tag a { color: #4f8ef7; text-decoration: none; }
     .meta-tag a:hover { text-decoration: underline; }
     .email-tag { color: #22c55e; }
+    .phone-tag { color: #60a5fa; }
+    .contact-info { font-size: 12px; margin-top: 4px; }
     .card-actions { display: flex; gap: 8px; margin-top: 10px; }
     .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
     .btn-sm:hover { border-color: #4f8ef7; color: #fff; }
@@ -186,6 +188,8 @@
             + '<div class="person-title">' + (p.title || '') + '</div>'
             + '<div class="person-company">' + (p.company_name || '') + (p.company_domain ? ' &middot; ' + p.company_domain : '') + '</div>'
             + (metaTags ? '<div class="card-meta">' + metaTags + '</div>' : '')
+            + (p.email ? '<div class="contact-info"><span class="email-tag">✉ ' + p.email + '</span></div>' : '')
+            + (p.phone ? '<div class="contact-info"><span class="phone-tag">📞 ' + p.phone + '</span></div>' : '')
             + '<div class="card-actions">'
             + '<button class="btn-sm btn-hs" id="hs-' + i + '" onclick="sendToHubspot(' + i + ')">&#8679; HubSpot</button>'
             + '</div>'
