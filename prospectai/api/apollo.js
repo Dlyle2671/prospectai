@@ -31,13 +31,9 @@ export default async function handler(req, res) {
 
     if (employee_ranges.length > 0) {
       const map = {
-        "1,10": "1,10",
-        "11,50": "11,50",
-        "51,200": "51,200",
-        "201,500": "201,500",
-        "501,1000": "501,1000",
-        "1001,5000": "1001,5000",
-        "5001,10000000": "5001,10000000"
+        "1,10": "1,10", "11,50": "11,50", "51,200": "51,200",
+        "201,500": "201,500", "501,1000": "501,1000",
+        "1001,5000": "1001,5000", "5001,10000000": "5001,10000000"
       };
       const ranges = employee_ranges.map(r => map[r]).filter(Boolean);
       if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
@@ -45,73 +41,84 @@ export default async function handler(req, res) {
 
     const searchResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-        "X-Api-Key": process.env.APOLLO_API_KEY
-      },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-cache", "X-Api-Key": process.env.APOLLO_API_KEY },
       body: JSON.stringify(body),
     });
 
     const searchData = await searchResp.json();
-
     if (!searchResp.ok) {
       return res.status(searchResp.status).json({ error: searchData.message || searchData.error || JSON.stringify(searchData) });
     }
 
     const rawPeople = searchData.people || [];
     const candidates = rawPeople.filter(p => p.has_email || p.has_direct_phone);
+    if (candidates.length === 0) return res.status(200).json([]);
 
-    const enriched = await Promise.all(
-      candidates.map(async (p) => {
-        try {
-          // Build enrich payload - include webhook for phone reveal if they have a phone
-          const enrichPayload = { id: p.id };
-          if (p.has_direct_phone) {
-            enrichPayload.reveal_phone_number = true;
-            enrichPayload.webhook_url = process.env.VERCEL_URL
-              ? `https://${process.env.VERCEL_URL}/api/phone-webhook`
-              : "https://prospectai-woad.vercel.app/api/phone-webhook";
-          }
+    // Use bulk_match to enrich all candidates at once and get phone numbers
+    const bulkPayload = {
+      details: candidates.map(p => ({ id: p.id })),
+      reveal_personal_emails: false,
+      reveal_phone_number: false
+    };
 
-          const enrichResp = await fetch("https://api.apollo.io/api/v1/people/match", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
-            body: JSON.stringify(enrichPayload),
-          });
-          const enrichData = await enrichResp.json();
-          const ep = enrichData.person || {};
+    const bulkResp = await fetch("https://api.apollo.io/api/v1/people/bulk_match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
+      body: JSON.stringify(bulkPayload),
+    });
 
-          const email = ep.email || "";
-          // Apollo may return phone in the sync response even with webhook (if cached)
-          const phone = (ep.phone_numbers && ep.phone_numbers.length > 0)
-            ? (ep.phone_numbers.find(ph => ph.type === "mobile" || ph.type === "direct") || ep.phone_numbers[0]).sanitized_number || ""
-            : "";
+    const bulkData = await bulkResp.json();
 
-          if (!email && !phone) return null;
+    // If bulk_match fails, fall back to individual people/match
+    let enrichedPeople = [];
+    if (bulkResp.ok && bulkData.matches) {
+      enrichedPeople = bulkData.matches;
+    } else {
+      // Fallback: individual match
+      const results = await Promise.all(
+        candidates.map(async (p) => {
+          try {
+            const r = await fetch("https://api.apollo.io/api/v1/people/match", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
+              body: JSON.stringify({ id: p.id }),
+            });
+            const d = await r.json();
+            return d.person || null;
+          } catch { return null; }
+        })
+      );
+      enrichedPeople = results.filter(Boolean);
+    }
 
-          return {
-            id: p.id,
-            first_name: ep.first_name || p.first_name || "",
-            last_name: ep.last_name || "",
-            name: ep.name || p.first_name || "",
-            title: ep.title || p.title || "",
-            email,
-            phone,
-            linkedin_url: ep.linkedin_url || "",
-            photo_url: ep.photo_url || "",
-            company_name: (ep.organization && ep.organization.name) || (p.organization && p.organization.name) || "",
-            company_domain: (ep.organization && ep.organization.primary_domain) || (p.organization && p.organization.primary_domain) || "",
-            company_industry: (ep.organization && ep.organization.industry) || (p.organization && p.organization.industry) || "",
-            company_size: (ep.organization && ep.organization.estimated_num_employees) || (p.organization && p.organization.estimated_num_employees) || "",
-          };
-        } catch (e) {
-          return null;
-        }
+    const people = enrichedPeople
+      .map((ep, i) => {
+        if (!ep) return null;
+        const raw = candidates[i] || {};
+        const email = ep.email || "";
+        const phone = (ep.phone_numbers && ep.phone_numbers.length > 0)
+          ? (ep.phone_numbers.find(ph => ph.type === "mobile" || ph.type === "direct_phone") || ep.phone_numbers[0]).sanitized_number || ""
+          : (ep.sanitized_phone || "");
+        if (!email && !phone) return null;
+        return {
+          id: ep.id || raw.id,
+          first_name: ep.first_name || raw.first_name || "",
+          last_name: ep.last_name || "",
+          name: ep.name || raw.first_name || "",
+          title: ep.title || raw.title || "",
+          email,
+          phone,
+          linkedin_url: ep.linkedin_url || "",
+          photo_url: ep.photo_url || "",
+          company_name: (ep.organization && ep.organization.name) || (raw.organization && raw.organization.name) || "",
+          company_domain: (ep.organization && ep.organization.primary_domain) || (raw.organization && raw.organization.primary_domain) || "",
+          company_industry: (ep.organization && ep.organization.industry) || (raw.organization && raw.organization.industry) || "",
+          company_size: (ep.organization && ep.organization.estimated_num_employees) || (raw.organization && raw.organization.estimated_num_employees) || "",
+        };
       })
-    );
+      .filter(Boolean);
 
-    return res.status(200).json(enriched.filter(Boolean));
+    return res.status(200).json(people);
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
