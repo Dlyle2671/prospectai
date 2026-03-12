@@ -50,75 +50,39 @@ export default async function handler(req, res) {
       return res.status(searchResp.status).json({ error: searchData.message || searchData.error || JSON.stringify(searchData) });
     }
 
-    const rawPeople = searchData.people || [];
-    const candidates = rawPeople.filter(p => p.has_email || p.has_direct_phone);
+    const candidates = (searchData.people || []).filter(p => p.has_email);
     if (candidates.length === 0) return res.status(200).json([]);
 
-    // Use bulk_match to enrich all candidates at once and get phone numbers
-    const bulkPayload = {
-      details: candidates.map(p => ({ id: p.id })),
-      reveal_personal_emails: false,
-      reveal_phone_number: false
-    };
-
-    const bulkResp = await fetch("https://api.apollo.io/api/v1/people/bulk_match", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
-      body: JSON.stringify(bulkPayload),
-    });
-
-    const bulkData = await bulkResp.json();
-
-    // If bulk_match fails, fall back to individual people/match
-    let enrichedPeople = [];
-    if (bulkResp.ok && bulkData.matches) {
-      enrichedPeople = bulkData.matches;
-    } else {
-      // Fallback: individual match
-      const results = await Promise.all(
-        candidates.map(async (p) => {
-          try {
-            const r = await fetch("https://api.apollo.io/api/v1/people/match", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
-              body: JSON.stringify({ id: p.id }),
-            });
-            const d = await r.json();
-            return d.person || null;
-          } catch { return null; }
-        })
-      );
-      enrichedPeople = results.filter(Boolean);
-    }
-
-    const people = enrichedPeople
-      .map((ep, i) => {
-        if (!ep) return null;
-        const raw = candidates[i] || {};
-        const email = ep.email || "";
-        const phone = (ep.phone_numbers && ep.phone_numbers.length > 0)
-          ? (ep.phone_numbers.find(ph => ph.type === "mobile" || ph.type === "direct_phone") || ep.phone_numbers[0]).sanitized_number || ""
-          : (ep.sanitized_phone || "");
-        if (!email && !phone) return null;
-        return {
-          id: ep.id || raw.id,
-          first_name: ep.first_name || raw.first_name || "",
-          last_name: ep.last_name || "",
-          name: ep.name || raw.first_name || "",
-          title: ep.title || raw.title || "",
-          email,
-          phone,
-          linkedin_url: ep.linkedin_url || "",
-          photo_url: ep.photo_url || "",
-          company_name: (ep.organization && ep.organization.name) || (raw.organization && raw.organization.name) || "",
-          company_domain: (ep.organization && ep.organization.primary_domain) || (raw.organization && raw.organization.primary_domain) || "",
-          company_industry: (ep.organization && ep.organization.industry) || (raw.organization && raw.organization.industry) || "",
-          company_size: (ep.organization && ep.organization.estimated_num_employees) || (raw.organization && raw.organization.estimated_num_employees) || "",
-        };
+    // Enrich each candidate to get the verified email
+    const enriched = await Promise.all(
+      candidates.map(async (p) => {
+        try {
+          const r = await fetch("https://api.apollo.io/api/v1/people/match", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
+            body: JSON.stringify({ id: p.id }),
+          });
+          const d = await r.json();
+          const ep = d.person || {};
+          const email = ep.email || "";
+          if (!email) return null;
+          return {
+            id: p.id,
+            name: ep.name || p.first_name || "",
+            title: ep.title || p.title || "",
+            email,
+            linkedin_url: ep.linkedin_url || "",
+            photo_url: ep.photo_url || "",
+            company_name: (ep.organization && ep.organization.name) || (p.organization && p.organization.name) || "",
+            company_domain: (ep.organization && ep.organization.primary_domain) || (p.organization && p.organization.primary_domain) || "",
+            company_industry: (ep.organization && ep.organization.industry) || (p.organization && p.organization.industry) || "",
+            company_size: (ep.organization && ep.organization.estimated_num_employees) || (p.organization && p.organization.estimated_num_employees) || "",
+          };
+        } catch { return null; }
       })
-      .filter(Boolean);
+    );
 
-    return res.status(200).json(people);
+    return res.status(200).json(enriched.filter(Boolean));
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
