@@ -106,6 +106,8 @@
       'VP of Engineering','Director of Sales','Director of Marketing',
       'Head of Growth','Head of Product','Sales Manager','Account Executive','Founder'
     ];
+    var LIMIT_OPTIONS = [10, 25, 50, 100];
+
 
     var state = {
       stage: 0,
@@ -113,7 +115,8 @@
       selectedIndustries: [],
       selectedEmployeeRanges: [],
       selectedTechStack: ['AWS'],
-      selectedTitles: []
+      selectedTitles: [],
+      selectedLimit: 25
     };
 
     function showTab(name, e) {
@@ -149,6 +152,7 @@
       if (state.stage === 0) {
         var indBtns = INDUSTRIES.map(function(v) { return pill(v, 'industry', v, false); }).join('');
         var empBtns = EMP_RANGES.map(function(r) { return pill(r.label, 'emp', r.val, false); }).join('');
+        var limitBtns = LIMIT_OPTIONS.map(function(v) { return pill(v, 'limit', v, v === state.selectedLimit); }).join('');
         var titleBtns = TITLE_OPTIONS.map(function(v) { return pill(v, 'title', v, false); }).join('');
         el.innerHTML = '<div class="fade-up">'
           + '<div class="section-title">Find Leads</div>'
@@ -156,6 +160,7 @@
           + '<div class="filter-group"><div class="filter-label">Job Title</div><div class="pill-row">' + titleBtns + '</div></div>'
           + '<div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">' + indBtns + '</div></div>'
           + '<div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">' + empBtns + '</div></div>'
+          + '<div class="filter-group"><div class="filter-label">Leads to Return</div><div class="pill-row">' + limitBtns + '</div></div>'
           + '<button class="search-btn" onclick="doSearch()">Search Contacts</button>'
           + '</div>';
 
@@ -208,7 +213,8 @@
           industry: state.selectedIndustries,
           employee_ranges: state.selectedEmployeeRanges,
           tech_stack: state.selectedTechStack,
-          titles: state.selectedTitles
+          titles: state.selectedTitles,
+          per_page: state.selectedLimit
         })
       })
       .then(function(r) { return r.json(); })
@@ -257,3 +263,4 @@
   </script>
 </body>
 </html>
+      if (type === 'limit') { state.selectedLimit = val; render(); return; }
