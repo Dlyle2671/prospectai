@@ -2,77 +2,13 @@
 const SENIORITY_SCORE = { 'c_suite': 40, 'founder': 40, 'vp': 35, 'head': 30, 'director': 25, 'manager': 15, 'senior': 10, 'entry': 5 };
 const TITLE_SCORE = { 'ceo': 40, 'cto': 38, 'coo': 35, 'cfo': 32, 'cmo': 30, 'founder': 40, 'co-founder': 40, 'vp of engineering': 35, 'vp of sales': 33, 'vp of marketing': 30, 'vp of product': 30, 'vp': 28, 'director of engineering': 28, 'director of sales': 26, 'director of marketing': 24, 'director': 22, 'head of engineering': 26, 'head of growth': 24, 'head of product': 24, 'head': 20, 'manager': 12, 'account executive': 8, 'senior': 8 };
 const HIGH_VALUE_INDUSTRIES = [ 'technology', 'software', 'saas', 'cloud computing', 'cybersecurity', 'fintech', 'financial services', 'healthcare', 'biotech' ];
-
 const AWS_PATTERNS = ['amazon', 'aws ', 'aws-', 'amazon s3', 'amazon ec2', 'amazon rds', 'amazon cloudfront', 'amazon lambda', 'amazon dynamodb', 'amazon sns', 'amazon sqs', 'amazon redshift', 'amazon vpc', 'amazon route', 'amazon iam', 'amazon eks', 'amazon ecs', 'amazon elasticache', 'amazon kinesis', 'amazon sagemaker', 'amazon athena', 'amazon glue', 'amazon emr', 'amazon cloudwatch', 'amazon cognito'];
-
-function isAwsService(name) {
-  const lower = (name || '').toLowerCase();
-  return AWS_PATTERNS.some(p => lower.includes(p)) || lower === 'amazon web services';
-}
-
-function cleanAwsName(name) {
-  return name.replace(/^Amazon\s+/i, '').replace(/^AWS\s+/i, '');
-}
-
-function scoreEmployeeCount(count) {
-  if (!count) return 0;
-  const n = Number(count);
-  if (n >= 201 && n <= 500) return 30;
-  if (n >= 501 && n <= 1000) return 35;
-  if (n >= 1001 && n <= 5000) return 38;
-  if (n >= 51 && n <= 200) return 22;
-  if (n > 5000) return 25;
-  if (n >= 11 && n <= 50) return 12;
-  return 5;
-}
-
-function calcLeadScore(lead) {
-  let score = 0;
-  const titleLower = (lead.title || '').toLowerCase();
-  let titlePts = 0;
-  for (const [key, pts] of Object.entries(TITLE_SCORE)) {
-    if (titleLower.includes(key)) { titlePts = Math.max(titlePts, pts); }
-  }
-  score += titlePts;
-  if (titlePts < 20) {
-    const senLower = (lead.seniority || '').toLowerCase();
-    for (const [key, pts] of Object.entries(SENIORITY_SCORE)) {
-      if (senLower.includes(key)) { score += pts; break; }
-    }
-  }
-  score += scoreEmployeeCount(lead.company_size);
-  const indLower = (lead.company_industry || '').toLowerCase();
-  if (HIGH_VALUE_INDUSTRIES.some(i => indLower.includes(i))) score += 20; else score += 5;
-  if (lead.linkedin_url) score += 2;
-  if (lead.email_status === 'verified') score += 3;
-  if (lead.funding_round_date) {
-    const monthsAgo = (Date.now() - new Date(lead.funding_round_date)) / (1000 * 60 * 60 * 24 * 30);
-    if (monthsAgo <= 18) score += 8;
-  }
-  if (lead.linkedin_follower_count && lead.linkedin_follower_count > 1000) score += 3;
-  if (lead.job_postings_count && lead.job_postings_count > 5) score += 2;
-  if (lead.twitter_url) score += 1;
-  if (lead.hiring_surge) score += 3;
-  if (lead.aws_services && lead.aws_services.length >= 3) score += 3;
-  return Math.min(100, Math.round(score));
-}
-
-function scoreLabel(score) {
-  if (score >= 75) return 'hot';
-  if (score >= 50) return 'warm';
-  return 'cold';
-}
-
-function fmtRevenue(rev) {
-  if (!rev) return null;
-  if (typeof rev === 'string') return rev;
-  const n = Number(rev);
-  if (isNaN(n) || n <= 0) return null;
-  if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B ARR';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(0) + 'M ARR';
-  if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K ARR';
-  return '$' + n;
-}
+function isAwsService(name) { const lower = (name || '').toLowerCase(); return AWS_PATTERNS.some(p => lower.includes(p)) || lower === 'amazon web services'; }
+function cleanAwsName(name) { return name.replace(/^Amazon\s+/i, '').replace(/^AWS\s+/i, ''); }
+function scoreEmployeeCount(count) { if (!count) return 0; const n = Number(count); if (n >= 201 && n <= 500) return 30; if (n >= 501 && n <= 1000) return 35; if (n >= 1001 && n <= 5000) return 38; if (n >= 51 && n <= 200) return 22; if (n > 5000) return 25; if (n >= 11 && n <= 50) return 12; return 5; }
+function calcLeadScore(lead) { let score = 0; const titleLower = (lead.title || '').toLowerCase(); let titlePts = 0; for (const [key, pts] of Object.entries(TITLE_SCORE)) { if (titleLower.includes(key)) { titlePts = Math.max(titlePts, pts); } } score += titlePts; if (titlePts < 20) { const senLower = (lead.seniority || '').toLowerCase(); for (const [key, pts] of Object.entries(SENIORITY_SCORE)) { if (senLower.includes(key)) { score += pts; break; } } } score += scoreEmployeeCount(lead.company_size); const indLower = (lead.company_industry || '').toLowerCase(); if (HIGH_VALUE_INDUSTRIES.some(i => indLower.includes(i))) score += 20; else score += 5; if (lead.linkedin_url) score += 2; if (lead.email_status === 'verified') score += 3; if (lead.funding_round_date) { const monthsAgo = (Date.now() - new Date(lead.funding_round_date)) / (1000 * 60 * 60 * 24 * 30); if (monthsAgo <= 18) score += 8; } if (lead.linkedin_follower_count && lead.linkedin_follower_count > 1000) score += 3; if (lead.job_postings_count && lead.job_postings_count > 5) score += 2; if (lead.twitter_url) score += 1; if (lead.hiring_surge) score += 3; if (lead.aws_services && lead.aws_services.length >= 3) score += 3; return Math.min(100, Math.round(score)); }
+function scoreLabel(score) { if (score >= 75) return 'hot'; if (score >= 50) return 'warm'; return 'cold'; }
+function fmtRevenue(rev) { if (!rev) return null; if (typeof rev === 'string') return rev; const n = Number(rev); if (isNaN(n) || n <= 0) return null; if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B ARR'; if (n >= 1e6) return '$' + (n / 1e6).toFixed(0) + 'M ARR'; if (n >= 1e3) return '$' + (n / 1e3).toFixed(0) + 'K ARR'; return '$' + n; }
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -80,7 +16,6 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
-
   try {
     const { industry = [], employee_ranges = [], tech_stack = [], titles = [], locations = [], page = 1, per_page = 25 } = req.body;
     const body = {
@@ -100,20 +35,15 @@ export default async function handler(req, res) {
       if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
     }
     if (locations.length > 0) body.person_locations = locations;
-
     const searchResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Cache-Control": "no-cache", "X-Api-Key": process.env.APOLLO_API_KEY },
       body: JSON.stringify(body),
     });
     const searchData = await searchResp.json();
-    if (!searchResp.ok) {
-      return res.status(searchResp.status).json({ error: searchData.message || searchData.error || JSON.stringify(searchData) });
-    }
-
+    if (!searchResp.ok) { return res.status(searchResp.status).json({ error: searchData.message || searchData.error || JSON.stringify(searchData) }); }
     const candidates = (searchData.people || []).filter(p => p.has_email);
     if (candidates.length === 0) return res.status(200).json([]);
-
     const enriched = await Promise.all(
       candidates.map(async (p) => {
         try {
@@ -127,45 +57,31 @@ export default async function handler(req, res) {
           const org = ep.organization || p.organization || {};
           const email = ep.email || "";
           if (!email) return null;
-
           const email_status = ep.email_status || ep.contact_email_status || "";
           const headline = ep.headline || ep.linkedin_bio || "";
           const twitter_url = ep.twitter_url || ep.twitter || "";
           const github_url = ep.github_url || ep.github || "";
-
           const employmentHistory = ep.employment_history || [];
           const currentJob = employmentHistory.find(j => j.current) || {};
-          const prevJobs = employmentHistory
-            .filter(j => !j.current && j.organization_name)
-            .slice(0, 2)
-            .map(j => ({ company: j.organization_name, title: j.title || "", end_date: j.end_date || "" }));
-
+          const prevJobs = employmentHistory.filter(j => !j.current && j.organization_name).slice(0, 2).map(j => ({ company: j.organization_name, title: j.title || "", end_date: j.end_date || "" }));
           const intent_strength = ep.intent_strength || null;
           const persona_tags = (ep.persona_tags || ep.personas || []).slice(0, 3);
-
-          const allTech = (org.technology_names || org.technologies || [])
-            .map(t => (typeof t === 'string' ? t : t.name || t.category || ''))
-            .filter(Boolean);
-
+          const allTech = (org.technology_names || org.technologies || []).map(t => (typeof t === 'string' ? t : t.name || t.category || '')).filter(Boolean);
           const awsRaw = allTech.filter(t => isAwsService(t));
-          const awsSpecific = awsRaw
-            .filter(t => t.toLowerCase() !== 'amazon web services')
-            .map(t => cleanAwsName(t));
-          const aws_services = awsSpecific.length > 0
-            ? [...new Set(awsSpecific)].slice(0, 15)
-            : (awsRaw.length > 0 ? ['Amazon Web Services'] : []);
-
-          const techStack = allTech
-            .filter(t => !isAwsService(t))
-            .slice(0, 8);
-
+          const awsSpecific = awsRaw.filter(t => t.toLowerCase() !== 'amazon web services').map(t => cleanAwsName(t));
+          const aws_services = awsSpecific.length > 0 ? [...new Set(awsSpecific)].slice(0, 15) : (awsRaw.length > 0 ? ['Amazon Web Services'] : []);
+          const techStack = allTech.filter(t => !isAwsService(t)).slice(0, 8);
           const subindustry = org.subindustry || org.sub_industry || "";
           const market_cap = org.market_cap || null;
           const company_twitter = org.twitter_url || org.twitter || "";
           const seo_description = org.seo_description ? org.seo_description.slice(0, 200) : "";
           const g2_review_count = org.g2_review_count || org.review_count || null;
-          const primary_phone = org.primary_phone?.number || org.phone || null;
-
+          const company_phone = org.primary_phone?.number || org.phone || null;
+          const company_street = org.street_address || org.address || org.raw_address || null;
+          const company_zip = org.postal_code || org.zip || null;
+          const company_city = org.city || null;
+          const company_state = org.state || null;
+          const company_country = org.country || null;
           const funding_stage = org.latest_funding_stage || org.funding_stage || "";
           const funding_total = org.total_funding || org.funding_total || null;
           const fundingEvents = org.funding_events || org.funding_rounds || [];
@@ -182,99 +98,39 @@ export default async function handler(req, res) {
           }
           if (!funding_round_date) funding_round_date = org.latest_funding_round_date || org.last_funding_round_date || null;
           if (!funding_round_type) funding_round_type = org.latest_funding_round_type || null;
-          if (top_investors.length === 0 && org.investors) {
-            top_investors = (org.investors || []).map(inv => (typeof inv === 'string' ? inv : inv.name || '')).filter(Boolean).slice(0, 3);
-          }
-
+          if (top_investors.length === 0 && org.investors) { top_investors = (org.investors || []).map(inv => (typeof inv === 'string' ? inv : inv.name || '')).filter(Boolean).slice(0, 3); }
           const headcount_growth = org.headcount_growth_rate_6_month || org.employee_count_6_month_growth || null;
           const linkedin_follower_count = org.linkedin_follower_count || org.linkedin_followers || null;
           const annual_revenue = fmtRevenue(org.annual_revenue_printed || org.annual_revenue || org.estimated_annual_revenue || null);
           const alexa_rank = org.alexa_rank || org.website_rank || null;
           const num_funding_rounds = org.num_funding_rounds || fundingEvents.length || null;
           const job_postings_count = org.job_postings_count || org.open_jobs_count || null;
-
           const headcountGrowthNum = headcount_growth !== null ? Number(headcount_growth) : null;
           const hiring_surge = (job_postings_count && job_postings_count > 10) || (headcountGrowthNum !== null && headcountGrowthNum > 0.20);
-
           let recently_funded = false;
-          if (funding_round_date) {
-            const monthsAgo = (Date.now() - new Date(funding_round_date)) / (1000 * 60 * 60 * 24 * 30);
-            recently_funded = monthsAgo <= 18;
-          }
-
+          if (funding_round_date) { const monthsAgo = (Date.now() - new Date(funding_round_date)) / (1000 * 60 * 60 * 24 * 30); recently_funded = monthsAgo <= 18; }
           const intent_signals = [];
-          if (recently_funded && funding_stage) {
-            const amt = funding_round_amount;
-            const amtStr = amt ? (amt >= 1e9 ? '$' + (amt/1e9).toFixed(1)+'B' : amt >= 1e6 ? '$'+(amt/1e6).toFixed(0)+'M' : '$'+(amt/1e3).toFixed(0)+'K') : '';
-            intent_signals.push({ type: 'funding', label: funding_stage + (amtStr ? ' ' + amtStr : '') });
-          } else if (recently_funded) {
-            intent_signals.push({ type: 'funding', label: 'Recently Funded' });
-          }
-          if (hiring_surge) {
-            const surgeLabel = job_postings_count ? job_postings_count + ' open roles' : (headcountGrowthNum !== null ? '+' + Math.round(headcountGrowthNum * 100) + '% headcount' : 'Hiring Surge');
-            intent_signals.push({ type: 'hiring', label: surgeLabel });
-          }
-          if (linkedin_follower_count && linkedin_follower_count > 5000) {
-            const followersStr = linkedin_follower_count >= 1e6 ? (linkedin_follower_count/1e6).toFixed(1)+'M followers' : linkedin_follower_count >= 1e3 ? (linkedin_follower_count/1e3).toFixed(0)+'K followers' : linkedin_follower_count+' followers';
-            intent_signals.push({ type: 'social', label: followersStr });
-          }
-          if (headcountGrowthNum !== null && headcountGrowthNum > 0.10 && !hiring_surge) {
-            intent_signals.push({ type: 'growth', label: '+' + Math.round(headcountGrowthNum * 100) + '% headcount' });
-          }
-
+          if (recently_funded && funding_stage) { const amt = funding_round_amount; const amtStr = amt ? (amt >= 1e9 ? '$' + (amt/1e9).toFixed(1)+'B' : amt >= 1e6 ? '$'+(amt/1e6).toFixed(0)+'M' : '$'+(amt/1e3).toFixed(0)+'K') : ''; intent_signals.push({ type: 'funding', label: funding_stage + (amtStr ? ' ' + amtStr : '') }); } else if (recently_funded) { intent_signals.push({ type: 'funding', label: 'Recently Funded' }); }
+          if (hiring_surge) { const surgeLabel = job_postings_count ? job_postings_count + ' open roles' : (headcountGrowthNum !== null ? '+' + Math.round(headcountGrowthNum * 100) + '% headcount' : 'Hiring Surge'); intent_signals.push({ type: 'hiring', label: surgeLabel }); }
+          if (linkedin_follower_count && linkedin_follower_count > 5000) { const followersStr = linkedin_follower_count >= 1e6 ? (linkedin_follower_count/1e6).toFixed(1)+'M followers' : linkedin_follower_count >= 1e3 ? (linkedin_follower_count/1e3).toFixed(0)+'K followers' : linkedin_follower_count+' followers'; intent_signals.push({ type: 'social', label: followersStr }); }
+          if (headcountGrowthNum !== null && headcountGrowthNum > 0.10 && !hiring_surge) { intent_signals.push({ type: 'growth', label: '+' + Math.round(headcountGrowthNum * 100) + '% headcount' }); }
           const lead = {
-            id: p.id,
-            name: ep.name || p.name || "",
-            first_name: ep.first_name || p.first_name || "",
-            last_name: ep.last_name || p.last_name || "",
-            title: ep.title || p.title || "",
-            seniority: ep.seniority || p.seniority || "",
-            department: ep.departments?.[0] || ep.department || p.departments?.[0] || "",
-            headline,
-            email,
-            email_status,
-            linkedin_url: ep.linkedin_url || "",
-            twitter_url,
-            github_url,
-            photo_url: ep.photo_url || "",
-            city: ep.city || p.city || "",
-            state: ep.state || p.state || "",
-            country: ep.country || p.country || "",
-            prev_jobs: prevJobs,
-            time_in_role_months: currentJob.start_date ? Math.floor((Date.now() - new Date(currentJob.start_date)) / (1000 * 60 * 60 * 24 * 30)) : null,
-            intent_strength,
-            persona_tags,
-            company_name: org.name || p.organization?.name || "",
-            company_domain: org.primary_domain || p.organization?.primary_domain || "",
-            company_industry: org.industry || p.organization?.industry || "",
-            subindustry,
+            id: p.id, name: ep.name || p.name || "", first_name: ep.first_name || p.first_name || "", last_name: ep.last_name || p.last_name || "",
+            title: ep.title || p.title || "", seniority: ep.seniority || p.seniority || "", department: ep.departments?.[0] || ep.department || p.departments?.[0] || "",
+            headline, email, email_status, linkedin_url: ep.linkedin_url || "", twitter_url, github_url, photo_url: ep.photo_url || "",
+            city: ep.city || p.city || "", state: ep.state || p.state || "", country: ep.country || p.country || "",
+            prev_jobs: prevJobs, time_in_role_months: currentJob.start_date ? Math.floor((Date.now() - new Date(currentJob.start_date)) / (1000 * 60 * 60 * 24 * 30)) : null,
+            intent_strength, persona_tags,
+            company_name: org.name || p.organization?.name || "", company_domain: org.primary_domain || p.organization?.primary_domain || "",
+            company_industry: org.industry || p.organization?.industry || "", subindustry,
             company_size: org.estimated_num_employees || p.organization?.estimated_num_employees || "",
-            company_founded: org.founded_year || "",
-            company_linkedin: org.linkedin_url || "",
-            company_twitter,
-            company_description: (org.short_description || "").slice(0, 160),
-            seo_description,
-            primary_phone,
-            market_cap,
-            g2_review_count,
-            tech_stack: techStack,
-            aws_services,
-            funding_stage,
-            funding_total,
-            funding_round_date,
-            funding_round_type,
-            funding_round_amount,
-            top_investors,
-            num_funding_rounds,
-            headcount_growth,
-            linkedin_follower_count,
-            annual_revenue,
-            alexa_rank,
-            job_postings_count,
-            keywords: (org.keywords || []).slice(0, 5),
-            hiring_surge: hiring_surge || false,
-            recently_funded,
-            intent_signals,
+            company_founded: org.founded_year || "", company_linkedin: org.linkedin_url || "", company_twitter,
+            company_description: (org.short_description || "").slice(0, 160), seo_description,
+            company_phone, company_street, company_zip, company_city, company_state, company_country,
+            primary_phone: company_phone, market_cap, g2_review_count, tech_stack: techStack, aws_services,
+            funding_stage, funding_total, funding_round_date, funding_round_type, funding_round_amount, top_investors, num_funding_rounds,
+            headcount_growth, linkedin_follower_count, annual_revenue, alexa_rank, job_postings_count,
+            keywords: (org.keywords || []).slice(0, 5), hiring_surge: hiring_surge || false, recently_funded, intent_signals,
           };
           lead.score = calcLeadScore(lead);
           lead.score_label = scoreLabel(lead.score);
@@ -282,7 +138,6 @@ export default async function handler(req, res) {
         } catch { return null; }
       })
     );
-
     const results = enriched.filter(Boolean).sort((a, b) => b.score - a.score);
     return res.status(200).json(results);
   } catch (err) {
