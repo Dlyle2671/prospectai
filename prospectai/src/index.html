@@ -123,6 +123,53 @@ main { max-width: 960px; width: 100%; margin: 0 auto; padding: 40px 24px; }
 .rf-chip.active-funded { background: rgba(251,191,36,0.15); border-color: #fbbf24; color: #fbbf24; font-weight: 600; }
 .rf-chip.active-hiring { background: rgba(34,197,94,0.15); border-color: #22c55e; color: #22c55e; font-weight: 600; }
 .rf-divider { width: 1px; height: 20px; background: #1a2540; margin: 0 4px; flex-shrink: 0; }
+/* Company Intel styles */
+.ci-search-wrap { display: flex; gap: 10px; margin-bottom: 32px; }
+.ci-search-input { flex: 1; padding: 12px 16px; background: #0d1424; border: 1px solid #1a2540; border-radius: 10px; color: #c8d4e8; font-size: 15px; font-family: inherit; outline: none; transition: border-color .2s; }
+.ci-search-input:focus { border-color: #4f8ef7; }
+.ci-search-input::placeholder { color: #3a4a6a; }
+.ci-search-btn { padding: 12px 28px; border-radius: 10px; border: none; background: linear-gradient(135deg,#4f8ef7,#2563eb); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; transition: opacity .2s; }
+.ci-search-btn:hover { opacity: .88; }
+.ci-profile { animation: fadeUp .35s ease both; }
+.ci-header { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; padding: 24px; background: #0d1424; border: 1px solid #1a2540; border-radius: 16px; }
+.ci-logo { width: 64px; height: 64px; border-radius: 12px; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; overflow: hidden; }
+.ci-logo img { width: 64px; height: 64px; border-radius: 12px; object-fit: contain; }
+.ci-company-name { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.ci-company-meta { font-size: 13px; color: #6b7a99; margin-bottom: 8px; }
+.ci-company-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.ci-link { font-size: 12px; color: #4f8ef7; background: rgba(79,142,247,0.1); border: 1px solid rgba(79,142,247,0.2); padding: 3px 10px; border-radius: 6px; text-decoration: none; }
+.ci-link:hover { background: rgba(79,142,247,0.2); }
+.ci-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.ci-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 640px) { .ci-grid, .ci-grid-3 { grid-template-columns: 1fr; } }
+.ci-section { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 20px; }
+.ci-section-title { font-size: 12px; font-weight: 700; color: #4f8ef7; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.ci-stat-row { display: flex; flex-direction: column; gap: 10px; }
+.ci-stat { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #111827; }
+.ci-stat:last-child { border-bottom: none; }
+.ci-stat-label { font-size: 12px; color: #4a5568; }
+.ci-stat-value { font-size: 13px; color: #c8d4e8; font-weight: 500; text-align: right; max-width: 60%; }
+.ci-desc { font-size: 13px; color: #8a9bb8; line-height: 1.6; }
+.ci-funding-event { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #111827; }
+.ci-funding-event:last-child { border-bottom: none; }
+.ci-funding-date { font-size: 11px; color: #4a5568; margin-bottom: 2px; }
+.ci-funding-type { font-size: 13px; color: #fbbf24; font-weight: 600; }
+.ci-funding-investors { font-size: 11px; color: #6b7a99; margin-top: 2px; }
+.ci-funding-amount { font-size: 14px; font-weight: 700; color: #34d399; white-space: nowrap; }
+.ci-contact-card { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #111827; }
+.ci-contact-card:last-child { border-bottom: none; }
+.ci-contact-avatar { width: 38px; height: 38px; border-radius: 50%; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; overflow: hidden; }
+.ci-contact-avatar img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+.ci-contact-info { flex: 1; min-width: 0; }
+.ci-contact-name { font-size: 14px; font-weight: 600; color: #fff; }
+.ci-contact-title { font-size: 12px; color: #4f8ef7; }
+.ci-contact-email { font-size: 11px; color: #22c55e; margin-top: 2px; }
+.ci-contact-phone { font-size: 11px; color: #6b7a99; }
+.ci-contact-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.ci-push-all { width: 100%; padding: 12px; border-radius: 10px; border: none; background: #ff7a59; color: #fff; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 16px; transition: opacity .2s; }
+.ci-push-all:hover { opacity: .88; }
+.ci-push-all.sent { background: #1a5c38; border: 1px solid #22c55e; color: #22c55e; cursor: default; }
+.ci-similar-pill { font-size: 12px; color: #a78bfa; background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -130,11 +177,13 @@ main { max-width: 960px; width: 100%; margin: 0 auto; padding: 40px 24px; }
   <div class="nav-logo">Prospect<span>AI</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showTab('leads',event)">Find Leads</button>
+    <button class="nav-tab" onclick="showTab('company',event)">Company Intel</button>
     <button class="nav-tab" onclick="showTab('settings',event)">Settings</button>
   </div>
 </nav>
 <main>
   <div id="tab-leads" class="tab-content active"><div id="app"></div></div>
+  <div id="tab-company" class="tab-content"><div id="company-app"></div></div>
   <div id="tab-settings" class="tab-content">
     <div class="fade-up">
       <div class="section-title">Settings</div>
@@ -155,19 +204,21 @@ var TITLE_OPTIONS=['CEO','CTO','CFO','COO','CMO','VP of Sales','VP of Marketing'
 var LIMIT_OPTIONS=[10,25,50,100];
 var GEO_OPTIONS=[{label:'United States',val:'United States'},{label:'California',val:'California, United States'},{label:'New York',val:'New York, United States'},{label:'Texas',val:'Texas, United States'},{label:'Florida',val:'Florida, United States'},{label:'Washington',val:'Washington, United States'},{label:'Massachusetts',val:'Massachusetts, United States'},{label:'Illinois',val:'Illinois, United States'},{label:'Georgia',val:'Georgia, United States'},{label:'Colorado',val:'Colorado, United States'},{label:'United Kingdom',val:'United Kingdom'},{label:'Canada',val:'Canada'},{label:'Australia',val:'Australia'},{label:'Germany',val:'Germany'},{label:'France',val:'France'},{label:'India',val:'India'},{label:'Singapore',val:'Singapore'},{label:'Netherlands',val:'Netherlands'}];
 var state={stage:0,results:[],selectedIndustries:[],selectedEmployeeRanges:[],selectedTechStack:['AWS'],selectedTitles:[],selectedLocations:[],selectedLimit:25,activeResultFilters:[]};
-function showTab(name,e){document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});document.querySelectorAll('.nav-tab').forEach(function(el){el.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');if(e&&e.target)e.target.classList.add('active');if(name==='leads')render();}
+var ciState={stage:0,profile:null};
+function showTab(name,e){document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});document.querySelectorAll('.nav-tab').forEach(function(el){el.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');if(e&&e.target)e.target.classList.add('active');if(name==='leads')render();if(name==='company')renderCI();}
 function toggleFilter(type,val){if(type==='limit'){state.selectedLimit=Number(val);render();return;}if(type==='tech'&&val==='AWS')return;var arr=type==='industry'?state.selectedIndustries:type==='emp'?state.selectedEmployeeRanges:type==='tech'?state.selectedTechStack:type==='geo'?state.selectedLocations:state.selectedTitles;var idx=arr.indexOf(val);if(idx>=0)arr.splice(idx,1);else arr.push(val);render();}
 function toggleResultFilter(val){var idx=state.activeResultFilters.indexOf(val);if(idx>=0)state.activeResultFilters.splice(idx,1);else state.activeResultFilters.push(val);render();}
 function getFilteredResults(){var people=state.results;if(state.activeResultFilters.length===0)return people;return people.filter(function(p){return state.activeResultFilters.every(function(f){if(f==='hot')return p.score_label==='hot';if(f==='warm')return p.score_label==='warm';if(f==='cold')return p.score_label==='cold';if(f==='funded')return p.recently_funded===true;if(f==='hiring')return p.hiring_surge===true;return true;});});}
 function pill(label,type,val,locked){var active=locked||(type==='limit'?[state.selectedLimit]:type==='industry'?state.selectedIndustries:type==='emp'?state.selectedEmployeeRanges:type==='tech'?state.selectedTechStack:type==='geo'?state.selectedLocations:state.selectedTitles).indexOf(val)>=0;var cls='pill'+(locked?' locked':active?' active':'');var handler=locked?'':' onclick="toggleFilter(&apos;'+type+'&apos;,&apos;'+val+'&apos;)"';return '<button class="'+cls+'"'+handler+'>'+label+'</button>';}
 function rfChip(label,val,activeClass){var isActive=state.activeResultFilters.indexOf(val)>=0;var cls='rf-chip'+(isActive?' '+activeClass:'');return '<button class="'+cls+'" onclick="toggleResultFilter(&apos;'+val+'&apos;)">'+label+'</button>';}
 function fmtFunding(amt){if(!amt)return'';var n=Number(amt);if(n>=1e9)return'$'+(n/1e9).toFixed(1)+'B raised';if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M raised';if(n>=1e3)return'$'+(n/1e3).toFixed(0)+'K raised';return'$'+n+' raised';}
+function fmtAmt(amt){if(!amt)return'';var n=Number(amt);if(n>=1e9)return'$'+(n/1e9).toFixed(1)+'B';if(n>=1e6)return'$'+(n/1e6).toFixed(0)+'M';if(n>=1e3)return'$'+(n/1e3).toFixed(0)+'K';return'$'+n;}
 function fmtGrowth(g){if(g===null||g===undefined||g==='')return'';var pct=Math.round(Number(g)*100);return(pct>=0?'+':'')+pct+'% headcount (6mo)';}
 function fmtTimeInRole(months){if(months===null||months===undefined)return'';if(months<1)return'New hire';if(months<12)return months+'mo in role';return Math.floor(months/12)+'yr '+(months%12)+'mo in role';}
 function fmtRoundDate(d){if(!d)return'';var dt=new Date(d);var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return months[dt.getMonth()]+' '+dt.getFullYear();}
 function fmtRoundAmount(amt){if(!amt)return'';var n=Number(amt);if(isNaN(n)||n<=0)return'';if(n>=1e9)return'$'+(n/1e9).toFixed(1)+'B';if(n>=1e6)return'$'+(n/1e6).toFixed(0)+'M';if(n>=1e3)return'$'+(n/1e3).toFixed(0)+'K';return'$'+n;}
 function fmtFollowers(n){if(!n)return'';n=Number(n);if(n>=1e6)return(n/1e6).toFixed(1)+'M followers';if(n>=1e3)return(n/1e3).toFixed(0)+'K followers';return n+' followers';}
-function renderCard(p,i){var sl=p.score_label||'cold';var score=p.score||0;var avatarHtml=p.photo_url?'<div class="avatar"><img src="'+p.photo_url+'" onerror="this.parentNode.innerHTML=String.fromCodePoint(128100)" /></div>':'<div class="avatar">&#128100;</div>';var loc=[p.city,p.state,p.country].filter(Boolean).join(', ');var emailCls=p.email_status==='verified'?'email':'email-guessed';var emailBadge=p.email_status==='verified'?'&#9989;':'&#9993;';var intentStripHtml='';if(sl==='hot'&&p.intent_signals&&p.intent_signals.length>0){var chips=p.intent_signals.map(function(sig){return'<span class="intent-chip '+sig.type+'">'+sig.label+'</span>';}).join('');intentStripHtml='<div class="intent-strip"><span class="intent-strip-label">&#128293; Intent</span>'+chips+'</div>';}var fundedBadge=p.recently_funded?'<span class="badge-funded">&#128176; Recently Funded</span>':'';var hiringBadge=p.hiring_surge?'<span class="badge-hiring">&#128200; Hiring Surge</span>':'';var meta1='';if(p.email)meta1+='<span class="meta-tag '+emailCls+'">'+emailBadge+' '+p.email+(p.email_status?' ('+p.email_status+')':'')+'</span>';if(loc)meta1+='<span class="meta-tag location">&#128205; '+loc+'</span>';if(p.department)meta1+='<span class="meta-tag dept">&#127970; '+p.department+'</span>';if(p.seniority)meta1+='<span class="meta-tag">&#11088; '+p.seniority+'</span>';if(p.linkedin_url)meta1+='<span class="meta-tag social"><a href="'+p.linkedin_url+'" target="_blank">in &#8599;</a></span>';if(p.twitter_url)meta1+='<span class="meta-tag social"><a href="'+p.twitter_url+'" target="_blank">&#120143; &#8599;</a></span>';if(p.github_url)meta1+='<span class="meta-tag social"><a href="'+p.github_url+'" target="_blank">gh &#8599;</a></span>';if(p.personal_phone)meta1+='<span class="meta-tag">&#128222; '+p.personal_phone+'</span>';var meta2='';if(p.company_size)meta2+='<span class="meta-tag">&#128101; '+Number(p.company_size).toLocaleString()+' employees</span>';if(p.company_founded)meta2+='<span class="meta-tag">&#128197; Founded '+p.company_founded+'</span>';if(p.annual_revenue)meta2+='<span class="meta-tag revenue">&#128176; '+p.annual_revenue+'</span>';if(p.subindustry)meta2+='<span class="meta-tag dept">'+p.subindustry+'</span>';if(p.headcount_growth)meta2+='<span class="meta-tag growth">&#128200; '+fmtGrowth(p.headcount_growth)+'</span>';if(p.time_in_role_months!==null&&p.time_in_role_months!==undefined)meta2+='<span class="meta-tag">&#128336; '+fmtTimeInRole(p.time_in_role_months)+'</span>';if(p.g2_review_count)meta2+='<span class="meta-tag revenue">&#11088; '+p.g2_review_count+' G2 reviews</span>';if(p.primary_phone)meta2+='<span class="meta-tag">&#128222; '+p.primary_phone+'</span>';var meta3='';if(fundedBadge)meta3+=fundedBadge;if(hiringBadge)meta3+=hiringBadge;if(p.funding_stage)meta3+='<span class="meta-tag funding">&#128184; '+p.funding_stage+(p.funding_total?' &middot; '+fmtFunding(p.funding_total):'')+' </span>';if(p.funding_round_date){var roundLabel=fmtRoundDate(p.funding_round_date);if(p.funding_round_type)roundLabel+=' '+p.funding_round_type;if(p.funding_round_amount)roundLabel+=' '+fmtRoundAmount(p.funding_round_amount);meta3+='<span class="meta-tag round">&#128204; '+roundLabel+'</span>';}if(p.num_funding_rounds&&p.num_funding_rounds>1)meta3+='<span class="meta-tag funding">'+p.num_funding_rounds+' rounds</span>';if(p.top_investors&&p.top_investors.length>0)meta3+='<span class="meta-tag investors">&#128081; '+p.top_investors.join(', ')+'</span>';var meta4='';if(p.linkedin_follower_count)meta4+='<span class="meta-tag intent">&#128241; '+fmtFollowers(p.linkedin_follower_count)+'</span>';if(p.job_postings_count)meta4+='<span class="meta-tag intent">&#128188; '+p.job_postings_count+' open roles</span>';if(p.alexa_rank)meta4+='<span class="meta-tag intent">&#127760; Rank #'+Number(p.alexa_rank).toLocaleString()+'</span>';if(p.company_twitter)meta4+='<span class="meta-tag social"><a href="'+p.company_twitter+'" target="_blank">Co. &#120143; &#8599;</a></span>';var prevJobsHtml='';if(p.prev_jobs&&p.prev_jobs.length>0){prevJobsHtml='<div class="card-meta">'+p.prev_jobs.map(function(j){return'<span class="meta-tag prev-job">&#128257; '+j.title+(j.company?' @ '+j.company:'')+'</span>';}).join('')+'</div>';}var awsHtml='';if(p.aws_services&&p.aws_services.length>0){var awsPills=p.aws_services.map(function(s){return'<span class="aws-service-pill">'+s+'</span>';}).join('');awsHtml='<div class="aws-services-row"><span class="aws-services-label">&#9729; AWS</span>'+awsPills+'</div>';}var techHtml='';if(p.tech_stack&&p.tech_stack.length>0){techHtml='<div class="tech-pills">'+p.tech_stack.map(function(t){return'<span class="tech-pill">'+t+'</span>';}).join('')+'</div>';}var kwHtml=p.keywords&&p.keywords.length>0?'<div class="card-meta">'+p.keywords.map(function(k){return'<span class="meta-tag keyword">'+k+'</span>';}).join('')+'</div>':'';var descHtml='';if(p.seo_description){descHtml='<div class="company-desc">'+p.seo_description+'</div>';}else if(p.company_description){descHtml='<div class="company-desc">'+p.company_description+'</div>';}return '<div class="card '+sl+' fade-up" style="animation-delay:'+(i*0.04)+'s">'+avatarHtml+'<div class="card-body">'+intentStripHtml+'<div class="card-top"><div style="min-width:0;flex:1;"><div class="person-name">'+(p.name||'Unknown')+'</div><div class="person-title">'+(p.title||'')+'</div><div class="person-company">'+(p.company_name||'')+(p.company_domain?' &middot; '+p.company_domain:'')+'</div>'+(p.headline?'<div class="person-headline">'+p.headline+'</div>':'')+'</div><div class="score-badge"><div class="score-num '+sl+'">'+score+'</div><div class="score-lbl '+sl+'">'+sl+'</div><div class="score-bar-wrap"><div class="score-bar '+sl+'" style="width:'+score+'%"></div></div></div></div>'+(meta1?'<div class="card-meta">'+meta1+'</div>':'')+(meta2?'<div class="card-meta">'+meta2+'</div>':'')+(meta3?'<div class="card-meta">'+meta3+'</div>':'')+(meta4?'<div class="card-meta">'+meta4+'</div>':'')+prevJobsHtml+awsHtml+kwHtml+techHtml+descHtml+'<div class="card-actions"><button class="btn-sm btn-hs'+(p._hsSent?' sent':'')+'" id="hs-'+i+'" onclick="sendToHubspot('+i+')">'+(p._hsSent?'&#10003; In HubSpot':'&#8679; Push to HubSpot')+'</button></div></div></div>';}
+function renderCard(p,i){var sl=p.score_label||'cold';var score=p.score||0;var avatarHtml=p.photo_url?'<div class="avatar"><img src="'+p.photo_url+'" onerror="this.parentNode.innerHTML=String.fromCodePoint(128100)" /></div>':'<div class="avatar">'+String.fromCodePoint(128100)+'</div>';var loc=[p.city,p.state,p.country].filter(Boolean).join(', ');var emailCls=p.email_status==='verified'?'email':'email-guessed';var emailBadge=p.email_status==='verified'?'&#9989;':'&#9993;';var intentStripHtml='';if(sl==='hot'&&p.intent_signals&&p.intent_signals.length>0){var chips=p.intent_signals.map(function(sig){return'<span class="intent-chip '+sig.type+'">'+sig.label+'</span>';}).join('');intentStripHtml='<div class="intent-strip"><span class="intent-strip-label">&#128293; Intent</span>'+chips+'</div>';}var fundedBadge=p.recently_funded?'<span class="badge-funded">&#128176; Recently Funded</span>':'';var hiringBadge=p.hiring_surge?'<span class="badge-hiring">&#128200; Hiring Surge</span>':'';var meta1='';if(p.email)meta1+='<span class="meta-tag '+emailCls+'">'+emailBadge+' '+p.email+(p.email_status?' ('+p.email_status+')':'')+'</span>';if(loc)meta1+='<span class="meta-tag location">&#128205; '+loc+'</span>';if(p.department)meta1+='<span class="meta-tag dept">&#127970; '+p.department+'</span>';if(p.seniority)meta1+='<span class="meta-tag">&#11088; '+p.seniority+'</span>';if(p.linkedin_url)meta1+='<span class="meta-tag social"><a href="'+p.linkedin_url+'" target="_blank">in &#8599;</a></span>';if(p.twitter_url)meta1+='<span class="meta-tag social"><a href="'+p.twitter_url+'" target="_blank">&#120143; &#8599;</a></span>';if(p.github_url)meta1+='<span class="meta-tag social"><a href="'+p.github_url+'" target="_blank">gh &#8599;</a></span>';if(p.personal_phone)meta1+='<span class="meta-tag">&#128222; '+p.personal_phone+'</span>';var meta2='';if(p.company_size)meta2+='<span class="meta-tag">&#128101; '+Number(p.company_size).toLocaleString()+' employees</span>';if(p.company_founded)meta2+='<span class="meta-tag">&#128197; Founded '+p.company_founded+'</span>';if(p.annual_revenue)meta2+='<span class="meta-tag revenue">&#128176; '+p.annual_revenue+'</span>';if(p.subindustry)meta2+='<span class="meta-tag dept">'+p.subindustry+'</span>';if(p.headcount_growth)meta2+='<span class="meta-tag growth">&#128200; '+fmtGrowth(p.headcount_growth)+'</span>';if(p.time_in_role_months!==null&&p.time_in_role_months!==undefined)meta2+='<span class="meta-tag">&#128336; '+fmtTimeInRole(p.time_in_role_months)+'</span>';if(p.g2_review_count)meta2+='<span class="meta-tag revenue">&#11088; '+p.g2_review_count+' G2 reviews</span>';if(p.primary_phone)meta2+='<span class="meta-tag">&#128222; '+p.primary_phone+'</span>';var meta3='';if(fundedBadge)meta3+=fundedBadge;if(hiringBadge)meta3+=hiringBadge;if(p.funding_stage)meta3+='<span class="meta-tag funding">&#128184; '+p.funding_stage+(p.funding_total?' &middot; '+fmtFunding(p.funding_total):'')+' </span>';if(p.funding_round_date){var roundLabel=fmtRoundDate(p.funding_round_date);if(p.funding_round_type)roundLabel+=' '+p.funding_round_type;if(p.funding_round_amount)roundLabel+=' '+fmtRoundAmount(p.funding_round_amount);meta3+='<span class="meta-tag round">&#128204; '+roundLabel+'</span>';}if(p.num_funding_rounds&&p.num_funding_rounds>1)meta3+='<span class="meta-tag funding">'+p.num_funding_rounds+' rounds</span>';if(p.top_investors&&p.top_investors.length>0)meta3+='<span class="meta-tag investors">&#128081; '+p.top_investors.join(', ')+'</span>';var meta4='';if(p.linkedin_follower_count)meta4+='<span class="meta-tag intent">&#128241; '+fmtFollowers(p.linkedin_follower_count)+'</span>';if(p.job_postings_count)meta4+='<span class="meta-tag intent">&#128188; '+p.job_postings_count+' open roles</span>';if(p.alexa_rank)meta4+='<span class="meta-tag intent">&#127760; Rank #'+Number(p.alexa_rank).toLocaleString()+'</span>';if(p.company_twitter)meta4+='<span class="meta-tag social"><a href="'+p.company_twitter+'" target="_blank">Co. &#120143; &#8599;</a></span>';var prevJobsHtml='';if(p.prev_jobs&&p.prev_jobs.length>0){prevJobsHtml='<div class="card-meta">'+p.prev_jobs.map(function(j){return'<span class="meta-tag prev-job">&#128257; '+j.title+(j.company?' @ '+j.company:'')+'</span>';}).join('')+'</div>';}var awsHtml='';if(p.aws_services&&p.aws_services.length>0){var awsPills=p.aws_services.map(function(s){return'<span class="aws-service-pill">'+s+'</span>';}).join('');awsHtml='<div class="aws-services-row"><span class="aws-services-label">&#9729; AWS</span>'+awsPills+'</div>';}var techHtml='';if(p.tech_stack&&p.tech_stack.length>0){techHtml='<div class="tech-pills">'+p.tech_stack.map(function(t){return'<span class="tech-pill">'+t+'</span>';}).join('')+'</div>';}var kwHtml=p.keywords&&p.keywords.length>0?'<div class="card-meta">'+p.keywords.map(function(k){return'<span class="meta-tag keyword">'+k+'</span>';}).join('')+'</div>':'';var descHtml='';if(p.seo_description){descHtml='<div class="company-desc">'+p.seo_description+'</div>';}else if(p.company_description){descHtml='<div class="company-desc">'+p.company_description+'</div>';}return '<div class="card '+sl+' fade-up" style="animation-delay:'+(i*0.04)+'s">'+avatarHtml+'<div class="card-body">'+intentStripHtml+'<div class="card-top"><div style="min-width:0;flex:1;"><div class="person-name">'+(p.name||'Unknown')+'</div><div class="person-title">'+(p.title||'')+'</div><div class="person-company">'+(p.company_name||'')+(p.company_domain?' &middot; '+p.company_domain:'')+'</div>'+(p.headline?'<div class="person-headline">'+p.headline+'</div>':'')+'</div><div class="score-badge"><div class="score-num '+sl+'">'+score+'</div><div class="score-lbl '+sl+'">'+sl+'</div><div class="score-bar-wrap"><div class="score-bar '+sl+'" style="width:'+score+'%"></div></div></div></div>'+(meta1?'<div class="card-meta">'+meta1+'</div>':'')+(meta2?'<div class="card-meta">'+meta2+'</div>':'')+(meta3?'<div class="card-meta">'+meta3+'</div>':'')+(meta4?'<div class="card-meta">'+meta4+'</div>':'')+prevJobsHtml+awsHtml+kwHtml+techHtml+descHtml+'<div class="card-actions"><button class="btn-sm btn-hs'+(p._hsSent?' sent':'')+'" id="hs-'+i+'" onclick="sendToHubspot('+i+')">'+(p._hsSent?'&#10003; In HubSpot':'&#8679; Push to HubSpot')+'</button></div></div></div>';}
 function render(){
   var el=document.getElementById('app');
   if(!el)return;
@@ -190,22 +241,173 @@ function render(){
     var hiring=people.filter(function(p){return p.hiring_surge===true;}).length;
     var filtered=getFilteredResults();
     var cards=filtered.length?filtered.map(function(p,i){return renderCard(p,i);}).join(''):'<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts match the current filters.</div></div>';
-    var filterBar='<div class="results-filter-bar">'
-      +'<span class="results-filter-label">Filter:</span>'
-      +rfChip('&#128293; Hot ('+hot+')','hot','active-hot')
-      +rfChip('&#128993; Warm ('+warm+')','warm','active-warm')
-      +rfChip('&#128309; Cold ('+cold+')','cold','active-cold')
-      +'<div class="rf-divider"></div>'
-      +(funded>0?rfChip('&#128176; Funded ('+funded+')','funded','active-funded'):'')
-      +(hiring>0?rfChip('&#128200; Hiring ('+hiring+')','hiring','active-hiring'):'')
-      +'</div>';
+    var filterBar='<div class="results-filter-bar"><span class="results-filter-label">Filter:</span>'+rfChip('&#128293; Hot ('+hot+')','hot','active-hot')+rfChip('&#128993; Warm ('+warm+')','warm','active-warm')+rfChip('&#128309; Cold ('+cold+')','cold','active-cold')+'<div class="rf-divider"></div>'+(funded>0?rfChip('&#128176; Funded ('+funded+')','funded','active-funded'):'')+(hiring>0?rfChip('&#128200; Hiring ('+hiring+')','hiring','active-hiring'):'')+'</div>';
     var showing=filtered.length===total?total+' contacts found':'Showing '+filtered.length+' of '+total+' contacts';
     el.innerHTML='<div class="fade-up"><button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;state.activeResultFilters=[];render()">&#8592; Back to filters</button><div class="results-header"><div class="results-count">'+showing+' &mdash; sorted by lead score</div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Hot ('+hot+')</div><div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Warm ('+warm+')</div><div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div> Cold ('+cold+')</div></div></div>'+filterBar+cards+'</div>';
   }
 }
 function doSearch(){state.stage=1;render();fetch('/api/apollo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({industry:state.selectedIndustries,employee_ranges:state.selectedEmployeeRanges,tech_stack:state.selectedTechStack,titles:state.selectedTitles,locations:state.selectedLocations,per_page:state.selectedLimit})}).then(function(r){return r.json();}).then(function(data){if(data.error)throw new Error(data.error);state.results=Array.isArray(data)?data:[];state.activeResultFilters=[];state.stage=2;render();}).catch(function(err){state.stage=0;render();alert('Search failed: '+err.message);});}
 function sendToHubspot(i){var p=state.results[i];if(!p)return;var btn=document.getElementById('hs-'+i);if(btn){btn.textContent='Pushing...';btn.disabled=true;}fetch('/api/hubspot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:p.first_name,last_name:p.last_name,email:p.email,title:p.title,company_name:p.company_name,company_domain:p.company_domain,linkedin_url:p.linkedin_url,department:p.department,seniority:p.seniority,city:p.city,state:p.state,country:p.country,company_size:p.company_size,company_industry:p.company_industry,lead_score:p.score,score_label:p.score_label,funding_stage:p.funding_stage,funding_round_date:p.funding_round_date,funding_round_type:p.funding_round_type,top_investors:p.top_investors,annual_revenue:p.annual_revenue,linkedin_follower_count:p.linkedin_follower_count,email_status:p.email_status,twitter_url:p.twitter_url,recently_funded:p.recently_funded,hiring_surge:p.hiring_surge,aws_services:p.aws_services,company_phone:p.company_phone,company_city:p.company_city,company_state:p.company_state,company_country:p.company_country,company_street:p.company_street,company_zip:p.company_zip,company_founded:p.company_founded,company_linkedin:p.company_linkedin,company_description:p.company_description,personal_phone:p.personal_phone})}).then(function(r){return r.json();}).then(function(d){if(d.error)throw new Error(d.error);state.results[i]._hsSent=true;render();}).catch(function(err){if(btn){btn.textContent='Failed';btn.disabled=false;}alert('HubSpot error: '+err.message);});}
+/* ---- COMPANY INTEL ---- */
+function renderCI(){
+  var el=document.getElementById('company-app');
+  if(!el)return;
+  var searchBar='<div class="ci-search-wrap"><input class="ci-search-input" id="ci-domain-input" type="text" placeholder="Enter company domain (e.g. salesforce.com)" onkeydown="if(event.key===&apos;Enter&apos;)doCompanyLookup()" /><button class="ci-search-btn" onclick="doCompanyLookup()">&#128269; Look Up</button></div>';
+  if(ciState.stage===0){
+    el.innerHTML='<div class="fade-up"><div class="section-title">Company Intel</div><div class="section-sub">Enter a company domain to get a full dossier: funding history, tech stack, key contacts, and more.</div>'+searchBar+'</div>';
+  } else if(ciState.stage===1){
+    el.innerHTML='<div class="fade-up">'+searchBar+'<div style="text-align:center;padding:60px 0;"><div class="spinner"></div><div style="font-size:15px;color:#6b7a99;margin-top:16px;">Researching company...</div></div></div>';
+    var inp=document.getElementById('ci-domain-input');
+    if(inp&&ciState.lastDomain)inp.value=ciState.lastDomain;
+  } else {
+    var c=ciState.profile;
+    el.innerHTML='<div class="fade-up">'+searchBar+renderCompanyProfile(c)+'</div>';
+    var inp=document.getElementById('ci-domain-input');
+    if(inp&&ciState.lastDomain)inp.value=ciState.lastDomain;
+  }
+}
+function doCompanyLookup(){
+  var inp=document.getElementById('ci-domain-input');
+  var domain=inp?inp.value.trim():'';
+  if(!domain)return;
+  ciState.lastDomain=domain;
+  ciState.stage=1;
+  renderCI();
+  fetch('/api/company',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:domain})})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.error)throw new Error(data.error);
+      ciState.profile=data;
+      ciState.stage=2;
+      renderCI();
+    })
+    .catch(function(err){ciState.stage=0;renderCI();alert('Lookup failed: '+err.message);});
+}
+function renderCompanyProfile(c){
+  var logoHtml=c.logo_url?'<div class="ci-logo"><img src="'+c.logo_url+'" onerror="this.parentNode.innerHTML=String.fromCodePoint(127970)" /></div>':'<div class="ci-logo">'+String.fromCodePoint(127970)+'</div>';
+  var links='';
+  if(c.website)links+='<a class="ci-link" href="'+c.website+'" target="_blank">&#127760; Website</a>';
+  if(c.linkedin_url)links+='<a class="ci-link" href="'+c.linkedin_url+'" target="_blank">in LinkedIn</a>';
+  if(c.twitter_url)links+='<a class="ci-link" href="'+c.twitter_url+'" target="_blank">&#120143; Twitter</a>';
+  var headerHtml='<div class="ci-header">'+logoHtml+'<div style="flex:1;min-width:0;"><div class="ci-company-name">'+(c.name||c.domain)+'</div><div class="ci-company-meta">'+(c.industry||'')+(c.headquarters?' &middot; '+c.headquarters:'')+(c.founded_year?' &middot; Founded '+c.founded_year:'')+'</div><div class="ci-company-links">'+links+'</div></div></div>';
+  /* Overview stats */
+  var overviewRows='';
+  if(c.employee_count)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Employees</span><span class="ci-stat-value">'+Number(c.employee_count).toLocaleString()+'</span></div>';
+  if(c.founded_year)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Founded</span><span class="ci-stat-value">'+c.founded_year+'</span></div>';
+  if(c.annual_revenue)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Annual Revenue</span><span class="ci-stat-value">'+c.annual_revenue+'</span></div>';
+  if(c.latest_funding_stage)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Funding Stage</span><span class="ci-stat-value">'+c.latest_funding_stage+'</span></div>';
+  if(c.total_funding)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Total Raised</span><span class="ci-stat-value">'+fmtAmt(c.total_funding)+'</span></div>';
+  if(c.num_funding_rounds)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Funding Rounds</span><span class="ci-stat-value">'+c.num_funding_rounds+'</span></div>';
+  if(c.job_postings_count)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Open Roles</span><span class="ci-stat-value">'+c.job_postings_count+'</span></div>';
+  if(c.headcount_growth_6mo!==null&&c.headcount_growth_6mo!==undefined)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Headcount Growth (6mo)</span><span class="ci-stat-value">'+fmtGrowth(c.headcount_growth_6mo)+'</span></div>';
+  if(c.linkedin_follower_count)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">LinkedIn Followers</span><span class="ci-stat-value">'+fmtFollowers(c.linkedin_follower_count)+'</span></div>';
+  if(c.alexa_rank)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Website Rank</span><span class="ci-stat-value">#'+Number(c.alexa_rank).toLocaleString()+'</span></div>';
+  if(c.g2_review_count)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">G2 Reviews</span><span class="ci-stat-value">'+c.g2_review_count+'</span></div>';
+  if(c.phone)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Phone</span><span class="ci-stat-value">'+c.phone+'</span></div>';
+  if(c.street_address)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Address</span><span class="ci-stat-value">'+c.street_address+(c.postal_code?' '+c.postal_code:'')+'</span></div>';
+  var overviewHtml='<div class="ci-section"><div class="ci-section-title">&#128202; Overview</div><div class="ci-stat-row">'+overviewRows+'</div></div>';
+  /* Description */
+  var descHtml='';
+  var descText=c.seo_description||c.description||'';
+  if(descText)descHtml='<div class="ci-section"><div class="ci-section-title">&#128221; About</div><div class="ci-desc">'+descText+'</div></div>';
+  /* Funding history */
+  var fundingHtml='';
+  if(c.funding_events&&c.funding_events.length>0){
+    var fevents=c.funding_events.map(function(ev){
+      var invStr=ev.investors&&ev.investors.length?'<div class="ci-funding-investors">'+ev.investors.join(', ')+'</div>':'';
+      return '<div class="ci-funding-event"><div><div class="ci-funding-date">'+fmtRoundDate(ev.date)+'</div><div class="ci-funding-type">'+(ev.type||'Round')+'</div>'+invStr+'</div><div class="ci-funding-amount">'+(ev.amount?fmtAmt(ev.amount):'')+'</div></div>';
+    }).join('');
+    var topInv=c.top_investors&&c.top_investors.length>0?'<div style="margin-top:14px;padding-top:12px;border-top:1px solid #111827;"><div style="font-size:11px;color:#4a5568;margin-bottom:8px;">KEY INVESTORS</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+c.top_investors.map(function(inv){return'<span class="meta-tag investors">'+inv+'</span>';}).join('')+'</div></div>':'';
+    fundingHtml='<div class="ci-section"><div class="ci-section-title">&#128176; Funding History</div>'+fevents+topInv+'</div>';
+  }
+  /* Tech stack */
+  var techHtml='';
+  var hasTech=(c.tech_stack&&c.tech_stack.length>0)||(c.aws_services&&c.aws_services.length>0);
+  if(hasTech){
+    var awsPart=c.aws_services&&c.aws_services.length>0?'<div class="aws-services-row" style="margin-bottom:10px;"><span class="aws-services-label">&#9729; AWS</span>'+c.aws_services.map(function(s){return'<span class="aws-service-pill">'+s+'</span>';}).join('')+'</div>':'';
+    var stackPart=c.tech_stack&&c.tech_stack.length>0?'<div class="tech-pills">'+c.tech_stack.map(function(t){return'<span class="tech-pill">'+t+'</span>';}).join('')+'</div>':'';
+    techHtml='<div class="ci-section"><div class="ci-section-title">&#9881; Tech Stack</div>'+awsPart+stackPart+'</div>';
+  }
+  /* Keywords & Similar */
+  var kwHtml='';
+  if((c.keywords&&c.keywords.length>0)||(c.similar_companies&&c.similar_companies.length>0)){
+    var kwPart=c.keywords&&c.keywords.length>0?'<div style="margin-bottom:12px;"><div style="font-size:11px;color:#4a5568;margin-bottom:8px;">KEYWORDS</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+c.keywords.map(function(k){return'<span class="meta-tag keyword">'+k+'</span>';}).join('')+'</div></div>':'';
+    var simPart=c.similar_companies&&c.similar_companies.length>0?'<div><div style="font-size:11px;color:#4a5568;margin-bottom:8px;">SIMILAR COMPANIES</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+c.similar_companies.map(function(s){return'<span class="ci-similar-pill">'+s+'</span>';}).join('')+'</div></div>':'';
+    kwHtml='<div class="ci-section"><div class="ci-section-title">&#128270; Intelligence</div>'+kwPart+simPart+'</div>';
+  }
+  /* Contacts */
+  var contactsHtml='';
+  if(c.contacts&&c.contacts.length>0){
+    var contactCards=c.contacts.map(function(p,i){
+      var av=p.photo_url?'<div class="ci-contact-avatar"><img src="'+p.photo_url+'" onerror="this.parentNode.innerHTML=String.fromCodePoint(128100)" /></div>':'<div class="ci-contact-avatar">'+String.fromCodePoint(128100)+'</div>';
+      var emailCls=p.email_status==='verified'?'color:#22c55e':'color:#f59e0b';
+      var links='';
+      if(p.linkedin_url)links+='<a class="ci-link" href="'+p.linkedin_url+'" target="_blank" style="padding:2px 8px;font-size:11px;">in</a>';
+      var btn='<button class="btn-sm btn-hs'+(p._hsSent?' sent':'')+'" id="ci-hs-'+i+'" onclick="ciSendContact('+i+')" style="font-size:11px;padding:4px 10px;">'+(p._hsSent?'&#10003;':'&#8679; Push')+'</button>';
+      return '<div class="ci-contact-card">'+av+'<div class="ci-contact-info"><div class="ci-contact-name">'+p.name+'</div><div class="ci-contact-title">'+p.title+'</div><div class="ci-contact-email" style="'+emailCls+'">'+p.email+'</div>'+(p.personal_phone?'<div class="ci-contact-phone">&#128222; '+p.personal_phone+'</div>':'')+'</div><div class="ci-contact-actions">'+links+btn+'</div></div>';
+    }).join('');
+    var pushAllBtn=c._allSent?'<button class="ci-push-all sent">&#10003; All Contacts in HubSpot</button>':'<button class="ci-push-all" onclick="ciPushAll()">&#8679; Push All Contacts + Company to HubSpot</button>';
+    contactsHtml='<div class="ci-section" style="margin-top:16px;"><div class="ci-section-title">&#128101; Key Contacts ('+c.contacts.length+')</div>'+contactCards+pushAllBtn+'</div>';
+  }
+  return headerHtml+'<div class="ci-grid">'+overviewHtml+(descHtml||'<div></div>')+'</div>'+(fundingHtml?'<div class="ci-grid">'+fundingHtml+(techHtml||'<div class="ci-section"><div class="ci-section-title">&#9881; Tech Stack</div><div style="color:#4a5568;font-size:13px;">No tech data available.</div></div>')+'</div>':techHtml?'<div>'+techHtml+'</div>':'')+(kwHtml?kwHtml:'')+contactsHtml;
+}
+function ciSendContact(i){
+  var c=ciState.profile;
+  if(!c||!c.contacts||!c.contacts[i])return;
+  var p=c.contacts[i];
+  var btn=document.getElementById('ci-hs-'+i);
+  if(btn){btn.textContent='Pushing...';btn.disabled=true;}
+  fetch('/api/hubspot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    first_name:p.first_name,last_name:p.last_name,email:p.email,title:p.title,
+    company_name:c.name,company_domain:c.domain,linkedin_url:p.linkedin_url,
+    city:p.city,state:p.state,country:p.country,
+    score_label:'warm',twitter_url:p.twitter_url,personal_phone:p.personal_phone,
+    company_phone:c.phone,company_city:c.headquarters?c.headquarters.split(', ')[0]:'',
+    company_state:c.headquarters?c.headquarters.split(', ')[1]:'',
+    company_country:c.headquarters?c.headquarters.split(', ')[2]:'',
+    company_street:c.street_address,company_zip:c.postal_code,
+    company_description:c.description,company_industry:c.industry,
+    company_size:c.employee_count
+  })}).then(function(r){return r.json();}).then(function(d){
+    if(d.error)throw new Error(d.error);
+    ciState.profile.contacts[i]._hsSent=true;
+    renderCI();
+  }).catch(function(err){if(btn){btn.textContent='Failed';btn.disabled=false;}alert('HubSpot error: '+err.message);});
+}
+function ciPushAll(){
+  var c=ciState.profile;
+  if(!c||!c.contacts||c.contacts.length===0)return;
+  var remaining=c.contacts.filter(function(p){return !p._hsSent;});
+  if(remaining.length===0)return;
+  var idx=0;
+  function pushNext(){
+    if(idx>=c.contacts.length){ciState.profile._allSent=true;renderCI();return;}
+    var p=c.contacts[idx];
+    if(p._hsSent){idx++;pushNext();return;}
+    var btn=document.getElementById('ci-hs-'+idx);
+    if(btn){btn.textContent='Pushing...';btn.disabled=true;}
+    fetch('/api/hubspot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      first_name:p.first_name,last_name:p.last_name,email:p.email,title:p.title,
+      company_name:c.name,company_domain:c.domain,linkedin_url:p.linkedin_url,
+      city:p.city,state:p.state,country:p.country,
+      score_label:'warm',twitter_url:p.twitter_url,personal_phone:p.personal_phone,
+      company_phone:c.phone,company_city:c.headquarters?c.headquarters.split(', ')[0]:'',
+      company_state:c.headquarters?c.headquarters.split(', ')[1]:'',
+      company_country:c.headquarters?c.headquarters.split(', ')[2]:'',
+      company_street:c.street_address,company_zip:c.postal_code,
+      company_description:c.description,company_industry:c.industry,
+      company_size:c.employee_count
+    })}).then(function(r){return r.json();}).then(function(d){
+      if(d.error)throw new Error(d.error);
+      ciState.profile.contacts[idx]._hsSent=true;
+      idx++;
+      setTimeout(pushNext,400);
+    }).catch(function(err){idx++;setTimeout(pushNext,400);});
+  }
+  pushNext();
+}
 render();
+renderCI();
 </script>
 </body>
 </html>
