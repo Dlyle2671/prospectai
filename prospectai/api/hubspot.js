@@ -103,9 +103,10 @@ export default async function handler(req, res) {
   try {
     const {
       first_name, last_name, email, title,
-      company_name, company_domain, linkedin_url,
-      city, state, country,
-      company_size, company_industry, score_label, twitter_url, personal_phone,
+      company_name, company_domain,
+      linkedin_url, city, state, country,
+      company_size, company_industry, score_label,
+      twitter_url, personal_phone,
       company_city, company_state, company_country,
       company_street, company_zip, company_phone,
       company_description,
@@ -116,6 +117,19 @@ export default async function handler(req, res) {
       "Content-Type": "application/json",
       "Authorization": "Bearer " + token,
     };
+
+    // --- 0. FETCH DEFAULT OWNER ---
+    let defaultOwnerId = null;
+    try {
+      const ownersResp = await fetch(
+        "https://api.hubapi.com/crm/v3/owners?limit=1",
+        { headers: hsHeaders }
+      );
+      const ownersData = await ownersResp.json();
+      if (ownersData.results && ownersData.results.length > 0) {
+        defaultOwnerId = String(ownersData.results[0].id);
+      }
+    } catch (_) {}
 
     // --- 1. UPSERT COMPANY ---
     let companyId = null;
@@ -154,18 +168,27 @@ export default async function handler(req, res) {
       if (company_description) companyProps.description = company_description;
       const mappedIndustry = mapIndustry(company_industry);
       if (mappedIndustry) companyProps.industry = mappedIndustry;
+      if (defaultOwnerId) companyProps.hubspot_owner_id = defaultOwnerId;
 
       if (existingCompanyId) {
         const updateResp = await fetch(
           "https://api.hubapi.com/crm/v3/objects/companies/" + existingCompanyId,
-          { method: "PATCH", headers: hsHeaders, body: JSON.stringify({ properties: companyProps }) }
+          {
+            method: "PATCH",
+            headers: hsHeaders,
+            body: JSON.stringify({ properties: companyProps })
+          }
         );
         const updateData = await updateResp.json();
         companyId = updateData.id || existingCompanyId;
       } else {
         const createResp = await fetch(
           "https://api.hubapi.com/crm/v3/objects/companies",
-          { method: "POST", headers: hsHeaders, body: JSON.stringify({ properties: companyProps }) }
+          {
+            method: "POST",
+            headers: hsHeaders,
+            body: JSON.stringify({ properties: companyProps })
+          }
         );
         const createData = await createResp.json();
         if (!createResp.ok) {
@@ -197,6 +220,9 @@ export default async function handler(req, res) {
       }
     }
 
+    // Use personal_phone first, fall back to company_phone
+    const contactPhone = personal_phone || company_phone || null;
+
     const contactProps = {};
     if (first_name) contactProps.firstname = first_name;
     if (last_name) contactProps.lastname = last_name;
@@ -209,20 +235,31 @@ export default async function handler(req, res) {
     if (state) contactProps.state = state;
     if (country) contactProps.country = country;
     if (twitter_url) contactProps.twitterhandle = twitter_url;
-    if (personal_phone) contactProps.phone = personal_phone;
-    if (score_label) contactProps.lifecyclestage = score_label === "hot" ? "salesqualifiedlead" : score_label === "warm" ? "marketingqualifiedlead" : "lead";
+    if (contactPhone) contactProps.phone = contactPhone;
+    if (defaultOwnerId) contactProps.hubspot_owner_id = defaultOwnerId;
+    if (score_label) contactProps.lifecyclestage =
+      score_label === "hot" ? "salesqualifiedlead" :
+      score_label === "warm" ? "marketingqualifiedlead" : "lead";
 
     if (existingContactId) {
       const updateResp = await fetch(
         "https://api.hubapi.com/crm/v3/objects/contacts/" + existingContactId,
-        { method: "PATCH", headers: hsHeaders, body: JSON.stringify({ properties: contactProps }) }
+        {
+          method: "PATCH",
+          headers: hsHeaders,
+          body: JSON.stringify({ properties: contactProps })
+        }
       );
       const updateData = await updateResp.json();
       contactId = updateData.id || existingContactId;
     } else {
       const createResp = await fetch(
         "https://api.hubapi.com/crm/v3/objects/contacts",
-        { method: "POST", headers: hsHeaders, body: JSON.stringify({ properties: contactProps }) }
+        {
+          method: "POST",
+          headers: hsHeaders,
+          body: JSON.stringify({ properties: contactProps })
+        }
       );
       const createData = await createResp.json();
       if (!createResp.ok) {
@@ -249,7 +286,6 @@ export default async function handler(req, res) {
       contact_status: existingContactId ? "updated" : "created",
       company_status: companyId ? (existingCompanyId ? "updated" : "created") : "skipped",
     });
-
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
