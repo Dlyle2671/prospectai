@@ -26,31 +26,28 @@ export default async function handler(req, res) {
 
     const orgId = org.id || null;
     const orgNameLower = (org.name || "").toLowerCase().trim();
-    // Build a set of domain variants to match against
+
     const domainVariants = new Set([cleanDomain]);
     if (cleanDomain.startsWith("www.")) domainVariants.add(cleanDomain.slice(4));
 
-    // Helper: does a string match our target company name?
     function nameMatches(n) {
       if (!n) return false;
       const nl = n.toLowerCase().trim();
       if (nl === orgNameLower) return true;
-      // Allow if one contains the other and they're reasonably long
       if (orgNameLower.length >= 6 && nl.includes(orgNameLower)) return true;
       if (nl.length >= 6 && orgNameLower.includes(nl)) return true;
       return false;
     }
 
-    // Helper: does a domain string match our target?
     function domainMatches(d) {
       if (!d) return false;
       const dl = d.toLowerCase().replace(/^www\./, "");
       return domainVariants.has(dl) || dl === cleanDomain;
     }
 
-    // --- 2. Search people by organization_id (most precise) ---
-    // Also run a second search by domain to catch people Apollo didn't link to the org_id
-    const [res1, res2] = await Promise.all([
+    // --- 2. Parallel: people search x2 + job postings + news ---
+    const [res1, res2, jobsResp, newsResp] = await Promise.all([
+      // People by org_id
       fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
@@ -63,6 +60,7 @@ export default async function handler(req, res) {
           page: 1,
         }),
       }),
+      // People by domain
       fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
@@ -75,11 +73,61 @@ export default async function handler(req, res) {
           page: 1,
         }),
       }),
+      // Job postings from Apollo
+      fetch("https://api.apollo.io/api/v1/mixed_jobs/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
+        body: JSON.stringify({
+          api_key: apiKey,
+          organization_ids: orgId ? [orgId] : undefined,
+          per_page: 50,
+          page: 1,
+        }),
+      }).catch(() => null),
+      // Google News RSS
+      fetch("https://news.google.com/rss/search?q=" + encodeURIComponent('"' + (org.name || cleanDomain) + '"') + "&hl=en-US&gl=US&ceid=US:en")
+        .catch(() => null),
     ]);
 
     const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
 
-    // Merge and deduplicate candidates by id
+    // --- Parse job postings ---
+    const TECH_KEYWORDS = ["engineer", "developer", "devops", "cloud", "architect", "data", "software", "infrastructure", "platform", "backend", "frontend", "fullstack", "full-stack", "sre", "security", "machine learning", "ml", "ai", "analytics", "database", "network", "systems", "it ", "technical", "technology", "cyber", "devsecops", "kubernetes", "terraform"];
+    let jobPostings = [];
+    if (jobsResp && jobsResp.ok) {
+      const jobsData = await jobsResp.json();
+      const allJobs = jobsData.jobs || jobsData.job_postings || [];
+      jobPostings = allJobs
+        .filter(j => {
+          const title = (j.title || j.job_title || "").toLowerCase();
+          return TECH_KEYWORDS.some(kw => title.includes(kw));
+        })
+        .slice(0, 15)
+        .map(j => ({
+          title: j.title || j.job_title || "",
+          location: j.city || j.location || "",
+          url: j.url || j.job_url || "",
+          posted_at: j.posted_at || j.created_at || "",
+        }));
+    }
+
+    // --- Parse news articles from Google RSS ---
+    let newsArticles = [];
+    if (newsResp && newsResp.ok) {
+      const xmlText = await newsResp.text();
+      const items = xmlText.match(/<item>[\s\S]*?<\/item>/g) || [];
+      newsArticles = items.slice(0, 8).map(item => {
+        const title = (item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/) || [])[1] || "";
+        const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || "";
+        const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || "";
+        const source = (item.match(/<source[^>]*>(.*?)<\/source>/) || [])[1] || "";
+        const cleanTitle = title.replace(/ - [^-]+$/, "").trim();
+        const sourceName = source || (link.match(/https?:\/\/(?:www\.)?([^/]+)/) || [])[1] || "";
+        return { title: cleanTitle, url: link, date: pubDate ? new Date(pubDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "", source: sourceName };
+      }).filter(a => a.title);
+    }
+
+    // --- Merge and deduplicate people ---
     const seen = new Set();
     const candidates = [];
     for (const p of [...(data1.people || []), ...(data2.people || [])]) {
@@ -89,7 +137,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- 3. Enrich and validate ---
+    // --- Enrich and validate contacts ---
     const contacts = await Promise.all(
       candidates.slice(0, 30).map(async (p) => {
         try {
@@ -103,52 +151,26 @@ export default async function handler(req, res) {
           const email = ep.email || "";
           if (!email) return null;
 
-          // --- Validation tiers ---
           const empHistory = ep.employment_history || [];
           const personOrg = ep.organization || {};
           const personOrgId = personOrg.id || ep.organization_id || "";
 
-          // TIER 1: person's current org_id matches our org_id exactly
-          if (orgId && personOrgId && personOrgId === orgId) {
-            // Still reject if clearly a famous person with implausible title for this company size
-            // (no good heuristic — trust org_id match)
-          } else {
-            // TIER 2: Check employment history entries
-            // Look for entries where org matches AND there is no end_date (currently employed)
+          if (!(orgId && personOrgId && personOrgId === orgId)) {
             const matchingJobs = empHistory.filter(j => {
               const jobDomain = (j.organization_domain || j.organization?.primary_domain || "").toLowerCase().replace(/^www\./, "");
               const jobOrgId = j.organization_id || j.organization?.id || "";
-              const jobName = (j.organization_name || j.title_raw_company || "");
-              const domainOk = domainMatches(jobDomain);
-              const idOk = orgId && jobOrgId === orgId;
-              const nameOk = nameMatches(jobName);
-              return domainOk || idOk || nameOk;
+              return domainMatches(jobDomain) || (orgId && jobOrgId === orgId) || nameMatches(j.organization_name || "");
             });
-
-            if (matchingJobs.length === 0) return null; // No link to this company at all
-
-            // Check if they have a matching job with no end_date (current) OR current:true
+            if (matchingJobs.length === 0) return null;
             const hasCurrentJob = matchingJobs.some(j => j.current === true || !j.end_date);
-
-            if (!hasCurrentJob) {
-              // They worked there in the past but left — skip them
-              return null;
-            }
-
-            // Extra check: make sure they don't have a DIFFERENT current job
-            // (someone who left and joined elsewhere)
+            if (!hasCurrentJob) return null;
             const otherCurrentJobs = empHistory.filter(j => {
-              if (j.current !== true && j.end_date) return false; // clearly ended
+              if (j.current !== true && j.end_date) return false;
               const jobDomain = (j.organization_domain || j.organization?.primary_domain || "").toLowerCase().replace(/^www\./, "");
               const jobOrgId = j.organization_id || j.organization?.id || "";
-              const domainOk = domainMatches(jobDomain);
-              const idOk = orgId && jobOrgId === orgId;
-              const nameOk = nameMatches(j.organization_name || "");
-              // If this is NOT our company and is marked current
-              return (j.current === true) && !domainOk && !idOk && !nameOk;
+              return (j.current === true) && !domainMatches(jobDomain) && !(orgId && jobOrgId === orgId) && !nameMatches(j.organization_name || "");
             });
-
-            if (otherCurrentJobs.length > 0) return null; // Currently at a different company
+            if (otherCurrentJobs.length > 0) return null;
           }
 
           const phoneNums = ep.phone_numbers || [];
@@ -180,17 +202,12 @@ export default async function handler(req, res) {
     );
 
     const validContacts = contacts.filter(Boolean);
-
-    const allTech = (org.technology_names || org.technologies || [])
-      .map(t => typeof t === "string" ? t : t.name || "").filter(Boolean);
+    const allTech = (org.technology_names || org.technologies || []).map(t => typeof t === "string" ? t : t.name || "").filter(Boolean);
     const AWS_PATTERNS = ["amazon", "aws ", "aws-", "amazon web services"];
     const awsServices = allTech.filter(t => AWS_PATTERNS.some(p => t.toLowerCase().includes(p)));
     const techStack = allTech.filter(t => !AWS_PATTERNS.some(p => t.toLowerCase().includes(p))).slice(0, 12);
-
     const fundingEvents = org.funding_events || org.funding_rounds || [];
-    const sortedFunding = [...fundingEvents].sort((a, b) =>
-      new Date(b.date || b.announced_on || 0) - new Date(a.date || a.announced_on || 0)
-    );
+    const sortedFunding = [...fundingEvents].sort((a, b) => new Date(b.date || b.announced_on || 0) - new Date(a.date || a.announced_on || 0));
 
     return res.status(200).json({
       id: orgId || "",
@@ -222,8 +239,7 @@ export default async function handler(req, res) {
         date: e.date || e.announced_on || "",
         type: e.type || e.round_type || "",
         amount: e.amount || e.raised_amount || null,
-        investors: (e.investors || e.lead_investors || [])
-          .map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 4),
+        investors: (e.investors || e.lead_investors || []).map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 4),
       })),
       top_investors: (org.investors || []).map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 6),
       alexa_rank: org.alexa_rank || null,
@@ -236,6 +252,8 @@ export default async function handler(req, res) {
       keywords: (org.keywords || []).slice(0, 8),
       similar_companies: (org.similar_companies || []).map(c => c.name || c).filter(Boolean).slice(0, 6),
       contacts: validContacts,
+      job_postings: jobPostings,
+      news: newsArticles,
     });
   } catch (err) {
     return res.status(500).json({ error: err.message });
