@@ -74,16 +74,16 @@ export default async function handler(req, res) {
         }),
       }),
       // Job postings from Apollo
-      fetch("https://api.apollo.io/api/v1/mixed_jobs/search", {
+      (orgId ? fetch("https://api.apollo.io/api/v1/jobs/search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
         body: JSON.stringify({
           api_key: apiKey,
-          organization_ids: orgId ? [orgId] : undefined,
+          organization_ids: [orgId],
           per_page: 50,
           page: 1,
         }),
-      }).catch(() => null),
+      }).catch(() => null) : Promise.resolve(null)),
       // Google News RSS
       fetch("https://news.google.com/rss/search?q=" + encodeURIComponent('"' + (org.name || cleanDomain) + '"') + "&hl=en-US&gl=US&ceid=US:en")
         .catch(() => null),
@@ -97,18 +97,16 @@ export default async function handler(req, res) {
     if (jobsResp && jobsResp.ok) {
       const jobsData = await jobsResp.json();
       const allJobs = jobsData.jobs || jobsData.job_postings || [];
-      jobPostings = allJobs
-        .filter(j => {
-          const title = (j.title || j.job_title || "").toLowerCase();
-          return TECH_KEYWORDS.some(kw => title.includes(kw));
-        })
-        .slice(0, 15)
-        .map(j => ({
-          title: j.title || j.job_title || "",
-          location: j.city || j.location || "",
-          url: j.url || j.job_url || "",
-          posted_at: j.posted_at || j.created_at || "",
-        }));
+      const filteredJobs = allJobs.filter(j => {
+        const title = (j.title || j.job_title || "").toLowerCase();
+        return TECH_KEYWORDS.some(kw => title.includes(kw));
+      });
+      jobPostings = filteredJobs.slice(0, 15).map(j => ({
+        title: j.title || j.job_title || "",
+        location: [j.city, j.state, j.country].filter(Boolean).join(", ") || j.location || "",
+        url: j.url || j.job_url || j.linkedin_url || "",
+        posted_at: j.posted_at || j.created_at || "",
+      }));
     }
 
     // --- Parse news articles from Google RSS ---
