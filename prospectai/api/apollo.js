@@ -61,51 +61,22 @@ export default async function handler(req, res) {
 
     const rawPeople = searchData.people || [];
 
-    // DEBUG: return raw first person to inspect has_email/has_direct_phone values
-    if (req.body._debug && rawPeople.length > 0) {
-      const p = rawPeople[0];
-      // Also test enrichment on this person
-      const enrichResp = await fetch("https://api.apollo.io/api/v1/people/match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
-        body: JSON.stringify({ id: p.id, reveal_personal_emails: false, reveal_phone_number: true }),
-      });
-      const enrichData = await enrichResp.json();
-      return res.status(200).json({
-        search_person: {
-          id: p.id,
-          first_name: p.first_name,
-          has_email: p.has_email,
-          has_direct_phone: p.has_direct_phone,
-          all_keys: Object.keys(p)
-        },
-        enrich_status: enrichResp.status,
-        enrich_person: enrichData.person ? {
-          email: enrichData.person.email,
-          phone_numbers: enrichData.person.phone_numbers,
-          all_keys: Object.keys(enrichData.person)
-        } : enrichData
-      });
-    }
+    // Only enrich people Apollo has flagged as having an email
+    const candidates = rawPeople.filter(p => p.has_email);
 
-    // Only enrich people flagged as having email or phone
-    const candidates = rawPeople.filter(p => p.has_email || p.has_direct_phone);
-
+    // Enrich each to get the actual email address (synchronous, no webhook needed)
     const enriched = await Promise.all(
       candidates.map(async (p) => {
         try {
           const enrichResp = await fetch("https://api.apollo.io/api/v1/people/match", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
-            body: JSON.stringify({ id: p.id, reveal_personal_emails: false, reveal_phone_number: true }),
+            body: JSON.stringify({ id: p.id }),
           });
           const enrichData = await enrichResp.json();
           const ep = enrichData.person || {};
           const email = ep.email || "";
-          const phone = (ep.phone_numbers && ep.phone_numbers.length > 0)
-            ? ep.phone_numbers[0].sanitized_number || ep.phone_numbers[0].raw_number || ""
-            : (ep.sanitized_phone || "");
-          if (!email && !phone) return null;
+          if (!email) return null;
           return {
             id: p.id,
             first_name: ep.first_name || p.first_name || "",
@@ -113,7 +84,7 @@ export default async function handler(req, res) {
             name: ep.name || p.first_name || "",
             title: ep.title || p.title || "",
             email,
-            phone,
+            phone: "",
             linkedin_url: ep.linkedin_url || "",
             photo_url: ep.photo_url || "",
             company_name: (ep.organization && ep.organization.name) || (p.organization && p.organization.name) || "",
