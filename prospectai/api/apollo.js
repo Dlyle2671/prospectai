@@ -70,7 +70,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { industry = [], employee_ranges = [], tech_stack = [], titles = [], page = 1, per_page = 25 } = req.body;
+    const { industry = [], employee_ranges = [], tech_stack = [], titles = [], locations = [], page = 1, per_page = 25 } = req.body;
     const body = {
       api_key: process.env.APOLLO_API_KEY,
       page,
@@ -87,6 +87,8 @@ export default async function handler(req, res) {
       const ranges = employee_ranges.map(r => map[r]).filter(Boolean);
       if (ranges.length > 0) body.organization_num_employees_ranges = ranges;
     }
+    // Geography: filter by where person is located
+    if (locations.length > 0) body.person_locations = locations;
 
     const searchResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
       method: "POST",
@@ -168,7 +170,6 @@ export default async function handler(req, res) {
           const num_funding_rounds = org.num_funding_rounds || fundingEvents.length || null;
           const job_postings_count = org.job_postings_count || org.open_jobs_count || null;
 
-          // Step 4: Intent signal flags
           const headcountGrowthNum = headcount_growth !== null ? Number(headcount_growth) : null;
           const hiring_surge = (job_postings_count && job_postings_count > 10) || (headcountGrowthNum !== null && headcountGrowthNum > 0.20);
 
@@ -178,7 +179,6 @@ export default async function handler(req, res) {
             recently_funded = monthsAgo <= 18;
           }
 
-          // Intent signals array for summary strip
           const intent_signals = [];
           if (recently_funded && funding_stage) {
             const amt = funding_round_amount;
