@@ -60,23 +60,36 @@ export default async function handler(req, res) {
     }
 
     const rawPeople = searchData.people || [];
+    const candidates = rawPeople.filter(p => p.has_email || p.has_direct_phone);
 
-    // Only enrich people Apollo has flagged as having an email
-    const candidates = rawPeople.filter(p => p.has_email);
-
-    // Enrich each to get the actual email address (synchronous, no webhook needed)
     const enriched = await Promise.all(
       candidates.map(async (p) => {
         try {
+          // Build enrich payload - include webhook for phone reveal if they have a phone
+          const enrichPayload = { id: p.id };
+          if (p.has_direct_phone) {
+            enrichPayload.reveal_phone_number = true;
+            enrichPayload.webhook_url = process.env.VERCEL_URL
+              ? `https://${process.env.VERCEL_URL}/api/phone-webhook`
+              : "https://prospectai-woad.vercel.app/api/phone-webhook";
+          }
+
           const enrichResp = await fetch("https://api.apollo.io/api/v1/people/match", {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-Api-Key": process.env.APOLLO_API_KEY },
-            body: JSON.stringify({ id: p.id }),
+            body: JSON.stringify(enrichPayload),
           });
           const enrichData = await enrichResp.json();
           const ep = enrichData.person || {};
+
           const email = ep.email || "";
-          if (!email) return null;
+          // Apollo may return phone in the sync response even with webhook (if cached)
+          const phone = (ep.phone_numbers && ep.phone_numbers.length > 0)
+            ? (ep.phone_numbers.find(ph => ph.type === "mobile" || ph.type === "direct") || ep.phone_numbers[0]).sanitized_number || ""
+            : "";
+
+          if (!email && !phone) return null;
+
           return {
             id: p.id,
             first_name: ep.first_name || p.first_name || "",
@@ -84,7 +97,7 @@ export default async function handler(req, res) {
             name: ep.name || p.first_name || "",
             title: ep.title || p.title || "",
             email,
-            phone: "",
+            phone,
             linkedin_url: ep.linkedin_url || "",
             photo_url: ep.photo_url || "",
             company_name: (ep.organization && ep.organization.name) || (p.organization && p.organization.name) || "",
