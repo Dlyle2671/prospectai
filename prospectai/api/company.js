@@ -26,31 +26,72 @@ export default async function handler(req, res) {
 
     const orgId = org.id || null;
     const orgNameLower = (org.name || "").toLowerCase().trim();
+    // Build a set of domain variants to match against
+    const domainVariants = new Set([cleanDomain]);
+    if (cleanDomain.startsWith("www.")) domainVariants.add(cleanDomain.slice(4));
 
-    // --- 2. Find Key Contacts — search by organization_id for precision ---
-    const searchBody = {
-      api_key: apiKey,
-      organization_ids: orgId ? [orgId] : undefined,
-      organization_domains: orgId ? undefined : [cleanDomain],
-      person_seniorities: ["c_suite", "founder", "vp", "director", "head"],
-      contact_email_status: ["verified", "guessed"],
-      per_page: 25,
-      page: 1,
-    };
-    // Remove undefined keys
-    Object.keys(searchBody).forEach(k => searchBody[k] === undefined && delete searchBody[k]);
+    // Helper: does a string match our target company name?
+    function nameMatches(n) {
+      if (!n) return false;
+      const nl = n.toLowerCase().trim();
+      if (nl === orgNameLower) return true;
+      // Allow if one contains the other and they're reasonably long
+      if (orgNameLower.length >= 6 && nl.includes(orgNameLower)) return true;
+      if (nl.length >= 6 && orgNameLower.includes(nl)) return true;
+      return false;
+    }
 
-    const peopleResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
-      body: JSON.stringify(searchBody),
-    });
-    const peopleData = await peopleResp.json();
-    const candidates = (peopleData.people || []).filter(p => p.has_email);
+    // Helper: does a domain string match our target?
+    function domainMatches(d) {
+      if (!d) return false;
+      const dl = d.toLowerCase().replace(/^www\./, "");
+      return domainVariants.has(dl) || dl === cleanDomain;
+    }
 
-    // --- 3. Enrich and validate contacts belong to this company ---
+    // --- 2. Search people by organization_id (most precise) ---
+    // Also run a second search by domain to catch people Apollo didn't link to the org_id
+    const [res1, res2] = await Promise.all([
+      fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
+        body: JSON.stringify({
+          api_key: apiKey,
+          ...(orgId ? { organization_ids: [orgId] } : { organization_domains: [cleanDomain] }),
+          person_seniorities: ["c_suite", "founder", "vp", "director", "head", "manager", "senior"],
+          contact_email_status: ["verified", "guessed"],
+          per_page: 50,
+          page: 1,
+        }),
+      }),
+      fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
+        body: JSON.stringify({
+          api_key: apiKey,
+          organization_domains: [cleanDomain],
+          person_seniorities: ["c_suite", "founder", "vp", "director", "head", "manager", "senior"],
+          contact_email_status: ["verified", "guessed"],
+          per_page: 50,
+          page: 1,
+        }),
+      }),
+    ]);
+
+    const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
+
+    // Merge and deduplicate candidates by id
+    const seen = new Set();
+    const candidates = [];
+    for (const p of [...(data1.people || []), ...(data2.people || [])]) {
+      if (p.has_email && !seen.has(p.id)) {
+        seen.add(p.id);
+        candidates.push(p);
+      }
+    }
+
+    // --- 3. Enrich and validate ---
     const contacts = await Promise.all(
-      candidates.slice(0, 20).map(async (p) => {
+      candidates.slice(0, 30).map(async (p) => {
         try {
           const r = await fetch("https://api.apollo.io/api/v1/people/match", {
             method: "POST",
@@ -62,35 +103,53 @@ export default async function handler(req, res) {
           const email = ep.email || "";
           if (!email) return null;
 
-          // Validate via employment history — person must have a CURRENT job at this company
+          // --- Validation tiers ---
           const empHistory = ep.employment_history || [];
-          const currentJobs = empHistory.filter(j => j.current === true);
-          
-          let isValid = false;
+          const personOrg = ep.organization || {};
+          const personOrgId = personOrg.id || ep.organization_id || "";
 
-          if (currentJobs.length > 0) {
-            // Check if any current job matches the target company
-            isValid = currentJobs.some(j => {
-              const jobDomain = (j.organization_domain || j.organization?.primary_domain || "").toLowerCase();
-              const jobOrgId = j.organization_id || j.organization?.id || "";
-              const jobName = (j.organization_name || j.organization?.name || "").toLowerCase().trim();
-              const domainMatch = jobDomain && (jobDomain === cleanDomain || cleanDomain.includes(jobDomain) || jobDomain.includes(cleanDomain));
-              const idMatch = orgId && jobOrgId && jobOrgId === orgId;
-              const nameMatch = jobName && orgNameLower && jobName === orgNameLower;
-              return domainMatch || idMatch || nameMatch;
-            });
+          // TIER 1: person's current org_id matches our org_id exactly
+          if (orgId && personOrgId && personOrgId === orgId) {
+            // Still reject if clearly a famous person with implausible title for this company size
+            // (no good heuristic — trust org_id match)
           } else {
-            // No employment history — fall back to checking person's current org
-            const personOrg = ep.organization || {};
-            const personOrgId = personOrg.id || ep.organization_id || "";
-            const personOrgDomain = (personOrg.primary_domain || "").toLowerCase();
-            const personOrgName = (personOrg.name || "").toLowerCase().trim();
-            isValid = (orgId && personOrgId === orgId) ||
-                      (personOrgDomain && personOrgDomain === cleanDomain) ||
-                      (personOrgName && personOrgName === orgNameLower);
-          }
+            // TIER 2: Check employment history entries
+            // Look for entries where org matches AND there is no end_date (currently employed)
+            const matchingJobs = empHistory.filter(j => {
+              const jobDomain = (j.organization_domain || j.organization?.primary_domain || "").toLowerCase().replace(/^www\./, "");
+              const jobOrgId = j.organization_id || j.organization?.id || "";
+              const jobName = (j.organization_name || j.title_raw_company || "");
+              const domainOk = domainMatches(jobDomain);
+              const idOk = orgId && jobOrgId === orgId;
+              const nameOk = nameMatches(jobName);
+              return domainOk || idOk || nameOk;
+            });
 
-          if (!isValid) return null;
+            if (matchingJobs.length === 0) return null; // No link to this company at all
+
+            // Check if they have a matching job with no end_date (current) OR current:true
+            const hasCurrentJob = matchingJobs.some(j => j.current === true || !j.end_date);
+
+            if (!hasCurrentJob) {
+              // They worked there in the past but left — skip them
+              return null;
+            }
+
+            // Extra check: make sure they don't have a DIFFERENT current job
+            // (someone who left and joined elsewhere)
+            const otherCurrentJobs = empHistory.filter(j => {
+              if (j.current !== true && j.end_date) return false; // clearly ended
+              const jobDomain = (j.organization_domain || j.organization?.primary_domain || "").toLowerCase().replace(/^www\./, "");
+              const jobOrgId = j.organization_id || j.organization?.id || "";
+              const domainOk = domainMatches(jobDomain);
+              const idOk = orgId && jobOrgId === orgId;
+              const nameOk = nameMatches(j.organization_name || "");
+              // If this is NOT our company and is marked current
+              return (j.current === true) && !domainOk && !idOk && !nameOk;
+            });
+
+            if (otherCurrentJobs.length > 0) return null; // Currently at a different company
+          }
 
           const phoneNums = ep.phone_numbers || [];
           const directDial = Array.isArray(phoneNums)
@@ -133,7 +192,7 @@ export default async function handler(req, res) {
       new Date(b.date || b.announced_on || 0) - new Date(a.date || a.announced_on || 0)
     );
 
-    const company = {
+    return res.status(200).json({
       id: orgId || "",
       name: org.name || "",
       domain: cleanDomain,
@@ -177,9 +236,7 @@ export default async function handler(req, res) {
       keywords: (org.keywords || []).slice(0, 8),
       similar_companies: (org.similar_companies || []).map(c => c.name || c).filter(Boolean).slice(0, 6),
       contacts: validContacts,
-    };
-
-    return res.status(200).json(company);
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
