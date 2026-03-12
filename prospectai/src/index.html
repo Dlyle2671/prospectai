@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ProspectAI</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ProspectAI</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,6 +29,9 @@
     .pill.locked { background: #1a3a7a; border-color: #4f8ef7; color: #fff; opacity: .7; cursor: default; }
     .search-btn { margin-top: 28px; padding: 12px 32px; border-radius: 10px; border: none; background: linear-gradient(135deg,#4f8ef7,#2563eb); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .2s; }
     .search-btn:hover { opacity: .88; }
+    .send-btn { padding: 12px 32px; border-radius: 10px; border: none; background: linear-gradient(135deg,#22c55e,#16a34a); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .2s; }
+    .send-btn:hover { opacity: .88; }
+    .send-btn:disabled { opacity: .5; cursor: default; }
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .results-count { font-size: 13px; color: #6b7a99; margin-bottom: 16px; }
@@ -40,17 +43,20 @@
     .person-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
     .person-title { font-size: 13px; color: #4f8ef7; margin-bottom: 6px; }
     .person-company { font-size: 13px; color: #8a9bb8; margin-bottom: 8px; }
-    .card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+              .card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
     .meta-tag { font-size: 12px; color: #6b7a99; background: #111827; padding: 3px 10px; border-radius: 6px; border: 1px solid #1a2540; }
     .meta-tag a { color: #4f8ef7; text-decoration: none; }
     .meta-tag a:hover { text-decoration: underline; }
     .email-tag { color: #22c55e; }
-    .card-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
     .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
     .btn-sm:hover { border-color: #4f8ef7; color: #fff; }
     .btn-hs { background: #ff7a59; border-color: #ff7a59; color: #fff; }
     .btn-hs:hover { background: #ff6240; }
     .btn-hs.sent { background: #1a5c38; border-color: #22c55e; color: #22c55e; cursor: default; }
+    .btn-email { background: #1a3a7a; border-color: #4f8ef7; color: #4f8ef7; }
+    .btn-email:hover { background: #22408a; }
+    .btn-email.sent { background: #1a5c38; border-color: #22c55e; color: #22c55e; cursor: default; }
     .empty-state { text-align: center; padding: 60px 20px; color: #6b7a99; }
     .empty-icon { font-size: 40px; margin-bottom: 12px; }
     .tab-content { display: none; }
@@ -61,206 +67,452 @@
     .form-label { font-size: 12px; color: #6b7a99; margin-bottom: 6px; font-weight: 500; }
     .form-input { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
     .form-input:focus { border-color: #4f8ef7; }
+    .form-textarea { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; resize: vertical; min-height: 140px; }
+    .form-textarea:focus { border-color: #4f8ef7; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
-  </style>
-</head>
-<body>
-  <nav>
-    <div class="nav-logo">Prospect<span>AI</span></div>
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="showTab('leads', event)">Find Leads</button>
-      <button class="nav-tab" onclick="showTab('settings', event)">Settings</button>
-    </div>
-  </nav>
+    .template-card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 22px; margin-bottom: 16px; }
+    .template-card.selected { border-color: #4f8ef7; background: #0a1628; }
+    .template-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .template-name { font-size: 15px; font-weight: 600; color: #fff; flex: 1; background: transparent; border: none; font-family: inherit; outline: none; cursor: pointer; }
+    .template-name:focus { border-bottom: 1px solid #4f8ef7; cursor: text; }
+    .template-select-btn { padding: 5px 14px; border-radius: 8px; border: 1px solid #4f8ef7; background: transparent; color: #4f8ef7; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
+    .template-select-btn:hover, .template-select-btn.active { background: #1a3a7a; color: #fff; }
+    .hint { font-size: 12px; color: #4a5568; margin-top: 6px; }
+    .send-panel { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 22px; margin-bottom: 24px; }
+    .send-panel-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+    .progress-bar-wrap { background: #1a2540; border-radius: 6px; height: 8px; margin: 12px 0; overflow: hidden; }
+    .progress-bar { height: 8px; background: linear-gradient(90deg,#4f8ef7,#22c55e); border-radius: 6px; transition: width .4s; }
+    .result-row { font-size: 13px; padding: 4px 0; border-bottom: 1px solid #111827; display: flex; gap: 10px; }
+    .result-row .r-name { color: #c8d4e8; flex: 1; }
+    .result-row .r-status-sent { color: #22c55e; font-weight: 600; }
+    .result-row .r-status-fail { color: #ef4444; font-weight: 600; }
+    .result-row .r-status-skip { color: #6b7a99; }
+    </style>
+  </head>
+  <body>
+    <nav>
+        <div class="nav-logo">Prospect<span>AI</span></div>div>
+      <div class="nav-tabs">
+          <button class="nav-tab active" onclick="showTab('leads', event)">Find Leads</button>button>
+          <button class="nav-tab" onclick="showTab('templates', event)">Email Templates</button>button>
+          <button class="nav-tab" onclick="showTab('settings', event)">Settings</button>button>
+      </div>div>
+    </nav>
   <main>
-    <div id="tab-leads" class="tab-content active">
-      <div id="app"></div>
-    </div>
-    <div id="tab-settings" class="tab-content">
-      <div class="fade-up">
-        <div class="section-title">Settings</div>
-        <div class="section-sub">Configure your integrations.</div>
-        <div class="settings-card">
-          <div class="settings-title">&#9679; Integrations</div>
-          <div class="form-row"><div class="form-label">Apollo API Key</div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>
-          <div class="form-row"><div class="form-label">HubSpot Access Token</div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>
-          <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>
-        </div>
-      </div>
-    </div>
+      <div id="tab-leads" class="tab-content active">
+            <div id="app"></div>div>
+      </div>div>
+
+      <div id="tab-templates" class="tab-content">
+            <div class="fade-up">
+                    <div class="section-title">Email Templates</div>div>
+                    <div class="section-sub">Create and edit outreach templates. Use {{first_name}}, {{company}}, {{title}} for personalization.</div>div>
+                    <div id="templates-list"></div>div>
+                    <button class="search-btn" onclick="addTemplate()">+ Add Template</button>button>
+            </div>div>
+      </div>div>
+
+      <div id="tab-settings" class="tab-content">
+            <div class="fade-up">
+                    <div class="section-title">Settings</div>div>
+                    <div class="section-sub">Configure your integrations.</div>div>
+                    <div class="settings-card">
+                              <div class="settings-title">&#9679; Integrations</div>div>
+                              <div class="form-row"><div class="form-label">Apollo API Key</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
+                              <div class="form-row"><div class="form-label">HubSpot Access Token</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
+                              <div class="form-row"><div class="form-label">O365 Email (SMTP User)</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
+                              <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>div>
+                    </div>div>
+            </div>div>
+      </div>div>
   </main>
 
-  <script>
-    var INDUSTRIES = [
-      'Technology','Software','SaaS','Cloud Computing','Cybersecurity',
-      'Fintech','Healthcare','Biotech','E-commerce','Marketing',
-      'Real Estate','Education','Manufacturing','Logistics','Media'
-    ];
-    var EMP_RANGES = [
-      {label:'1-10',val:'1,10'},{label:'11-50',val:'11,50'},{label:'51-200',val:'51,200'},
-      {label:'201-500',val:'201,500'},{label:'501-1000',val:'501,1000'},
-      {label:'1001-5000',val:'1001,5000'},{label:'5001+',val:'5001,10000000'}
-    ];
-    var TITLE_OPTIONS = [
-      'CEO','CTO','CFO','COO','CMO','VP of Sales','VP of Marketing',
-      'VP of Engineering','Director of Sales','Director of Marketing',
-      'Head of Growth','Head of Product','Sales Manager','Account Executive','Founder'
-    ];
-    var LIMIT_OPTIONS = [10, 25, 50, 100];
+    <script>
+      var INDUSTRIES = [
+          'Technology','Software','SaaS','Cloud Computing','Cybersecurity',
+          'Fintech','Healthcare','Biotech','E-commerce','Marketing',
+          'Real Estate','Education','Manufacturing','Logistics','Media'
+        ];
+      var EMP_RANGES = [
+        {label:'1-10',val:'1,10'},{label:'11-50',val:'11,50'},{label:'51-200',val:'51,200'},
+        {label:'201-500',val:'201,500'},{label:'501-1000',val:'501,1000'},
+        {label:'1001-5000',val:'1001,5000'},{label:'5001+',val:'5001,10000000'}
+        ];
+      var TITLE_OPTIONS = [
+          'CEO','CTO','CFO','COO','CMO','VP of Sales','VP of Marketing',
+          'VP of Engineering','Director of Sales','Director of Marketing',
+          'Head of Growth','Head of Product','Sales Manager','Account Executive','Founder'
+        ];
+      var LIMIT_OPTIONS = [10, 25, 50, 100];
+      var BATCH_OPTIONS = [5, 10, 25, 50];
 
+      var state = {
+          stage: 0,
+          results: [],
+          selectedIndustries: [],
+          selectedEmployeeRanges: [],
+          selectedTechStack: ['AWS'],
+          selectedTitles: [],
+          selectedLimit: 25,
+          selectedTemplateId: null,
+          selectedBatch: 10,
+          sendProgress: null
+      };
 
-    var state = {
-      stage: 0,
-      results: [],
-      selectedIndustries: [],
-      selectedEmployeeRanges: [],
-      selectedTechStack: ['AWS'],
-      selectedTitles: [],
-      selectedLimit: 25
-    };
+      // Default starter templates
+      var templates = [
+        {
+              id: 1,
+              name: 'Cold Outreach - Intro',
+              subject: 'Quick question about {{company}}\'s AWS stack',
+              body: '<p>Hi {{first_name}},</p><p>I came across {{company}} and was impressed by what you\'re building on AWS. I\'d love to share how we\'ve helped similar teams streamline their cloud operations and reduce costs.</p><p>Would you be open to a quick 15-minute call this week?</p><p>Best,<br>[Your Name]</p>'
+        },
+        {
+              id: 2,
+              name: 'Follow-Up',
+              subject: 'Following up - {{company}}',
+              body: '<p>Hi {{first_name}},</p><p>I wanted to follow up on my previous note. I know your time is valuable, so I\'ll keep this brief.</p><p>We\'ve been helping AWS-focused teams like {{company}} achieve [specific outcome]. I think there could be a great fit here.</p><p>Are you available for a quick call this week?</p><p>Best,<br>[Your Name]</p>'
+        },
+        {
+              id: 3,
+              name: 'Value Proposition',
+              subject: 'How we helped companies like {{company}} cut cloud costs',
+              body: '<p>Hi {{first_name}},</p><p>As {{title}} at {{company}}, you\'re likely focused on getting the most out of your AWS investment.</p><p>We help companies like yours: reduce AWS costs by 20-30%, improve deployment reliability, and scale faster with less overhead.</p><p>I\'d love to show you a quick demo tailored to {{company}}. Would Tuesday or Wednesday work for a 20-minute call?</p><p>Best,<br>[Your Name]</p>'
+        }
+        ];
+      var nextTemplateId = 4;
 
-    function showTab(name, e) {
-      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
-      document.querySelectorAll('.nav-tab').forEach(function(el) { el.classList.remove('active'); });
-      document.getElementById('tab-' + name).classList.add('active');
-      if (e && e.target) e.target.classList.add('active');
-      if (name === 'leads') render();
-    }
-
-    function toggleFilter(type, val) {
-      if (type === 'limit') { state.selectedLimit = Number(val); render(); return; }
-      if (type === 'tech' && val === 'AWS') return;
-      var arr = type === 'industry' ? state.selectedIndustries
-        : type === 'emp' ? state.selectedEmployeeRanges
-        : type === 'tech' ? state.selectedTechStack
-        : state.selectedTitles;
-      var idx = arr.indexOf(val);
-      if (idx >= 0) arr.splice(idx, 1); else arr.push(val);
-      render();
-    }
-
-    function pill(label, type, val, locked) {
-      var active = locked || (type === 'industry' ? state.selectedIndustries : type === 'emp' ? state.selectedEmployeeRanges : type === 'tech' ? state.selectedTechStack : state.selectedTitles).indexOf(val) >= 0;
-      var cls = 'pill' + (locked ? ' locked' : active ? ' active' : '');
-      var handler = locked ? '' : ' onclick="toggleFilter(&apos;' + type + '&apos;,&apos;' + val + '&apos;)"';
-      return '<button class="' + cls + '"' + handler + '>' + label + '</button>';
-    }
-
-    function render() {
-      var el = document.getElementById('app');
-      if (!el) return;
-
-      if (state.stage === 0) {
-        var indBtns = INDUSTRIES.map(function(v) { return pill(v, 'industry', v, false); }).join('');
-        var empBtns = EMP_RANGES.map(function(r) { return pill(r.label, 'emp', r.val, false); }).join('');
-        var limitBtns = LIMIT_OPTIONS.map(function(v) { return pill(v, 'limit', v, Number(v) === state.selectedLimit); }).join('');
-        var titleBtns = TITLE_OPTIONS.map(function(v) { return pill(v, 'title', v, false); }).join('');
-        el.innerHTML = '<div class="fade-up">'
-          + '<div class="section-title">Find Leads</div>'
-          + '<div class="section-sub">Search for individual contacts via Apollo. AWS is always included in the tech filter.</div>'
-          + '<div class="filter-group"><div class="filter-label">Job Title</div><div class="pill-row">' + titleBtns + '</div></div>'
-          + '<div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">' + indBtns + '</div></div>'
-          + '<div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">' + empBtns + '</div></div>'
-          + '<div class="filter-group"><div class="filter-label">Leads to Return</div><div class="pill-row">' + limitBtns + '</div></div>'
-          + '<button class="search-btn" onclick="doSearch()">Search Contacts</button>'
-          + '</div>';
-
-      } else if (state.stage === 1) {
-        el.innerHTML = '<div class="fade-up" style="text-align:center;padding:60px 0;">'
-          + '<div class="spinner"></div>'
-          + '<div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching Apollo...</div>'
-          + '</div>';
-
-      } else {
-        var people = state.results;
-        var cards = people.length ? people.map(function(p, i) {
-          var avatarHtml = p.photo_url
-            ? '<div class="avatar"><img src="' + p.photo_url + '" /></div>'
-            : '<div class="avatar">&#128100;</div>';
-          var metaTags = '';
-          if (p.email) metaTags += '<span class="meta-tag email-tag">&#9993; ' + p.email + '</span>';
-          if (p.company_size) metaTags += '<span class="meta-tag">&#128101; ' + p.company_size + '</span>';
-          if (p.company_industry) metaTags += '<span class="meta-tag">' + p.company_industry + '</span>';
-          if (p.linkedin_url) metaTags += '<span class="meta-tag"><a href="' + p.linkedin_url + '" target="_blank">LinkedIn</a></span>';
-          return '<div class="card fade-up" style="animation-delay:' + (i * 0.04) + 's">'
-            + avatarHtml
-            + '<div class="card-body">'
-            + '<div class="person-name">' + (p.name || 'Unknown') + '</div>'
-            + '<div class="person-title">' + (p.title || '') + '</div>'
-            + '<div class="person-company">' + (p.company_name || '') + (p.company_domain ? ' &middot; ' + p.company_domain : '') + '</div>'
-            + (metaTags ? '<div class="card-meta">' + metaTags + '</div>' : '')
-            + (p.email ? '<div class="contact-info"><span class="email-tag">â ' + p.email + '</span></div>' : '')
-                        + '<div class="card-actions">'
-            + '<button class="btn-sm btn-hs" id="hs-' + i + '" onclick="sendToHubspot(' + i + ')">&#8679; HubSpot</button>'
-            + '</div>'
-            + '</div></div>';
-        }).join('')
-        : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts found. Try different filters.</div></div>';
-
-        el.innerHTML = '<div class="fade-up">'
-          + '<button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;render()">&#8592; Back to filters</button>'
-          + '<div class="results-count">' + people.length + ' contacts found</div>'
-          + cards + '</div>';
+      function showTab(name, e) {
+          document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+          document.querySelectorAll('.nav-tab').forEach(function(el) { el.classList.remove('active'); });
+          document.getElementById('tab-' + name).classList.add('active');
+          if (e && e.target) e.target.classList.add('active');
+          if (name === 'leads') render();
+          if (name === 'templates') renderTemplates();
       }
-    }
 
-    function doSearch() {
-      state.stage = 1;
+      function toggleFilter(type, val) {
+          if (type === 'limit') { state.selectedLimit = Number(val); render(); return; }
+          if (type === 'batch') { state.selectedBatch = Number(val); render(); return; }
+          if (type === 'tech' && val === 'AWS') return;
+          var arr = type === 'industry' ? state.selectedIndustries
+                : type === 'emp' ? state.selectedEmployeeRanges
+                : type === 'tech' ? state.selectedTechStack
+                : state.selectedTitles;
+          var idx = arr.indexOf(val);
+          if (idx >= 0) arr.splice(idx, 1); else arr.push(val);
+          render();
+      }
+
+      function pill(label, type, val, locked) {
+          var active = locked || (type === 'industry' ? state.selectedIndustries
+                                      : type === 'emp' ? state.selectedEmployeeRanges
+                                      : type === 'tech' ? state.selectedTechStack
+                                      : type === 'limit' ? [state.selectedLimit]
+                                      : type === 'batch' ? [state.selectedBatch]
+                                      : state.selectedTitles).indexOf(val) >= 0;
+          var cls = 'pill' + (locked ? ' locked' : active ? ' active' : '');
+          var handler = locked ? '' : ' onclick="toggleFilter(&apos;' + type + '&apos;,&apos;' + val + '&apos;)"';
+          return '<button class="' + cls + '"' + handler + '>' + label + '</button>';
+      }
+
+      function getSelectedTemplate() {
+          return templates.find(function(t) { return t.id === state.selectedTemplateId; }) || null;
+      }
+
+      function render() {
+          var el = document.getElementById('app');
+          if (!el) return;
+          if (state.stage === 0) {
+                var indBtns = INDUSTRIES.map(function(v) { return pill(v, 'industry', v, false); }).join('');
+                var empBtns = EMP_RANGES.map(function(r) { return pill(r.label, 'emp', r.val, false); }).join('');
+                var limitBtns = LIMIT_OPTIONS.map(function(v) { return pill(v, 'limit', v, Number(v) === state.selectedLimit); }).join('');
+                var titleBtns = TITLE_OPTIONS.map(function(v) { return pill(v, 'title', v, false); }).join('');
+                el.innerHTML = '<div class="fade-up">'
+                  + '<div class="section-title">Find Leads</div>'
+                  + '<div class="section-sub">Search for individual contacts via Apollo. AWS is always included in the tech filter.</div>'
+                  + '<div class="filter-group"><div class="filter-label">Job Title</div><div class="pill-row">' + titleBtns + '</div></div>'
+                  + '<div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">' + indBtns + '</div></div>'
+                  + '<div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">' + empBtns + '</div></div>'
+                  + '<div class="filter-group"><div class="filter-label">Leads to Return</div><div class="pill-row">' + limitBtns + '</div></div>'
+                  + '<button class="search-btn" onclick="doSearch()">Search Contacts</button>'
+                  + '</div>';
+          } else if (state.stage === 1) {
+                el.innerHTML = '<div class="fade-up" style="text-align:center;padding:60px 0;">'
+                  + '<div class="spinner"></div>'
+                  + '<div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching Apollo...</div>'
+                  + '</div>';
+          } else {
+                var people = state.results;
+                var tpl = getSelectedTemplate();
+
+                // Template selector for sending
+                var tplOptions = templates.map(function(t) {
+                        return '<option value="' + t.id + '"' + (state.selectedTemplateId === t.id ? ' selected' : '') + '>' + t.name + '</option>';
+                }).join('');
+
+                // Batch selector
+                var batchBtns = BATCH_OPTIONS.map(function(v) {
+                        return pill(v + '/batch', 'batch', v, Number(v) === state.selectedBatch);
+                }).join('');
+
+                // Progress/results panel
+                var progressHtml = '';
+                if (state.sendProgress) {
+                        var sp = state.sendProgress;
+                        var pct = sp.total > 0 ? Math.round((sp.done / sp.total) * 100) : 0;
+                        var rowsHtml = (sp.results || []).map(function(r) {
+                                  var statusCls = r.status === 'sent' ? 'r-status-sent' : r.status === 'failed' ? 'r-status-fail' : 'r-status-skip';
+                                  var statusLabel = r.status === 'sent' ? '&#10003; Sent' : r.status === 'failed' ? '&#10007; Failed' : 'Skipped';
+                                  return '<div class="result-row"><span class="r-name">' + (r.name || r.email) + '</span><span class="' + statusCls + '">' + statusLabel + '</span></div>';
+                        }).join('');
+                        progressHtml = '<div class="send-panel">'
+                          + '<div class="send-panel-title">&#128231; Send Progress (' + sp.done + '/' + sp.total + ')</div>'
+                          + '<div class="progress-bar-wrap"><div class="progress-bar" style="width:' + pct + '%"></div></div>'
+                          + (rowsHtml ? '<div style="max-height:200px;overflow-y:auto;margin-top:10px;">' + rowsHtml + '</div>' : '')
+                          + (sp.done === sp.total ? '<div style="margin-top:12px;color:#22c55e;font-size:13px;">&#10003; All done! ' + sp.sent + ' sent, ' + (sp.total - sp.sent) + ' skipped/failed.</div>' : '')
+                          + '</div>';
+                }
+
+                var sendBtnLabel = state.sendProgress && state.sendProgress.done < state.sendProgress.total
+                  ? '<span class="spinner"></span>Sending...'
+                        : '&#128231; Send Emails';
+                var sendBtnDisabled = (state.sendProgress && state.sendProgress.done < state.sendProgress.total) ? ' disabled' : '';
+
+                var cards = people.length ? people.map(function(p, i) {
+                        var avatarHtml = p.photo_url
+                          ? '<div class="avatar"><img src="' + p.photo_url + '" /></div>'
+                                  : '<div class="avatar">&#128100;</div>';
+                        var metaTags = '';
+                        if (p.email) metaTags += '<span class="meta-tag email-tag">&#9993; ' + p.email + '</span>';
+                        if (p.company_size) metaTags += '<span class="meta-tag">&#128101; ' + p.company_size + '</span>';
+                        if (p.company_industry) metaTags += '<span class="meta-tag">' + p.company_industry + '</span>';
+                        if (p.linkedin_url) metaTags += '<span class="meta-tag"><a href="' + p.linkedin_url + '" target="_blank">LinkedIn</a></span>';
+                        var emailStatus = p._emailSent ? ' sent' : '';
+                        return '<div class="card fade-up" style="animation-delay:' + (i * 0.04) + 's">'
+                          + avatarHtml
+                          + '<div class="card-body">'
+                          + '<div class="person-name">' + (p.name || 'Unknown') + '</div>'
+                          + '<div class="person-title">' + (p.title || '') + '</div>'
+                          + '<div class="person-company">' + (p.company_name || '') + (p.company_domain ? ' &middot; ' + p.company_domain : '') + '</div>'
+                          + (metaTags ? '<div class="card-meta">' + metaTags + '</div>' : '')
+                          + '<div class="card-actions">'
+                          + '<button class="btn-sm btn-hs' + (p._hsSent ? ' sent' : '') + '" id="hs-' + i + '" onclick="sendToHubspot(' + i + ')">' + (p._hsSent ? '&#10003; In HubSpot' : '&#8679; HubSpot') + '</button>'
+                          + '<button class="btn-sm btn-email' + emailStatus + '" id="email-' + i + '" onclick="sendSingleEmail(' + i + ')">' + (p._emailSent ? '&#10003; Email Sent' : '&#9993; Send Email') + '</button>'
+                          + '</div>'
+                          + '</div></div>';
+                }).join('') : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts found. Try different filters.</div></div>';
+
+                el.innerHTML = '<div class="fade-up">'
+                  + '<button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;state.sendProgress=null;render()">&#8592; Back to filters</button>'
+                  + '<div class="results-count">' + people.length + ' contacts found</div>'
+
+                  // Send All panel
+                  + (people.length > 0 ? '<div class="send-panel">'
+                             + '<div class="send-panel-title">&#128231; Send Emails to All Leads</div>'
+                             + '<div class="form-row" style="margin-bottom:12px;">'
+                             + '<div class="filter-label" style="margin-bottom:8px;">Select Template</div>'
+                             + '<select class="form-input" style="max-width:360px;" onchange="state.selectedTemplateId=Number(this.value);render()">'
+                             + '<option value="">-- Choose a template --</option>' + tplOptions
+                             + '</select>'
+                             + '</div>'
+                             + '<div class="filter-group" style="margin-bottom:14px;"><div class="filter-label">Batch Size (emails per batch)</div><div class="pill-row">' + batchBtns + '</div></div>'
+                             + '<div style="font-size:12px;color:#6b7a99;margin-bottom:14px;">&#9432; Emails are sent in batches with a 60-second pause between batches to avoid spam filters.</div>'
+                             + '<button class="send-btn"' + sendBtnDisabled + ' onclick="sendAllEmails()">' + sendBtnLabel + '</button>'
+                             + '</div>' : '')
+
+                  + progressHtml
+                  + cards
+                  + '</div>';
+          }
+      }
+
+      function doSearch() {
+          state.stage = 1;
+          render();
+          fetch('/api/apollo', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                        industry: state.selectedIndustries,
+                        employee_ranges: state.selectedEmployeeRanges,
+                        tech_stack: state.selectedTechStack,
+                        titles: state.selectedTitles,
+                        per_page: state.selectedLimit
+                })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+                if (data.error) throw new Error(data.error);
+                state.results = Array.isArray(data) ? data : [];
+                state.stage = 2;
+                state.sendProgress = null;
+                render();
+          })
+          .catch(function(err) {
+                state.stage = 0;
+                render();
+                alert('Search failed: ' + err.message);
+          });
+      }
+
+      function sendToHubspot(i) {
+          var p = state.results[i];
+          if (!p) return;
+          var btn = document.getElementById('hs-' + i);
+          if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+          fetch('/api/hubspot', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                        first_name: p.first_name, last_name: p.last_name, email: p.email,
+                        title: p.title, company_name: p.company_name, company_domain: p.company_domain,
+                        linkedin_url: p.linkedin_url
+                })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+                if (d.error) throw new Error(d.error);
+                state.results[i]._hsSent = true;
+                render();
+          })
+          .catch(function(err) {
+                if (btn) { btn.textContent = 'Failed: ' + err.message.slice(0,20); btn.disabled = false; }
+          });
+      }
+
+      function sendSingleEmail(i) {
+          var p = state.results[i];
+          if (!p || !p.email) return alert('No email for this contact.');
+          var tpl = getSelectedTemplate();
+          if (!tpl) return alert('Please select a template first using the "Send Emails to All Leads" panel above, or go to the Email Templates tab.');
+          var btn = document.getElementById('email-' + i);
+          if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+          fetch('/api/send-email', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ leads: [p], template: { subject: tpl.subject, body: tpl.body }, batchSize: 1, delaySeconds: 0 })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+                if (d.error) throw new Error(d.error);
+                state.results[i]._emailSent = true;
+                render();
+          })
+          .catch(function(err) {
+                alert('Send failed: ' + err.message);
+                render();
+          });
+      }
+
+      function sendAllEmails() {
+          if (!state.selectedTemplateId) return alert('Please select a template before sending.');
+          var tpl = getSelectedTemplate();
+          if (!tpl) return alert('Template not found.');
+          var leads = state.results.filter(function(p) { return p.email; });
+          if (leads.length === 0) return alert('No leads with email addresses found.');
+          state.sendProgress = { total: leads.length, done: 0, sent: 0, results: [] };
+          render();
+
+          fetch('/api/send-email', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                        leads: leads,
+                        template: { subject: tpl.subject, body: tpl.body },
+                        batchSize: state.selectedBatch,
+                        delaySeconds: 60
+                })
+          })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+                if (d.error) throw new Error(d.error);
+                state.sendProgress = {
+                        total: d.total,
+                        done: d.total,
+                        sent: d.sent,
+                        results: d.results
+                };
+                // Mark sent leads on cards
+                d.results.forEach(function(r) {
+                        if (r.status === 'sent') {
+                                  var lead = state.results.find(function(p) { return p.email === r.email; });
+                                  if (lead) lead._emailSent = true;
+                        }
+                });
+                render();
+          })
+          .catch(function(err) {
+                alert('Send failed: ' + err.message);
+                state.sendProgress = null;
+                render();
+          });
+      }
+
+      // ---- Templates Tab ----
+      function renderTemplates() {
+          var el = document.getElementById('templates-list');
+          if (!el) return;
+          if (templates.length === 0) {
+                el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128233;</div><div>No templates yet. Click Add Template to create one.</div></div>';
+                return;
+          }
+          el.innerHTML = templates.map(function(t) {
+                var isSelected = state.selectedTemplateId === t.id;
+                return '<div class="template-card' + (isSelected ? ' selected' : '') + '" id="tc-' + t.id + '">'
+                  + '<div class="template-header">'
+                  + '<input class="template-name form-input" style="font-size:15px;font-weight:600;background:transparent;border:none;border-bottom:1px solid transparent;padding:0;" value="' + escHtml(t.name) + '" onchange="updateTemplate(' + t.id + ',\'name\',this.value)" />'
+                  + '<button class="template-select-btn' + (isSelected ? ' active' : '') + '" onclick="selectTemplate(' + t.id + ')">' + (isSelected ? '&#10003; Selected' : 'Select') + '</button>'
+                  + '<button class="btn-sm" style="color:#ef4444;border-color:#ef4444;" onclick="deleteTemplate(' + t.id + ')">Delete</button>'
+                  + '</div>'
+                  + '<div class="form-row"><div class="form-label">Subject</div>'
+                  + '<input class="form-input" value="' + escHtml(t.subject) + '" onchange="updateTemplate(' + t.id + ',\'subject\',this.value)" /></div>'
+                  + '<div class="form-row"><div class="form-label">Body (HTML supported)</div>'
+                  + '<textarea class="form-textarea" onchange="updateTemplate(' + t.id + ',\'body\',this.value)">' + escHtml(t.body) + '</textarea>'
+                  + '<div class="hint">Variables: {{first_name}} {{name}} {{company}} {{title}} {{email}}</div>'
+                  + '</div>'
+                  + '</div>';
+          }).join('');
+      }
+
+      function escHtml(str) {
+          return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      function updateTemplate(id, field, val) {
+          var t = templates.find(function(t) { return t.id === id; });
+          if (t) t[field] = val;
+      }
+
+      function selectTemplate(id) {
+          state.selectedTemplateId = id;
+          renderTemplates();
+      }
+
+      function addTemplate() {
+          templates.push({
+                id: nextTemplateId++,
+                name: 'New Template',
+                subject: 'Hi {{first_name}}, quick question',
+                body: '<p>Hi {{first_name}},</p><p>I wanted to reach out to you at {{company}}...</p><p>Best,<br>[Your Name]</p>'
+          });
+          renderTemplates();
+      }
+
+      function deleteTemplate(id) {
+          if (!confirm('Delete this template?')) return;
+          templates = templates.filter(function(t) { return t.id !== id; });
+          if (state.selectedTemplateId === id) state.selectedTemplateId = null;
+          renderTemplates();
+      }
+
       render();
-      fetch('/api/apollo', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          industry: state.selectedIndustries,
-          employee_ranges: state.selectedEmployeeRanges,
-          tech_stack: state.selectedTechStack,
-          titles: state.selectedTitles,
-          per_page: state.selectedLimit
-        })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (data.error) throw new Error(data.error);
-        state.results = Array.isArray(data) ? data : [];
-        state.stage = 2;
-        render();
-      })
-      .catch(function(err) {
-        state.stage = 0;
-        render();
-        alert('Search failed: ' + err.message);
-      });
-    }
-
-    function sendToHubspot(i) {
-      var p = state.results[i];
-      if (!p) return;
-      var btn = document.getElementById('hs-' + i);
-      if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
-      fetch('/api/hubspot', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          first_name: p.first_name,
-          last_name: p.last_name,
-          email: p.email,
-          title: p.title,
-          company_name: p.company_name,
-          company_domain: p.company_domain,
-          linkedin_url: p.linkedin_url
-        })
-      })
-      .then(function(r) { return r.json(); })
-      .then(function(d) {
-        if (d.error) throw new Error(d.error);
-        if (btn) { btn.textContent = '&#10003; In HubSpot'; btn.classList.add('sent'); btn.disabled = true; }
-      })
-      .catch(function(err) {
-        if (btn) { btn.textContent = 'Failed: ' + err.message.slice(0,20); btn.disabled = false; }
-      });
-    }
-
-    render();
-  </script>
-</body>
-</html>
+    </script>
+  </body>
+</html>html>
+    </script>
+  </main></span>
+    </nav>
+  </body>
+  </style></title>
+  </head>
