@@ -59,12 +59,25 @@ export default async function handler(req, res) {
       return res.status(response.status).json({ error: data.message || data.error || JSON.stringify(data) });
     }
 
+    // DEBUG: return raw first person fields to diagnose
+    if (req.body._debug && data.people && data.people.length > 0) {
+      const p = data.people[0];
+      return res.status(200).json({
+        debug: true,
+        email: p.email,
+        email_status: p.email_status,
+        phone_numbers: p.phone_numbers,
+        sanitized_phone: p.sanitized_phone,
+        raw_keys: Object.keys(p)
+      });
+    }
+
     const people = (data.people || [])
       .map(p => {
-        const email = (p.email_status === "verified" || p.email_status === "guessed") ? (p.email || "") : "";
+        const email = p.email || "";
         const phone = (p.phone_numbers && p.phone_numbers.length > 0)
           ? p.phone_numbers[0].sanitized_number || p.phone_numbers[0].raw_number || ""
-          : "";
+          : (p.sanitized_phone || "");
         return {
           id: p.id,
           first_name: p.first_name || "",
