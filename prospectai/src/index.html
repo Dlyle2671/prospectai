@@ -10,13 +10,68 @@
     body { background: #080c14; color: #c8d4e8; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
     @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
     .fade-up { animation: fadeUp .35s ease both; }
-    nav { display: flex; align-items: center; padding: 18px 32px; border-bottom: 1px solid #1a2540; background: rgba(8,12,20,.92); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
-    .nav-logo { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -.4px; margin-right: auto; }
+
+    /* ── Nav ── */
+    nav {
+        display: flex;
+        align-items: center;
+        padding: 0 32px;
+        height: 60px;
+        min-height: 60px;
+        max-height: 60px;
+        border-bottom: 1px solid #1a2540;
+        background: rgba(8,12,20,.96);
+        backdrop-filter: blur(12px);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        overflow: hidden; /* clip any injected elements */
+    }
+    .nav-logo {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        letter-spacing: -.4px;
+        margin-right: auto;
+        flex-shrink: 0;
+        white-space: nowrap;
+        z-index: 1;
+    }
     .nav-logo span { color: #4f8ef7; }
-    .nav-tabs { display: flex; gap: 4px; }
-    .nav-tab { padding: 7px 18px; border-radius: 8px; border: none; background: transparent; color: #6b7a99; font-size: 14px; font-family: inherit; cursor: pointer; transition: all .2s; }
+    .nav-tabs {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        flex-shrink: 0;
+        /* hide any injected text nodes / non-button children */
+        font-size: 0;
+    }
+    /* only show actual nav-tab buttons */
+    .nav-tabs > .nav-tab {
+        font-size: 14px;
+    }
+    /* hide anything injected into nav that isn't our elements */
+    nav > *:not(.nav-logo):not(.nav-tabs) {
+        display: none !important;
+    }
+    .nav-tabs > *:not(.nav-tab) {
+        display: none !important;
+    }
+    .nav-tab {
+        padding: 7px 18px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: #6b7a99;
+        font-size: 14px;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all .2s;
+        white-space: nowrap;
+    }
     .nav-tab:hover { color: #c8d4e8; background: #111827; }
     .nav-tab.active { background: #1a2540; color: #fff; }
+
     main { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
     .section-title { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
     .section-sub { font-size: 14px; color: #6b7a99; margin-bottom: 28px; }
@@ -185,15 +240,12 @@
           var avatarHtml = p.photo_url
             ? '<div class="avatar"><img src="' + p.photo_url + '" onerror="this.parentNode.innerHTML=\'&#128100;\'" /></div>'
                 : '<div class="avatar">&#128100;</div>';
-
           var loc = [p.city, p.state, p.country].filter(Boolean).join(', ');
-
           var meta1 = '';
           if (p.email) meta1 += '<span class="meta-tag email">&#9993; ' + p.email + '</span>';
           if (loc) meta1 += '<span class="meta-tag location">&#128205; ' + loc + '</span>';
           if (p.department) meta1 += '<span class="meta-tag dept">&#127970; ' + p.department + '</span>';
           if (p.seniority) meta1 += '<span class="meta-tag">&#11088; ' + p.seniority + '</span>';
-
           var meta2 = '';
           if (p.company_size) meta2 += '<span class="meta-tag">&#128101; ' + Number(p.company_size).toLocaleString() + ' employees</span>';
           if (p.company_founded) meta2 += '<span class="meta-tag">&#128197; Founded ' + p.company_founded + '</span>';
@@ -201,26 +253,19 @@
           if (p.headcount_growth) meta2 += '<span class="meta-tag growth">&#128200; ' + fmtGrowth(p.headcount_growth) + '</span>';
           if (p.time_in_role_months !== null && p.time_in_role_months !== undefined) meta2 += '<span class="meta-tag">&#128336; ' + fmtTimeInRole(p.time_in_role_months) + '</span>';
           if (p.linkedin_url) meta2 += '<span class="meta-tag"><a href="' + p.linkedin_url + '" target="_blank">LinkedIn &#8599;</a></span>';
-
           var techHtml = '';
           if (p.tech_stack && p.tech_stack.length > 0) {
                 techHtml = '<div class="tech-pills">'
                   + p.tech_stack.map(function(t) {
                               var isAws = t.toLowerCase().includes('amazon') || t.toLowerCase().includes('aws');
                               return '<span class="tech-pill' + (isAws ? ' aws' : '') + '">' + t + '</span>';
-                  }).join('')
-                  + '</div>';
+                  }).join('') + '</div>';
           }
-
           var kwHtml = '';
           if (p.keywords && p.keywords.length > 0) {
                 kwHtml = p.keywords.map(function(k){ return '<span class="meta-tag keyword">' + k + '</span>'; }).join('');
           }
-
-          var descHtml = p.company_description
-            ? '<div class="company-desc">' + p.company_description + '</div>'
-                : '';
-
+          var descHtml = p.company_description ? '<div class="company-desc">' + p.company_description + '</div>' : '';
           return '<div class="card ' + sl + ' fade-up" style="animation-delay:' + (i * 0.04) + 's">'
             + avatarHtml
             + '<div class="card-body">'
@@ -239,8 +284,7 @@
               + (meta1 ? '<div class="card-meta">' + meta1 + '</div>' : '')
               + (meta2 ? '<div class="card-meta">' + meta2 + '</div>' : '')
               + (kwHtml ? '<div class="card-meta">' + kwHtml + '</div>' : '')
-              + techHtml
-              + descHtml
+              + techHtml + descHtml
               + '<div class="card-actions">'
                 + '<button class="btn-sm btn-hs' + (p._hsSent ? ' sent' : '') + '" id="hs-' + i + '" onclick="sendToHubspot(' + i + ')">' + (p._hsSent ? '&#10003; In HubSpot' : '&#8679; Push to HubSpot') + '</button>'
               + '</div>'
@@ -288,8 +332,7 @@
                       + '<div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div> Cold (' + cold + ')</div>'
                     + '</div>'
                   + '</div>'
-                  + cards
-                  + '</div>';
+                  + cards + '</div>';
           }
       }
 
