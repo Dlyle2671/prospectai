@@ -50,7 +50,6 @@ export default async function handler(req, res) {
       if (company_name) companyProps.name = company_name;
       if (company_domain) companyProps.domain = company_domain;
       if (company_domain) companyProps.website = "https://" + company_domain;
-      if (company_industry) companyProps.industry = company_industry;
       if (company_size) companyProps.numberofemployees = String(company_size);
       if (annual_revenue) companyProps.annualrevenue = annual_revenue;
       if (company_phone) companyProps.phone = company_phone;
