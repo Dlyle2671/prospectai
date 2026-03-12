@@ -33,7 +33,6 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .results-count { font-size: 13px; color: #6b7a99; }
-    /* Card */
     .card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 20px 22px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 16px; transition: border-color .2s; }
     .card:hover { border-color: #2d3f6b; }
     .card.hot { border-left: 3px solid #ef4444; }
@@ -46,7 +45,6 @@
     .person-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
     .person-title { font-size: 13px; color: #4f8ef7; margin-bottom: 2px; }
     .person-company { font-size: 13px; color: #8a9bb8; margin-bottom: 8px; }
-    /* Score badge */
     .score-badge { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; min-width: 52px; }
     .score-num { font-size: 22px; font-weight: 700; line-height: 1; }
     .score-num.hot { color: #ef4444; }
@@ -61,7 +59,6 @@
     .score-bar.hot { background: #ef4444; }
     .score-bar.warm { background: #f59e0b; }
     .score-bar.cold { background: #4f8ef7; }
-    /* Meta tags */
     .card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
     .meta-tag { font-size: 11px; color: #6b7a99; background: #111827; padding: 3px 9px; border-radius: 6px; border: 1px solid #1a2540; white-space: nowrap; }
     .meta-tag a { color: #4f8ef7; text-decoration: none; }
@@ -71,47 +68,28 @@
     .meta-tag.dept { color: #60a5fa; }
     .meta-tag.funding { color: #f59e0b; border-color: #3a2a00; background: #1a1200; }
     .meta-tag.growth { color: #22c55e; border-color: #1a4a2a; background: #0a2010; }
-    .meta-tag.tech { color: #94a3b8; border-color: #1e2d45; }
     .meta-tag.keyword { color: #c084fc; border-color: #2d1a45; background: #0e0a1a; }
-    /* Enrichment section */
-    .enrich-section { margin-top: 8px; }
-    .enrich-row { font-size: 12px; color: #6b7a99; margin-bottom: 4px; line-height: 1.5; }
-    .enrich-row strong { color: #8a9bb8; font-weight: 500; }
     .company-desc { font-size: 12px; color: #4a5568; font-style: italic; margin-top: 6px; line-height: 1.5; border-left: 2px solid #1a2540; padding-left: 8px; }
-    /* Tech pills */
     .tech-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
     .tech-pill { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #0f1e35; border: 1px solid #1e2d45; color: #60a5fa; }
     .tech-pill.aws { background: #1a2a10; border-color: #2a4a18; color: #86efac; }
-    /* Card actions */
     .card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
     .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
     .btn-sm:hover { border-color: #4f8ef7; color: #fff; }
     .btn-hs { background: #ff7a59; border-color: #ff7a59; color: #fff; }
     .btn-hs:hover { background: #ff6240; }
     .btn-hs.sent { background: #1a5c38; border-color: #22c55e; color: #22c55e; cursor: default; }
-    /* Empty / misc */
     .empty-state { text-align: center; padding: 60px 20px; color: #6b7a99; }
     .empty-icon { font-size: 40px; margin-bottom: 12px; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
-    /* Settings */
     .settings-card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 28px; margin-bottom: 16px; }
     .settings-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 16px; }
     .form-row { margin-bottom: 14px; }
     .form-label { font-size: 12px; color: #6b7a99; margin-bottom: 6px; font-weight: 500; }
     .form-input { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
     .form-input:focus { border-color: #4f8ef7; }
-    .form-textarea { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; resize: vertical; min-height: 140px; }
-    .form-textarea:focus { border-color: #4f8ef7; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
-    /* Templates */
-    .template-card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 22px; margin-bottom: 16px; }
-    .template-card.selected { border-color: #4f8ef7; background: #0a1628; }
-    .template-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-    .template-select-btn { padding: 5px 14px; border-radius: 8px; border: 1px solid #4f8ef7; background: transparent; color: #4f8ef7; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
-    .template-select-btn:hover, .template-select-btn.active { background: #1a3a7a; color: #fff; }
-    .hint { font-size: 12px; color: #4a5568; margin-top: 6px; }
-    /* Score legend */
     .legend { display: flex; gap: 16px; align-items: center; }
     .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #6b7a99; }
     .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -122,21 +100,11 @@
         <div class="nav-logo">Prospect<span>AI</span></div>div>
       <div class="nav-tabs">
           <button class="nav-tab active" onclick="showTab('leads',event)">Find Leads</button>button>
-          <button class="nav-tab" onclick="showTab('templates',event)">Email Templates</button>button>
           <button class="nav-tab" onclick="showTab('settings',event)">Settings</button>button>
       </div>div>
     </nav>
   <main>
       <div id="tab-leads" class="tab-content active"><div id="app"></div>div></div>div>
-
-      <div id="tab-templates" class="tab-content">
-            <div class="fade-up">
-                    <div class="section-title">Email Templates</div>div>
-                    <div class="section-sub">Create and edit outreach templates. Use {{first_name}}, {{company}}, {{title}} for personalization.</div>div>
-                    <div id="templates-list"></div>div>
-                    <button class="search-btn" onclick="addTemplate()">+ Add Template</button>button>
-            </div>div>
-      </div>div>
 
       <div id="tab-settings" class="tab-content">
             <div class="fade-up">
@@ -146,7 +114,6 @@
                               <div class="settings-title">&#9679; Integrations</div>div>
                               <div class="form-row"><div class="form-label">Apollo API Key</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
                               <div class="form-row"><div class="form-label">HubSpot Access Token</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
-                              <div class="form-row"><div class="form-label">O365 Email (SMTP User)</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
                               <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>div>
                     </div>div>
             </div>div>
@@ -166,20 +133,12 @@
           selectedLimit: 25
       };
 
-      var templates = [
-        { id:1, name:'Cold Outreach - Intro', subject:"Quick question about {{company}}'s AWS stack", body:"<p>Hi {{first_name}},</p><p>I came across {{company}} and was impressed by what you're building on AWS. I'd love to share how we've helped similar teams streamline their cloud operations and reduce costs.</p><p>Would you be open to a quick 15-minute call this week?</p><p>Best,<br>[Your Name]</p>" },
-        { id:2, name:'Follow-Up', subject:'Following up - {{company}}', body:"<p>Hi {{first_name}},</p><p>I wanted to follow up on my previous note. I know your time is valuable, so I'll keep this brief.</p><p>We've been helping AWS-focused teams like {{company}} achieve [specific outcome]. I think there could be a great fit here.</p><p>Are you available for a quick call this week?</p><p>Best,<br>[Your Name]</p>" },
-        { id:3, name:'Value Proposition', subject:'How we helped companies like {{company}} cut cloud costs', body:"<p>Hi {{first_name}},</p><p>As {{title}} at {{company}}, you're likely focused on getting the most out of your AWS investment.</p><p>We help companies like yours: reduce AWS costs by 20-30%, improve deployment reliability, and scale faster with less overhead.</p><p>I'd love to show you a quick demo tailored to {{company}}. Would Tuesday or Wednesday work for a 20-minute call?</p><p>Best,<br>[Your Name]</p>" }
-        ];
-      var nextTemplateId = 4;
-
       function showTab(name, e) {
           document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
           document.querySelectorAll('.nav-tab').forEach(function(el){ el.classList.remove('active'); });
           document.getElementById('tab-' + name).classList.add('active');
           if (e && e.target) e.target.classList.add('active');
           if (name === 'leads') render();
-          if (name === 'templates') renderTemplates();
       }
 
       function toggleFilter(type, val) {
@@ -227,28 +186,22 @@
             ? '<div class="avatar"><img src="' + p.photo_url + '" onerror="this.parentNode.innerHTML=\'&#128100;\'" /></div>'
                 : '<div class="avatar">&#128100;</div>';
 
-          // Location
           var loc = [p.city, p.state, p.country].filter(Boolean).join(', ');
 
-          // Meta row 1: contact + location + department
           var meta1 = '';
           if (p.email) meta1 += '<span class="meta-tag email">&#9993; ' + p.email + '</span>';
           if (loc) meta1 += '<span class="meta-tag location">&#128205; ' + loc + '</span>';
           if (p.department) meta1 += '<span class="meta-tag dept">&#127970; ' + p.department + '</span>';
           if (p.seniority) meta1 += '<span class="meta-tag">&#11088; ' + p.seniority + '</span>';
 
-          // Meta row 2: company signals
           var meta2 = '';
           if (p.company_size) meta2 += '<span class="meta-tag">&#128101; ' + Number(p.company_size).toLocaleString() + ' employees</span>';
           if (p.company_founded) meta2 += '<span class="meta-tag">&#128197; Founded ' + p.company_founded + '</span>';
           if (p.funding_stage) meta2 += '<span class="meta-tag funding">&#128184; ' + p.funding_stage + (p.funding_total ? ' &middot; ' + fmtFunding(p.funding_total) : '') + '</span>';
           if (p.headcount_growth) meta2 += '<span class="meta-tag growth">&#128200; ' + fmtGrowth(p.headcount_growth) + '</span>';
           if (p.time_in_role_months !== null && p.time_in_role_months !== undefined) meta2 += '<span class="meta-tag">&#128336; ' + fmtTimeInRole(p.time_in_role_months) + '</span>';
-
-          // LinkedIn
           if (p.linkedin_url) meta2 += '<span class="meta-tag"><a href="' + p.linkedin_url + '" target="_blank">LinkedIn &#8599;</a></span>';
 
-          // Tech stack pills
           var techHtml = '';
           if (p.tech_stack && p.tech_stack.length > 0) {
                 techHtml = '<div class="tech-pills">'
@@ -259,13 +212,11 @@
                   + '</div>';
           }
 
-          // Keywords
           var kwHtml = '';
           if (p.keywords && p.keywords.length > 0) {
                 kwHtml = p.keywords.map(function(k){ return '<span class="meta-tag keyword">' + k + '</span>'; }).join('');
           }
 
-          // Company description
           var descHtml = p.company_description
             ? '<div class="company-desc">' + p.company_description + '</div>'
                 : '';
@@ -321,14 +272,12 @@
                   + '</div>';
           } else {
                 var people = state.results;
-          var hot = people.filter(function(p){ return p.score_label==='hot'; }).length;
+                var hot = people.filter(function(p){ return p.score_label==='hot'; }).length;
                 var warm = people.filter(function(p){ return p.score_label==='warm'; }).length;
                 var cold = people.filter(function(p){ return p.score_label==='cold'; }).length;
-
                 var cards = people.length
                   ? people.map(function(p, i){ return renderCard(p, i); }).join('')
                         : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts found. Try different filters.</div></div>';
-
                 el.innerHTML = '<div class="fade-up">'
                   + '<button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;render()">&#8592; Back to filters</button>'
                   + '<div class="results-header">'
@@ -393,31 +342,6 @@
                 if (btn) { btn.textContent = 'Failed'; btn.disabled = false; }
                 alert('HubSpot error: ' + err.message);
           });
-      }
-
-      // ---- Templates ----
-      function renderTemplates() {
-          var el = document.getElementById('templates-list');
-          if (!el) return;
-          if (!templates.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128233;</div><div>No templates yet.</div></div>'; return; }
-          el.innerHTML = templates.map(function(t) {
-                return '<div class="template-card" id="tc-' + t.id + '">'
-                  + '<div class="template-header">'
-                  + '<input style="flex:1;font-size:15px;font-weight:600;background:transparent;border:none;border-bottom:1px solid #1a2540;color:#fff;font-family:inherit;outline:none;padding:0 0 4px;" value="' + esc(t.name) + '" onchange="updTpl(' + t.id + ',\'name\',this.value)" />'
-                  + '<button class="btn-sm" style="color:#ef4444;border-color:#ef4444;" onclick="delTpl(' + t.id + ')">Delete</button>'
-                  + '</div>'
-                  + '<div class="form-row"><div class="form-label">Subject</div><input class="form-input" value="' + esc(t.subject) + '" onchange="updTpl(' + t.id + ',\'subject\',this.value)" /></div>'
-                  + '<div class="form-row"><div class="form-label">Body (HTML)</div><textarea class="form-textarea" onchange="updTpl(' + t.id + ',\'body\',this.value)">' + esc(t.body) + '</textarea>'
-                  + '<div class="hint">Variables: {{first_name}} {{name}} {{company}} {{title}} {{email}}</div></div>'
-                  + '</div>';
-          }).join('');
-      }
-      function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-      function updTpl(id,f,v){ var t=templates.find(function(t){return t.id===id;}); if(t) t[f]=v; }
-      function delTpl(id){ if(!confirm('Delete?')) return; templates=templates.filter(function(t){return t.id!==id;}); renderTemplates(); }
-      function addTemplate(){
-          templates.push({id:nextTemplateId++,name:'New Template',subject:'Hi {{first_name}}, quick question',body:'<p>Hi {{first_name}},</p><p>I wanted to reach out to you at {{company}}...</p><p>Best,<br>[Your Name]</p>'});
-          renderTemplates();
       }
 
       render();
