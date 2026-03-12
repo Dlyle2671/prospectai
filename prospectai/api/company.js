@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     if (!domain) return res.status(400).json({ error: "domain is required" });
 
     const apiKey = process.env.APOLLO_API_KEY;
-    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].trim();
+    const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].trim().toLowerCase();
 
     // --- 1. Enrich Organization ---
     const orgResp = await fetch("https://api.apollo.io/api/v1/organizations/enrich?domain=" + encodeURIComponent(cleanDomain), {
@@ -24,6 +24,10 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Company not found for domain: " + cleanDomain });
     }
 
+    // Normalize company name and domain for validation
+    const orgNameLower = (org.name || "").toLowerCase();
+    const orgId = org.id || null;
+
     // --- 2. Find Key Contacts at this company ---
     const peopleResp = await fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
       method: "POST",
@@ -33,16 +37,16 @@ export default async function handler(req, res) {
         organization_domains: [cleanDomain],
         person_seniorities: ["c_suite", "founder", "vp", "director", "head"],
         contact_email_status: ["verified", "guessed"],
-        per_page: 20,
+        per_page: 25,
         page: 1,
       }),
     });
     const peopleData = await peopleResp.json();
     const candidates = (peopleData.people || []).filter(p => p.has_email);
 
-    // --- 3. Enrich top contacts ---
+    // --- 3. Enrich and VALIDATE contacts actually belong to this company ---
     const contacts = await Promise.all(
-      candidates.slice(0, 12).map(async (p) => {
+      candidates.slice(0, 20).map(async (p) => {
         try {
           const r = await fetch("https://api.apollo.io/api/v1/people/match", {
             method: "POST",
@@ -53,6 +57,32 @@ export default async function handler(req, res) {
           const ep = d.person || {};
           const email = ep.email || "";
           if (!email) return null;
+
+          // Validate: check current employment matches target company
+          // Check organization domain or organization_id from enriched person
+          const personOrg = ep.organization || {};
+          const personOrgDomain = (personOrg.primary_domain || personOrg.domain || "").toLowerCase();
+          const personOrgName = (personOrg.name || ep.organization_name || "").toLowerCase();
+          const personOrgId = personOrg.id || ep.organization_id || null;
+
+          // Also check employment history for current role
+          const empHistory = ep.employment_history || [];
+          const currentJob = empHistory.find(j => j.current) || {};
+          const currentOrgDomain = (currentJob.organization_domain || currentJob.organization?.primary_domain || "").toLowerCase();
+          const currentOrgName = (currentJob.organization_name || "").toLowerCase();
+
+          // Reject if clearly from a different company:
+          // Must match on domain OR organization id OR name similarity
+          const domainMatch = personOrgDomain && (personOrgDomain === cleanDomain || personOrgDomain.includes(cleanDomain) || cleanDomain.includes(personOrgDomain));
+          const idMatch = orgId && personOrgId && (orgId === personOrgId);
+          const nameMatch = personOrgName && orgNameLower && (personOrgName.includes(orgNameLower.substring(0, 8)) || orgNameLower.includes(personOrgName.substring(0, 8)));
+          const currentDomainMatch = currentOrgDomain && (currentOrgDomain === cleanDomain || currentOrgDomain.includes(cleanDomain));
+          const currentNameMatch = currentOrgName && orgNameLower && currentOrgName.includes(orgNameLower.substring(0, 8));
+
+          // Reject if no match at all
+          if (!domainMatch && !idMatch && !nameMatch && !currentDomainMatch && !currentNameMatch) {
+            return null;
+          }
 
           const phoneNums = ep.phone_numbers || [];
           const directDial = Array.isArray(phoneNums)
@@ -81,6 +111,8 @@ export default async function handler(req, res) {
         } catch (_) { return null; }
       })
     );
+
+    const validContacts = contacts.filter(Boolean);
 
     const allTech = (org.technology_names || org.technologies || [])
       .map(t => typeof t === "string" ? t : t.name || "").filter(Boolean);
@@ -136,7 +168,7 @@ export default async function handler(req, res) {
       aws_services: awsServices.map(t => t.replace(/^Amazon\s+/i, "").replace(/^AWS\s+/i, "")).filter(t => t.toLowerCase() !== "amazon web services"),
       keywords: (org.keywords || []).slice(0, 8),
       similar_companies: (org.similar_companies || []).map(c => c.name || c).filter(Boolean).slice(0, 6),
-      contacts: contacts.filter(Boolean),
+      contacts: validContacts,
     };
 
     return res.status(200).json(company);
