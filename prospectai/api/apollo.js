@@ -76,6 +76,11 @@ export default async function handler(req, res) {
           const company_twitter = org.twitter_url || org.twitter || "";
           const seo_description = org.seo_description ? org.seo_description.slice(0, 200) : "";
           const g2_review_count = org.g2_review_count || org.review_count || null;
+          const phoneNums = ep.phone_numbers || ep.sanitized_phone || [];
+          const directDial = Array.isArray(phoneNums)
+            ? (phoneNums.find(p => p.type === "direct_dial" || p.type === "mobile") || phoneNums[0] || null)
+            : null;
+          const personal_phone = directDial?.sanitized_number || directDial?.number || ep.mobile_phone || ep.phone || null;
           const company_phone = org.primary_phone?.number || org.phone || null;
           const company_street = org.street_address || org.address || org.raw_address || null;
           const company_zip = org.postal_code || org.zip || null;
@@ -126,8 +131,8 @@ export default async function handler(req, res) {
             company_size: org.estimated_num_employees || p.organization?.estimated_num_employees || "",
             company_founded: org.founded_year || "", company_linkedin: org.linkedin_url || "", company_twitter,
             company_description: (org.short_description || "").slice(0, 160), seo_description,
-            company_phone, company_street, company_zip, company_city, company_state, company_country,
-            primary_phone: company_phone, market_cap, g2_review_count, tech_stack: techStack, aws_services,
+            personal_phone, company_phone, company_street, company_zip, company_city, company_state, company_country,
+            primary_phone: personal_phone || company_phone, market_cap, g2_review_count, tech_stack: techStack, aws_services,
             funding_stage, funding_total, funding_round_date, funding_round_type, funding_round_amount, top_investors, num_funding_rounds,
             headcount_growth, linkedin_follower_count, annual_revenue, alexa_rank, job_postings_count,
             keywords: (org.keywords || []).slice(0, 5), hiring_surge: hiring_surge || false, recently_funded, intent_signals,
