@@ -1,393 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ProspectAI</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    /* Prevent ANY horizontal overflow — clips extension injections */
-    html, body {
-        overflow-x: hidden;
-        max-width: 100vw;
-    }
-
-    body {
-        background: #080c14;
-        color: #c8d4e8;
-        font-family: 'DM Sans', sans-serif;
-        min-height: 100vh;
-    }
-
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    .fade-up { animation: fadeUp .35s ease both; }
-
-    /* ── Nav ── */
-    nav {
-        display: flex;
-        align-items: center;
-        padding: 0 32px;
-        height: 60px;
-        min-height: 60px;
-        max-height: 60px;
-        width: 100%;
-        border-bottom: 1px solid #1a2540;
-        background: rgba(8,12,20,.96);
-        backdrop-filter: blur(12px);
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        overflow: hidden;
-    }
-    .nav-logo {
-        font-size: 18px;
-        font-weight: 700;
-        color: #fff !important;
-        letter-spacing: -.4px;
-        margin-right: auto;
-        flex-shrink: 0;
-        white-space: nowrap;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        position: relative;
-        z-index: 2;
-    }
-    .nav-logo span { color: #4f8ef7; }
-
-    .nav-tabs {
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        flex-shrink: 0;
-        font-size: 0; /* collapses injected text nodes */
-        position: relative;
-        z-index: 2;
-    }
-    .nav-tabs > .nav-tab { font-size: 14px; }
-
-    /* Nuke anything injected into nav that isn't ours */
-    nav > *:not(.nav-logo):not(.nav-tabs) { display: none !important; width: 0 !important; }
-    .nav-tabs > *:not(.nav-tab) { display: none !important; width: 0 !important; }
-
-    .nav-tab {
-        padding: 7px 18px;
-        border-radius: 8px;
-        border: none;
-        background: transparent;
-        color: #6b7a99;
-        font-size: 14px;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all .2s;
-        white-space: nowrap;
-    }
-    .nav-tab:hover { color: #c8d4e8; background: #111827; }
-    .nav-tab.active { background: #1a2540; color: #fff; }
-
-    /* ── Layout ── */
-    main {
-        max-width: 960px;
-        width: 100%;
-        margin: 0 auto;
-        padding: 40px 24px;
-        /* ensure content never gets clipped left */
-        position: relative;
-    }
-
-    .section-title { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .section-sub { font-size: 14px; color: #6b7a99; margin-bottom: 28px; }
-    .filter-group { margin-bottom: 20px; }
-    .filter-label { font-size: 12px; font-weight: 600; color: #6b7a99; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
-    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .pill { padding: 6px 14px; border-radius: 20px; border: 1px solid #1a2540; background: #111827; color: #6b7a99; font-size: 13px; font-family: inherit; cursor: pointer; transition: all .2s; }
-    .pill:hover { border-color: #4f8ef7; color: #c8d4e8; }
-    .pill.active { background: #1a3a7a; border-color: #4f8ef7; color: #fff; }
-    .pill.locked { background: #1a3a7a; border-color: #4f8ef7; color: #fff; opacity: .7; cursor: default; }
-    .search-btn { margin-top: 28px; padding: 12px 32px; border-radius: 10px; border: none; background: linear-gradient(135deg,#4f8ef7,#2563eb); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .2s; }
-    .search-btn:hover { opacity: .88; }
-    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .results-count { font-size: 13px; color: #6b7a99; }
-    .card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 20px 22px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 16px; transition: border-color .2s; }
-    .card:hover { border-color: #2d3f6b; }
-    .card.hot { border-left: 3px solid #ef4444; }
-    .card.warm { border-left: 3px solid #f59e0b; }
-    .card.cold { border-left: 3px solid #4f8ef7; }
-    .avatar { width: 48px; height: 48px; border-radius: 50%; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden; }
-    .avatar img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
-    .card-body { flex: 1; min-width: 0; }
-    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-    .person-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
-    .person-title { font-size: 13px; color: #4f8ef7; margin-bottom: 2px; }
-    .person-company { font-size: 13px; color: #8a9bb8; margin-bottom: 8px; }
-    .score-badge { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; min-width: 52px; }
-    .score-num { font-size: 22px; font-weight: 700; line-height: 1; }
-    .score-num.hot { color: #ef4444; }
-    .score-num.warm { color: #f59e0b; }
-    .score-num.cold { color: #4f8ef7; }
-    .score-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-    .score-lbl.hot { color: #ef4444; }
-    .score-lbl.warm { color: #f59e0b; }
-    .score-lbl.cold { color: #4f8ef7; }
-    .score-bar-wrap { width: 100%; background: #1a2540; border-radius: 3px; height: 4px; margin-top: 4px; }
-    .score-bar { height: 4px; border-radius: 3px; }
-    .score-bar.hot { background: #ef4444; }
-    .score-bar.warm { background: #f59e0b; }
-    .score-bar.cold { background: #4f8ef7; }
-    .card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-    .meta-tag { font-size: 11px; color: #6b7a99; background: #111827; padding: 3px 9px; border-radius: 6px; border: 1px solid #1a2540; white-space: nowrap; }
-    .meta-tag a { color: #4f8ef7; text-decoration: none; }
-    .meta-tag a:hover { text-decoration: underline; }
-    .meta-tag.email { color: #22c55e; border-color: #1a4a2a; background: #0a2010; }
-    .meta-tag.location { color: #a78bfa; }
-    .meta-tag.dept { color: #60a5fa; }
-    .meta-tag.funding { color: #f59e0b; border-color: #3a2a00; background: #1a1200; }
-    .meta-tag.growth { color: #22c55e; border-color: #1a4a2a; background: #0a2010; }
-    .meta-tag.keyword { color: #c084fc; border-color: #2d1a45; background: #0e0a1a; }
-    .company-desc { font-size: 12px; color: #4a5568; font-style: italic; margin-top: 6px; line-height: 1.5; border-left: 2px solid #1a2540; padding-left: 8px; }
-    .tech-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .tech-pill { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #0f1e35; border: 1px solid #1e2d45; color: #60a5fa; }
-    .tech-pill.aws { background: #1a2a10; border-color: #2a4a18; color: #86efac; }
-    .card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
-    .btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
-    .btn-sm:hover { border-color: #4f8ef7; color: #fff; }
-    .btn-hs { background: #ff7a59; border-color: #ff7a59; color: #fff; }
-    .btn-hs:hover { background: #ff6240; }
-    .btn-hs.sent { background: #1a5c38; border-color: #22c55e; color: #22c55e; cursor: default; }
-    .empty-state { text-align: center; padding: 60px 20px; color: #6b7a99; }
-    .empty-icon { font-size: 40px; margin-bottom: 12px; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-    .settings-card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 28px; margin-bottom: 16px; }
-    .settings-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 16px; }
-    .form-row { margin-bottom: 14px; }
-    .form-label { font-size: 12px; color: #6b7a99; margin-bottom: 6px; font-weight: 500; }
-    .form-input { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
-    .form-input:focus { border-color: #4f8ef7; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
-    .legend { display: flex; gap: 16px; align-items: center; }
-    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #6b7a99; }
-    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-    </style>
-  </head>
-  <body>
-    <nav>
-        <div class="nav-logo">Prospect<span>AI</span></div>div>
-      <div class="nav-tabs">
-          <button class="nav-tab active" onclick="showTab('leads',event)">Find Leads</button>button>
-          <button class="nav-tab" onclick="showTab('settings',event)">Settings</button>button>
-      </div>div>
-    </nav>
-  <main>
-      <div id="tab-leads" class="tab-content active"><div id="app"></div>div></div>div>
-      <div id="tab-settings" class="tab-content">
-            <div class="fade-up">
-                    <div class="section-title">Settings</div>div>
-                    <div class="section-sub">Configure your integrations.</div>div>
-                    <div class="settings-card">
-                              <div class="settings-title">&#9679; Integrations</div>div>
-                              <div class="form-row"><div class="form-label">Apollo API Key</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
-                              <div class="form-row"><div class="form-label">HubSpot Access Token</div>div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>div>
-                              <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>div>
-                    </div>div>
-            </div>div>
-      </div>div>
-  </main>
-    <script>
-      var INDUSTRIES = ['Technology','Software','SaaS','Cloud Computing','Cybersecurity','Fintech','Healthcare','Biotech','E-commerce','Marketing','Real Estate','Education','Manufacturing','Logistics','Media'];
-      var EMP_RANGES = [{label:'1-10',val:'1,10'},{label:'11-50',val:'11,50'},{label:'51-200',val:'51,200'},{label:'201-500',val:'201,500'},{label:'501-1000',val:'501,1000'},{label:'1001-5000',val:'1001,5000'},{label:'5001+',val:'5001,10000000'}];
-      var TITLE_OPTIONS = ['CEO','CTO','CFO','COO','CMO','VP of Sales','VP of Marketing','VP of Engineering','Director of Sales','Director of Marketing','Head of Growth','Head of Product','Sales Manager','Account Executive','Founder'];
-      var LIMIT_OPTIONS = [10, 25, 50, 100];
-
-      var state = {
-          stage: 0, results: [],
-          selectedIndustries: [], selectedEmployeeRanges: [],
-          selectedTechStack: ['AWS'], selectedTitles: [],
-          selectedLimit: 25
-      };
-
-      function showTab(name, e) {
-          document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
-          document.querySelectorAll('.nav-tab').forEach(function(el){ el.classList.remove('active'); });
-          document.getElementById('tab-' + name).classList.add('active');
-          if (e && e.target) e.target.classList.add('active');
-          if (name === 'leads') render();
-      }
-
-      function toggleFilter(type, val) {
-          if (type === 'limit') { state.selectedLimit = Number(val); render(); return; }
-          if (type === 'tech' && val === 'AWS') return;
-          var arr = type === 'industry' ? state.selectedIndustries : type === 'emp' ? state.selectedEmployeeRanges : type === 'tech' ? state.selectedTechStack : state.selectedTitles;
-          var idx = arr.indexOf(val);
-          if (idx >= 0) arr.splice(idx, 1); else arr.push(val);
-          render();
-      }
-
-      function pill(label, type, val, locked) {
-          var active = locked || (type === 'limit' ? [state.selectedLimit] : type === 'industry' ? state.selectedIndustries : type === 'emp' ? state.selectedEmployeeRanges : type === 'tech' ? state.selectedTechStack : state.selectedTitles).indexOf(val) >= 0;
-          var cls = 'pill' + (locked ? ' locked' : active ? ' active' : '');
-          var handler = locked ? '' : ' onclick="toggleFilter(&apos;' + type + '&apos;,&apos;' + val + '&apos;)"';
-          return '<button class="' + cls + '"' + handler + '>' + label + '</button>';
-      }
-
-      function fmtFunding(amt) {
-          if (!amt) return '';
-          var n = Number(amt);
-          if (n >= 1e9) return '$' + (n/1e9).toFixed(1) + 'B raised';
-          if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M raised';
-          if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K raised';
-          return '$' + n + ' raised';
-      }
-
-      function fmtGrowth(g) {
-          if (g === null || g === undefined || g === '') return '';
-          var pct = Math.round(Number(g) * 100);
-          return (pct >= 0 ? '+' : '') + pct + '% headcount (6mo)';
-      }
-
-      function fmtTimeInRole(months) {
-          if (months === null || months === undefined) return '';
-          if (months < 1) return 'New hire';
-          if (months < 12) return months + 'mo in role';
-          return Math.floor(months/12) + 'yr ' + (months % 12) + 'mo in role';
-      }
-
-      function renderCard(p, i) {
-          var sl = p.score_label || 'cold';
-          var score = p.score || 0;
-          var avatarHtml = p.photo_url
-            ? '<div class="avatar"><img src="' + p.photo_url + '" onerror="this.parentNode.innerHTML=\'&#128100;\'" /></div>'
-                : '<div class="avatar">&#128100;</div>';
-          var loc = [p.city, p.state, p.country].filter(Boolean).join(', ');
-          var meta1 = '';
-          if (p.email) meta1 += '<span class="meta-tag email">&#9993; ' + p.email + '</span>';
-          if (loc) meta1 += '<span class="meta-tag location">&#128205; ' + loc + '</span>';
-          if (p.department) meta1 += '<span class="meta-tag dept">&#127970; ' + p.department + '</span>';
-          if (p.seniority) meta1 += '<span class="meta-tag">&#11088; ' + p.seniority + '</span>';
-          var meta2 = '';
-          if (p.company_size) meta2 += '<span class="meta-tag">&#128101; ' + Number(p.company_size).toLocaleString() + ' employees</span>';
-          if (p.company_founded) meta2 += '<span class="meta-tag">&#128197; Founded ' + p.company_founded + '</span>';
-          if (p.funding_stage) meta2 += '<span class="meta-tag funding">&#128184; ' + p.funding_stage + (p.funding_total ? ' &middot; ' + fmtFunding(p.funding_total) : '') + '</span>';
-          if (p.headcount_growth) meta2 += '<span class="meta-tag growth">&#128200; ' + fmtGrowth(p.headcount_growth) + '</span>';
-          if (p.time_in_role_months !== null && p.time_in_role_months !== undefined) meta2 += '<span class="meta-tag">&#128336; ' + fmtTimeInRole(p.time_in_role_months) + '</span>';
-          if (p.linkedin_url) meta2 += '<span class="meta-tag"><a href="' + p.linkedin_url + '" target="_blank">LinkedIn &#8599;</a></span>';
-          var techHtml = '';
-          if (p.tech_stack && p.tech_stack.length > 0) {
-                techHtml = '<div class="tech-pills">'
-                  + p.tech_stack.map(function(t) {
-                              var isAws = t.toLowerCase().includes('amazon') || t.toLowerCase().includes('aws');
-                              return '<span class="tech-pill' + (isAws ? ' aws' : '') + '">' + t + '</span>';
-                  }).join('') + '</div>';
-          }
-          var kwHtml = p.keywords && p.keywords.length > 0
-            ? p.keywords.map(function(k){ return '<span class="meta-tag keyword">' + k + '</span>'; }).join('')
-                : '';
-          var descHtml = p.company_description ? '<div class="company-desc">' + p.company_description + '</div>' : '';
-          return '<div class="card ' + sl + ' fade-up" style="animation-delay:' + (i*0.04) + 's">'
-            + avatarHtml
-            + '<div class="card-body">'
-              + '<div class="card-top">'
-                + '<div style="min-width:0;flex:1;">'
-                  + '<div class="person-name">' + (p.name||'Unknown') + '</div>'
-                  + '<div class="person-title">' + (p.title||'') + '</div>'
-                  + '<div class="person-company">' + (p.company_name||'') + (p.company_domain?' &middot; '+p.company_domain:'') + '</div>'
-                + '</div>'
-                + '<div class="score-badge">'
-                  + '<div class="score-num ' + sl + '">' + score + '</div>'
-                  + '<div class="score-lbl ' + sl + '">' + sl + '</div>'
-                  + '<div class="score-bar-wrap"><div class="score-bar ' + sl + '" style="width:'+score+'%"></div></div>'
-                + '</div>'
-              + '</div>'
-              + (meta1?'<div class="card-meta">'+meta1+'</div>':'')
-              + (meta2?'<div class="card-meta">'+meta2+'</div>':'')
-              + (kwHtml?'<div class="card-meta">'+kwHtml+'</div>':'')
-              + techHtml + descHtml
-              + '<div class="card-actions">'
-                + '<button class="btn-sm btn-hs'+(p._hsSent?' sent':'')+'" id="hs-'+i+'" onclick="sendToHubspot('+i+')">'+(p._hsSent?'&#10003; In HubSpot':'&#8679; Push to HubSpot')+'</button>'
-              + '</div>'
-            + '</div>'
-          + '</div>';
-      }
-
-      function render() {
-          var el = document.getElementById('app');
-          if (!el) return;
-          if (state.stage === 0) {
-                var titleBtns = TITLE_OPTIONS.map(function(v){ return pill(v,'title',v,false); }).join('');
-                var indBtns = INDUSTRIES.map(function(v){ return pill(v,'industry',v,false); }).join('');
-                var empBtns = EMP_RANGES.map(function(r){ return pill(r.label,'emp',r.val,false); }).join('');
-                var limitBtns = LIMIT_OPTIONS.map(function(v){ return pill(v,'limit',v,Number(v)===state.selectedLimit); }).join('');
-                el.innerHTML = '<div class="fade-up">'
-                  + '<div class="section-title">Find Leads</div>'
-                  + '<div class="section-sub">Search for enriched contacts via Apollo. AWS is always included. Results are scored and sorted by priority.</div>'
-                  + '<div class="filter-group"><div class="filter-label">Job Title</div><div class="pill-row">'+titleBtns+'</div></div>'
-                  + '<div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">'+indBtns+'</div></div>'
-                  + '<div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">'+empBtns+'</div></div>'
-                  + '<div class="filter-group"><div class="filter-label">Leads to Return</div><div class="pill-row">'+limitBtns+'</div></div>'
-                  + '<button class="search-btn" onclick="doSearch()">Search Contacts</button>'
-                  + '</div>';
-          } else if (state.stage === 1) {
-                el.innerHTML = '<div class="fade-up" style="text-align:center;padding:60px 0;">'
-                  + '<div class="spinner"></div>'
-                  + '<div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching &amp; enriching leads...</div>'
-                  + '</div>';
-          } else {
-                var people = state.results;
-                var hot = people.filter(function(p){ return p.score_label==='hot'; }).length;
-                var warm = people.filter(function(p){ return p.score_label==='warm'; }).length;
-                var cold = people.filter(function(p){ return p.score_label==='cold'; }).length;
-                var cards = people.length
-                  ? people.map(function(p,i){ return renderCard(p,i); }).join('')
-                        : '<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts found.</div></div>';
-                el.innerHTML = '<div class="fade-up">'
-                  + '<button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;render()">&#8592; Back to filters</button>'
-                  + '<div class="results-header">'
-                    + '<div class="results-count">'+people.length+' contacts found &mdash; sorted by lead score</div>'
-                    + '<div class="legend">'
-                      + '<div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Hot ('+hot+')</div>'
-                      + '<div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Warm ('+warm+')</div>'
-                      + '<div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div> Cold ('+cold+')</div>'
-                    + '</div>'
-                  + '</div>'
-                  + cards + '</div>';
-          }
-      }
-
-      function doSearch() {
-          state.stage = 1; render();
-          fetch('/api/apollo', {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ industry: state.selectedIndustries, employee_ranges: state.selectedEmployeeRanges, tech_stack: state.selectedTechStack, titles: state.selectedTitles, per_page: state.selectedLimit })
-          })
-          .then(function(r){ return r.json(); })
-          .then(function(data){ if (data.error) throw new Error(data.error); state.results = Array.isArray(data)?data:[]; state.stage=2; render(); })
-          .catch(function(err){ state.stage=0; render(); alert('Search failed: '+err.message); });
-      }
-
-      function sendToHubspot(i) {
-          var p = state.results[i]; if (!p) return;
-          var btn = document.getElementById('hs-'+i);
-          if (btn) { btn.textContent='Pushing...'; btn.disabled=true; }
-          fetch('/api/hubspot', {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ first_name:p.first_name, last_name:p.last_name, email:p.email, title:p.title, company_name:p.company_name, company_domain:p.company_domain, linkedin_url:p.linkedin_url, department:p.department, seniority:p.seniority, city:p.city, state:p.state, country:p.country, company_size:p.company_size, company_industry:p.company_industry, lead_score:p.score, score_label:p.score_label, funding_stage:p.funding_stage })
-          })
-          .then(function(r){ return r.json(); })
-          .then(function(d){ if (d.error) throw new Error(d.error); state.results[i]._hsSent=true; render(); })
-          .catch(function(err){ if (btn){btn.textContent='Failed';btn.disabled=false;} alert('HubSpot error: '+err.message); });
-      }
-
-      render();
-    </script>
-  </body>
-</html>html>
-    </script>
-  </main></span>
-    </nav>
-  </body>
-  </style></title>
-  </head>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ProspectAI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: hidden; max-width: 100vw; }
+body { background: #080c14; color: #c8d4e8; font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp .35s ease both; }
+nav { display: flex; align-items: center; padding: 0 32px; height: 60px; min-height: 60px; max-height: 60px; width: 100%; border-bottom: 1px solid #1a2540; background: rgba(8,12,20,.96); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; overflow: hidden; }
+.nav-logo { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -.4px; margin-right: auto; flex-shrink: 0; white-space: nowrap; }
+.nav-logo span { color: #4f8ef7; }
+.nav-tabs { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
+.nav-tab { padding: 7px 18px; border-radius: 8px; border: none; background: transparent; color: #6b7a99; font-size: 14px; font-family: inherit; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.nav-tab:hover { color: #c8d4e8; background: #111827; }
+.nav-tab.active { background: #1a2540; color: #fff; }
+main { max-width: 960px; width: 100%; margin: 0 auto; padding: 40px 24px; }
+.section-title { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+.section-sub { font-size: 14px; color: #6b7a99; margin-bottom: 28px; }
+.filter-group { margin-bottom: 20px; }
+.filter-label { font-size: 12px; font-weight: 600; color: #6b7a99; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+.pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { padding: 6px 14px; border-radius: 20px; border: 1px solid #1a2540; background: #111827; color: #6b7a99; font-size: 13px; font-family: inherit; cursor: pointer; transition: all .2s; }
+.pill:hover { border-color: #4f8ef7; color: #c8d4e8; }
+.pill.active { background: #1a3a7a; border-color: #4f8ef7; color: #fff; }
+.pill.locked { background: #1a3a7a; border-color: #4f8ef7; color: #fff; opacity: .7; cursor: default; }
+.search-btn { margin-top: 28px; padding: 12px 32px; border-radius: 10px; border: none; background: linear-gradient(135deg,#4f8ef7,#2563eb); color: #fff; font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer; transition: opacity .2s; }
+.search-btn:hover { opacity: .88; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.results-count { font-size: 13px; color: #6b7a99; }
+.card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 20px 22px; margin-bottom: 12px; display: flex; align-items: flex-start; gap: 16px; transition: border-color .2s; }
+.card:hover { border-color: #2d3f6b; }
+.card.hot { border-left: 3px solid #ef4444; }
+.card.warm { border-left: 3px solid #f59e0b; }
+.card.cold { border-left: 3px solid #4f8ef7; }
+.avatar { width: 48px; height: 48px; border-radius: 50%; background: #1a2540; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden; }
+.avatar img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+.card-body { flex: 1; min-width: 0; }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.person-name { font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+.person-title { font-size: 13px; color: #4f8ef7; margin-bottom: 2px; }
+.person-company { font-size: 13px; color: #8a9bb8; margin-bottom: 8px; }
+.score-badge { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; min-width: 52px; }
+.score-num { font-size: 22px; font-weight: 700; line-height: 1; }
+.score-num.hot { color: #ef4444; }
+.score-num.warm { color: #f59e0b; }
+.score-num.cold { color: #4f8ef7; }
+.score-lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+.score-lbl.hot { color: #ef4444; }
+.score-lbl.warm { color: #f59e0b; }
+.score-lbl.cold { color: #4f8ef7; }
+.score-bar-wrap { width: 100%; background: #1a2540; border-radius: 3px; height: 4px; margin-top: 4px; }
+.score-bar { height: 4px; border-radius: 3px; }
+.score-bar.hot { background: #ef4444; }
+.score-bar.warm { background: #f59e0b; }
+.score-bar.cold { background: #4f8ef7; }
+.card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.meta-tag { font-size: 11px; color: #6b7a99; background: #111827; padding: 3px 9px; border-radius: 6px; border: 1px solid #1a2540; white-space: nowrap; }
+.meta-tag a { color: #4f8ef7; text-decoration: none; }
+.meta-tag a:hover { text-decoration: underline; }
+.meta-tag.email { color: #22c55e; border-color: #1a4a2a; background: #0a2010; }
+.meta-tag.location { color: #a78bfa; }
+.meta-tag.dept { color: #60a5fa; }
+.meta-tag.funding { color: #f59e0b; border-color: #3a2a00; background: #1a1200; }
+.meta-tag.growth { color: #22c55e; border-color: #1a4a2a; background: #0a2010; }
+.meta-tag.keyword { color: #c084fc; border-color: #2d1a45; background: #0e0a1a; }
+.company-desc { font-size: 12px; color: #4a5568; font-style: italic; margin-top: 6px; line-height: 1.5; border-left: 2px solid #1a2540; padding-left: 8px; }
+.tech-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.tech-pill { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #0f1e35; border: 1px solid #1e2d45; color: #60a5fa; }
+.tech-pill.aws { background: #1a2a10; border-color: #2a4a18; color: #86efac; }
+.card-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+.btn-sm { padding: 6px 14px; border-radius: 8px; border: 1px solid #1a2540; background: #111827; color: #c8d4e8; font-size: 12px; font-family: inherit; cursor: pointer; transition: all .2s; }
+.btn-sm:hover { border-color: #4f8ef7; color: #fff; }
+.btn-hs { background: #ff7a59; border-color: #ff7a59; color: #fff; }
+.btn-hs:hover { background: #ff6240; }
+.btn-hs.sent { background: #1a5c38; border-color: #22c55e; color: #22c55e; cursor: default; }
+.empty-state { text-align: center; padding: 60px 20px; color: #6b7a99; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.settings-card { background: #0d1424; border: 1px solid #1a2540; border-radius: 14px; padding: 28px; margin-bottom: 16px; }
+.settings-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 16px; }
+.form-row { margin-bottom: 14px; }
+.form-label { font-size: 12px; color: #6b7a99; margin-bottom: 6px; font-weight: 500; }
+.form-input { width: 100%; padding: 10px 14px; background: #080c14; border: 1px solid #1a2540; border-radius: 8px; color: #c8d4e8; font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
+.form-input:focus { border-color: #4f8ef7; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; margin-right: 6px; }
+.legend { display: flex; gap: 16px; align-items: center; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #6b7a99; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">Prospect<span>AI</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showTab('leads',event)">Find Leads</button>
+    <button class="nav-tab" onclick="showTab('settings',event)">Settings</button>
+  </div>
+</nav>
+<main>
+  <div id="tab-leads" class="tab-content active"><div id="app"></div></div>
+  <div id="tab-settings" class="tab-content">
+    <div class="fade-up">
+      <div class="section-title">Settings</div>
+      <div class="section-sub">Configure your integrations.</div>
+      <div class="settings-card">
+        <div class="settings-title">&#9679; Integrations</div>
+        <div class="form-row"><div class="form-label">Apollo API Key</div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>
+        <div class="form-row"><div class="form-label">HubSpot Access Token</div><input class="form-input" type="password" placeholder="Stored in Vercel environment" disabled /></div>
+        <div style="font-size:13px;color:#22c55e;"><span class="status-dot"></span>All credentials stored securely in Vercel environment variables.</div>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+var INDUSTRIES = ['Technology','Software','SaaS','Cloud Computing','Cybersecurity','Fintech','Healthcare','Biotech','E-commerce','Marketing','Real Estate','Education','Manufacturing','Logistics','Media'];
+var EMP_RANGES = [{label:'1-10',val:'1,10'},{label:'11-50',val:'11,50'},{label:'51-200',val:'51,200'},{label:'201-500',val:'201,500'},{label:'501-1000',val:'501,1000'},{label:'1001-5000',val:'1001,5000'},{label:'5001+',val:'5001,10000000'}];
+var TITLE_OPTIONS = ['CEO','CTO','CFO','COO','CMO','VP of Sales','VP of Marketing','VP of Engineering','Director of Sales','Director of Marketing','Head of Growth','Head of Product','Sales Manager','Account Executive','Founder'];
+var LIMIT_OPTIONS = [10, 25, 50, 100];
+var state = { stage:0, results:[], selectedIndustries:[], selectedEmployeeRanges:[], selectedTechStack:['AWS'], selectedTitles:[], selectedLimit:25 };
+function showTab(name,e){document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});document.querySelectorAll('.nav-tab').forEach(function(el){el.classList.remove('active');});document.getElementById('tab-'+name).classList.add('active');if(e&&e.target)e.target.classList.add('active');if(name==='leads')render();}
+function toggleFilter(type,val){if(type==='limit'){state.selectedLimit=Number(val);render();return;}if(type==='tech'&&val==='AWS')return;var arr=type==='industry'?state.selectedIndustries:type==='emp'?state.selectedEmployeeRanges:type==='tech'?state.selectedTechStack:state.selectedTitles;var idx=arr.indexOf(val);if(idx>=0)arr.splice(idx,1);else arr.push(val);render();}
+function pill(label,type,val,locked){var active=locked||(type==='limit'?[state.selectedLimit]:type==='industry'?state.selectedIndustries:type==='emp'?state.selectedEmployeeRanges:type==='tech'?state.selectedTechStack:state.selectedTitles).indexOf(val)>=0;var cls='pill'+(locked?' locked':active?' active':'');var handler=locked?'':' onclick="toggleFilter(&apos;'+type+'&apos;,&apos;'+val+'&apos;)"';return '<button class="'+cls+'"'+handler+'>'+label+'</button>';}
+function fmtFunding(amt){if(!amt)return'';var n=Number(amt);if(n>=1e9)return'$'+(n/1e9).toFixed(1)+'B raised';if(n>=1e6)return'$'+(n/1e6).toFixed(1)+'M raised';if(n>=1e3)return'$'+(n/1e3).toFixed(0)+'K raised';return'$'+n+' raised';}
+function fmtGrowth(g){if(g===null||g===undefined||g==='')return'';var pct=Math.round(Number(g)*100);return(pct>=0?'+':'')+pct+'% headcount (6mo)';}
+function fmtTimeInRole(months){if(months===null||months===undefined)return'';if(months<1)return'New hire';if(months<12)return months+'mo in role';return Math.floor(months/12)+'yr '+(months%12)+'mo in role';}
+function renderCard(p,i){var sl=p.score_label||'cold';var score=p.score||0;var avatarHtml=p.photo_url?'<div class="avatar"><img src="'+p.photo_url+'" onerror="this.parentNode.innerHTML='&#128100;'" /></div>':'<div class="avatar">&#128100;</div>';var loc=[p.city,p.state,p.country].filter(Boolean).join(', ');var meta1='';if(p.email)meta1+='<span class="meta-tag email">&#9993; '+p.email+'</span>';if(loc)meta1+='<span class="meta-tag location">&#128205; '+loc+'</span>';if(p.department)meta1+='<span class="meta-tag dept">&#127970; '+p.department+'</span>';if(p.seniority)meta1+='<span class="meta-tag">&#11088; '+p.seniority+'</span>';var meta2='';if(p.company_size)meta2+='<span class="meta-tag">&#128101; '+Number(p.company_size).toLocaleString()+' employees</span>';if(p.company_founded)meta2+='<span class="meta-tag">&#128197; Founded '+p.company_founded+'</span>';if(p.funding_stage)meta2+='<span class="meta-tag funding">&#128184; '+p.funding_stage+(p.funding_total?' &middot; '+fmtFunding(p.funding_total):'')+' </span>';if(p.headcount_growth)meta2+='<span class="meta-tag growth">&#128200; '+fmtGrowth(p.headcount_growth)+'</span>';if(p.time_in_role_months!==null&&p.time_in_role_months!==undefined)meta2+='<span class="meta-tag">&#128336; '+fmtTimeInRole(p.time_in_role_months)+'</span>';if(p.linkedin_url)meta2+='<span class="meta-tag"><a href="'+p.linkedin_url+'" target="_blank">LinkedIn &#8599;</a></span>';var techHtml='';if(p.tech_stack&&p.tech_stack.length>0){techHtml='<div class="tech-pills">'+p.tech_stack.map(function(t){var isAws=t.toLowerCase().includes('amazon')||t.toLowerCase().includes('aws');return'<span class="tech-pill'+(isAws?' aws':'')+'>'+t+'</span>';}).join('')+'</div>';}var kwHtml=p.keywords&&p.keywords.length>0?p.keywords.map(function(k){return'<span class="meta-tag keyword">'+k+'</span>';}).join(''):'';var descHtml=p.company_description?'<div class="company-desc">'+p.company_description+'</div>':'';return'<div class="card '+sl+' fade-up" style="animation-delay:'+(i*0.04)+'s">'+avatarHtml+'<div class="card-body"><div class="card-top"><div style="min-width:0;flex:1;"><div class="person-name">'+(p.name||'Unknown')+'</div><div class="person-title">'+(p.title||'')+'</div><div class="person-company">'+(p.company_name||'')+(p.company_domain?' &middot; '+p.company_domain:'')+'</div></div><div class="score-badge"><div class="score-num '+sl+'">'+score+'</div><div class="score-lbl '+sl+'">'+sl+'</div><div class="score-bar-wrap"><div class="score-bar '+sl+'" style="width:'+score+'%"></div></div></div></div>'+(meta1?'<div class="card-meta">'+meta1+'</div>':'')+(meta2?'<div class="card-meta">'+meta2+'</div>':'')+(kwHtml?'<div class="card-meta">'+kwHtml+'</div>':'')+techHtml+descHtml+'<div class="card-actions"><button class="btn-sm btn-hs'+(p._hsSent?' sent':'')+'" id="hs-'+i+'" onclick="sendToHubspot('+i+')">'+(p._hsSent?'&#10003; In HubSpot':'&#8679; Push to HubSpot')+'</button></div></div></div>';}
+function render(){var el=document.getElementById('app');if(!el)return;if(state.stage===0){var titleBtns=TITLE_OPTIONS.map(function(v){return pill(v,'title',v,false);}).join('');var indBtns=INDUSTRIES.map(function(v){return pill(v,'industry',v,false);}).join('');var empBtns=EMP_RANGES.map(function(r){return pill(r.label,'emp',r.val,false);}).join('');var limitBtns=LIMIT_OPTIONS.map(function(v){return pill(v,'limit',v,Number(v)===state.selectedLimit);}).join('');el.innerHTML='<div class="fade-up"><div class="section-title">Find Leads</div><div class="section-sub">Search for enriched contacts via Apollo. AWS is always included. Results are scored and sorted by priority.</div><div class="filter-group"><div class="filter-label">Job Title</div><div class="pill-row">'+titleBtns+'</div></div><div class="filter-group"><div class="filter-label">Industry</div><div class="pill-row">'+indBtns+'</div></div><div class="filter-group"><div class="filter-label">Company Size (Employees)</div><div class="pill-row">'+empBtns+'</div></div><div class="filter-group"><div class="filter-label">Leads to Return</div><div class="pill-row">'+limitBtns+'</div></div><button class="search-btn" onclick="doSearch()">Search Contacts</button></div>';}else if(state.stage===1){el.innerHTML='<div class="fade-up" style="text-align:center;padding:60px 0;"><div class="spinner"></div><div style="font-size:15px;color:#6b7a99;margin-top:16px;">Searching &amp; enriching leads...</div></div>';}else{var people=state.results;var hot=people.filter(function(p){return p.score_label==='hot';}).length;var warm=people.filter(function(p){return p.score_label==='warm';}).length;var cold=people.filter(function(p){return p.score_label==='cold';}).length;var cards=people.length?people.map(function(p,i){return renderCard(p,i);}).join(''):'<div class="empty-state"><div class="empty-icon">&#128269;</div><div>No contacts found.</div></div>';el.innerHTML='<div class="fade-up"><button style="background:none;border:none;color:#4f8ef7;cursor:pointer;margin-bottom:20px;font-size:14px;" onclick="state.stage=0;render()">&#8592; Back to filters</button><div class="results-header"><div class="results-count">'+people.length+' contacts found &mdash; sorted by lead score</div><div class="legend"><div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Hot ('+hot+')</div><div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Warm ('+warm+')</div><div class="legend-item"><div class="legend-dot" style="background:#4f8ef7"></div> Cold ('+cold+')</div></div></div>'+cards+'</div>';}}
+function doSearch(){state.stage=1;render();fetch('/api/apollo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({industry:state.selectedIndustries,employee_ranges:state.selectedEmployeeRanges,tech_stack:state.selectedTechStack,titles:state.selectedTitles,per_page:state.selectedLimit})}).then(function(r){return r.json();}).then(function(data){if(data.error)throw new Error(data.error);state.results=Array.isArray(data)?data:[];state.stage=2;render();}).catch(function(err){state.stage=0;render();alert('Search failed: '+err.message);});}
+function sendToHubspot(i){var p=state.results[i];if(!p)return;var btn=document.getElementById('hs-'+i);if(btn){btn.textContent='Pushing...';btn.disabled=true;}fetch('/api/hubspot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({first_name:p.first_name,last_name:p.last_name,email:p.email,title:p.title,company_name:p.company_name,company_domain:p.company_domain,linkedin_url:p.linkedin_url,department:p.department,seniority:p.seniority,city:p.city,state:p.state,country:p.country,company_size:p.company_size,company_industry:p.company_industry,lead_score:p.score,score_label:p.score_label,funding_stage:p.funding_stage})}).then(function(r){return r.json();}).then(function(d){if(d.error)throw new Error(d.error);state.results[i]._hsSent=true;render();}).catch(function(err){if(btn){btn.textContent='Failed';btn.disabled=false;}alert('HubSpot error: '+err.message);});}
+render();
+</script>
+</body>
+</html>
