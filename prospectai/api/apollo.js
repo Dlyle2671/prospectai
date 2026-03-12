@@ -17,40 +17,31 @@ function scoreEmployeeCount(count) {
 
 function calcLeadScore(lead) {
   let score = 0;
-  // Title score (up to 40pts)
   const titleLower = (lead.title || '').toLowerCase();
   let titlePts = 0;
   for (const [key, pts] of Object.entries(TITLE_SCORE)) {
     if (titleLower.includes(key)) { titlePts = Math.max(titlePts, pts); }
   }
   score += titlePts;
-  // Seniority score (up to 40pts, only if title didn't score high)
   if (titlePts < 20) {
     const senLower = (lead.seniority || '').toLowerCase();
     for (const [key, pts] of Object.entries(SENIORITY_SCORE)) {
       if (senLower.includes(key)) { score += pts; break; }
     }
   }
-  // Company size (up to 38pts)
   score += scoreEmployeeCount(lead.company_size);
-  // Industry fit (up to 20pts)
   const indLower = (lead.company_industry || '').toLowerCase();
   if (HIGH_VALUE_INDUSTRIES.some(i => indLower.includes(i))) score += 20; else score += 5;
-  // Has LinkedIn (2pts)
   if (lead.linkedin_url) score += 2;
-  // Verified email is stronger signal (+3pts)
   if (lead.email_status === 'verified') score += 3;
-  // Recent funding < 18mo (+8pts)
   if (lead.funding_round_date) {
     const monthsAgo = (Date.now() - new Date(lead.funding_round_date)) / (1000 * 60 * 60 * 24 * 30);
     if (monthsAgo <= 18) score += 8;
   }
-  // High LinkedIn followers (+3pts if >1000)
   if (lead.linkedin_follower_count && lead.linkedin_follower_count > 1000) score += 3;
-  // Hiring signal: open roles (+2pts)
   if (lead.job_postings_count && lead.job_postings_count > 5) score += 2;
-  // Person has Twitter/GitHub = more reachable (+1pt)
   if (lead.twitter_url) score += 1;
+  if (lead.hiring_surge) score += 3;
   return Math.min(100, Math.round(score));
 }
 
@@ -106,6 +97,7 @@ export default async function handler(req, res) {
     if (!searchResp.ok) {
       return res.status(searchResp.status).json({ error: searchData.message || searchData.error || JSON.stringify(searchData) });
     }
+
     const candidates = (searchData.people || []).filter(p => p.has_email);
     if (candidates.length === 0) return res.status(200).json([]);
 
@@ -120,17 +112,14 @@ export default async function handler(req, res) {
           const d = await r.json();
           const ep = d.person || {};
           const org = ep.organization || p.organization || {};
-
           const email = ep.email || "";
           if (!email) return null;
 
-          // --- PERSON FIELDS (Step 3: deeper Apollo) ---
           const email_status = ep.email_status || ep.contact_email_status || "";
           const headline = ep.headline || ep.linkedin_bio || "";
           const twitter_url = ep.twitter_url || ep.twitter || "";
           const github_url = ep.github_url || ep.github || "";
 
-          // Employment history — current + previous
           const employmentHistory = ep.employment_history || [];
           const currentJob = employmentHistory.find(j => j.current) || {};
           const prevJobs = employmentHistory
@@ -138,16 +127,13 @@ export default async function handler(req, res) {
             .slice(0, 2)
             .map(j => ({ company: j.organization_name, title: j.title || "", end_date: j.end_date || "" }));
 
-          // Intent/persona tags
           const intent_strength = ep.intent_strength || null;
           const persona_tags = (ep.persona_tags || ep.personas || []).slice(0, 3);
 
-          // Tech stack
           const techStack = (org.technology_names || org.technologies || [])
             .map(t => (typeof t === 'string' ? t : t.name || t.category || ''))
             .filter(Boolean).slice(0, 8);
 
-          // --- COMPANY FIELDS (Step 3: deeper Apollo) ---
           const subindustry = org.subindustry || org.sub_industry || "";
           const market_cap = org.market_cap || null;
           const company_twitter = org.twitter_url || org.twitter || "";
@@ -155,7 +141,6 @@ export default async function handler(req, res) {
           const g2_review_count = org.g2_review_count || org.review_count || null;
           const primary_phone = org.primary_phone?.number || org.phone || null;
 
-          // Funding
           const funding_stage = org.latest_funding_stage || org.funding_stage || "";
           const funding_total = org.total_funding || org.funding_total || null;
           const fundingEvents = org.funding_events || org.funding_rounds || [];
@@ -183,9 +168,39 @@ export default async function handler(req, res) {
           const num_funding_rounds = org.num_funding_rounds || fundingEvents.length || null;
           const job_postings_count = org.job_postings_count || org.open_jobs_count || null;
 
+          // Step 4: Intent signal flags
+          const headcountGrowthNum = headcount_growth !== null ? Number(headcount_growth) : null;
+          const hiring_surge = (job_postings_count && job_postings_count > 10) || (headcountGrowthNum !== null && headcountGrowthNum > 0.20);
+
+          let recently_funded = false;
+          if (funding_round_date) {
+            const monthsAgo = (Date.now() - new Date(funding_round_date)) / (1000 * 60 * 60 * 24 * 30);
+            recently_funded = monthsAgo <= 18;
+          }
+
+          // Intent signals array for summary strip
+          const intent_signals = [];
+          if (recently_funded && funding_stage) {
+            const amt = funding_round_amount;
+            const amtStr = amt ? (amt >= 1e9 ? '$' + (amt/1e9).toFixed(1)+'B' : amt >= 1e6 ? '$'+(amt/1e6).toFixed(0)+'M' : '$'+(amt/1e3).toFixed(0)+'K') : '';
+            intent_signals.push({ type: 'funding', label: funding_stage + (amtStr ? ' ' + amtStr : '') });
+          } else if (recently_funded) {
+            intent_signals.push({ type: 'funding', label: 'Recently Funded' });
+          }
+          if (hiring_surge) {
+            const surgeLabel = job_postings_count ? job_postings_count + ' open roles' : (headcountGrowthNum !== null ? '+' + Math.round(headcountGrowthNum * 100) + '% headcount' : 'Hiring Surge');
+            intent_signals.push({ type: 'hiring', label: surgeLabel });
+          }
+          if (linkedin_follower_count && linkedin_follower_count > 5000) {
+            const followersStr = linkedin_follower_count >= 1e6 ? (linkedin_follower_count/1e6).toFixed(1)+'M followers' : linkedin_follower_count >= 1e3 ? (linkedin_follower_count/1e3).toFixed(0)+'K followers' : linkedin_follower_count+' followers';
+            intent_signals.push({ type: 'social', label: followersStr });
+          }
+          if (headcountGrowthNum !== null && headcountGrowthNum > 0.10 && !hiring_surge) {
+            intent_signals.push({ type: 'growth', label: '+' + Math.round(headcountGrowthNum * 100) + '% headcount' });
+          }
+
           const lead = {
             id: p.id,
-            // Person basics
             name: ep.name || p.name || "",
             first_name: ep.first_name || p.first_name || "",
             last_name: ep.last_name || p.last_name || "",
@@ -199,19 +214,13 @@ export default async function handler(req, res) {
             twitter_url,
             github_url,
             photo_url: ep.photo_url || "",
-            // Location
             city: ep.city || p.city || "",
             state: ep.state || p.state || "",
             country: ep.country || p.country || "",
-            // Employment
             prev_jobs: prevJobs,
-            time_in_role_months: currentJob.start_date
-              ? Math.floor((Date.now() - new Date(currentJob.start_date)) / (1000 * 60 * 60 * 24 * 30))
-              : null,
-            // Intent
+            time_in_role_months: currentJob.start_date ? Math.floor((Date.now() - new Date(currentJob.start_date)) / (1000 * 60 * 60 * 24 * 30)) : null,
             intent_strength,
             persona_tags,
-            // Company basics
             company_name: org.name || p.organization?.name || "",
             company_domain: org.primary_domain || p.organization?.primary_domain || "",
             company_industry: org.industry || p.organization?.industry || "",
@@ -225,9 +234,7 @@ export default async function handler(req, res) {
             primary_phone,
             market_cap,
             g2_review_count,
-            // Tech
             tech_stack: techStack,
-            // Funding
             funding_stage,
             funding_total,
             funding_round_date,
@@ -235,21 +242,20 @@ export default async function handler(req, res) {
             funding_round_amount,
             top_investors,
             num_funding_rounds,
-            // Growth & signals
             headcount_growth,
             linkedin_follower_count,
             annual_revenue,
             alexa_rank,
             job_postings_count,
-            // Keywords
             keywords: (org.keywords || []).slice(0, 5),
+            hiring_surge: hiring_surge || false,
+            recently_funded,
+            intent_signals,
           };
           lead.score = calcLeadScore(lead);
           lead.score_label = scoreLabel(lead.score);
           return lead;
-        } catch {
-          return null;
-        }
+        } catch { return null; }
       })
     );
 
