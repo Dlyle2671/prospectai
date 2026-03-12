@@ -170,6 +170,19 @@ main { max-width: 960px; width: 100%; margin: 0 auto; padding: 40px 24px; }
 .ci-push-all:hover { opacity: .88; }
 .ci-push-all.sent { background: #1a5c38; border: 1px solid #22c55e; color: #22c55e; cursor: default; }
 .ci-similar-pill { font-size: 12px; color: #a78bfa; background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2); padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+.ci-job-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #111827; gap: 12px; }
+.ci-job-item:last-child { border-bottom: none; }
+.ci-job-title { font-size: 13px; color: #c8d4e8; font-weight: 500; margin-bottom: 3px; }
+.ci-job-location { font-size: 11px; color: #4a5568; }
+.ci-job-link { font-size: 11px; color: #4f8ef7; text-decoration: none; white-space: nowrap; flex-shrink: 0; padding: 3px 8px; border: 1px solid rgba(79,142,247,0.3); border-radius: 5px; }
+.ci-job-link:hover { background: rgba(79,142,247,0.1); }
+.ci-news-item { display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-bottom: 1px solid #111827; }
+.ci-news-item:last-child { border-bottom: none; }
+.ci-news-title { font-size: 13px; color: #c8d4e8; font-weight: 500; line-height: 1.4; }
+.ci-news-title a { color: inherit; text-decoration: none; }
+.ci-news-title a:hover { color: #4f8ef7; }
+.ci-news-meta { font-size: 11px; color: #4a5568; display: flex; gap: 8px; }
+.ci-news-source { color: #6b7a99; }
 </style>
 </head>
 <body>
@@ -335,6 +348,25 @@ function renderCompanyProfile(c){
     var simPart=c.similar_companies&&c.similar_companies.length>0?'<div><div style="font-size:11px;color:#4a5568;margin-bottom:8px;">SIMILAR COMPANIES</div><div style="display:flex;flex-wrap:wrap;gap:6px;">'+c.similar_companies.map(function(s){return'<span class="ci-similar-pill">'+s+'</span>';}).join('')+'</div></div>':'';
     kwHtml='<div class="ci-section"><div class="ci-section-title">&#128270; Intelligence</div>'+kwPart+simPart+'</div>';
   }
+  /* Job Postings */
+  var jobsHtml='';
+  if(c.job_postings&&c.job_postings.length>0){
+    var jobItems=c.job_postings.map(function(j){
+      var locPart=j.location?'<div class="ci-job-location">&#128205; '+j.location+'</div>':'';
+      var linkPart=j.url?'<a class="ci-job-link" href="'+j.url+'" target="_blank">Apply &#8599;</a>':'';
+      return '<div class="ci-job-item"><div><div class="ci-job-title">'+j.title+'</div>'+locPart+'</div>'+linkPart+'</div>';
+    }).join('');
+    jobsHtml='<div class="ci-section"><div class="ci-section-title">&#128188; Technical Job Openings ('+c.job_postings.length+')</div>'+jobItems+'</div>';
+  }
+  /* News */
+  var newsHtml='';
+  if(c.news&&c.news.length>0){
+    var newsItems=c.news.map(function(n){
+      var titleHtml=n.url?'<a href="'+n.url+'" target="_blank">'+n.title+'</a>':n.title;
+      return '<div class="ci-news-item"><div class="ci-news-title">'+titleHtml+'</div><div class="ci-news-meta">'+(n.source?'<span class="ci-news-source">'+n.source+'</span>':'')+(n.date?'<span>'+n.date+'</span>':'')+'</div></div>';
+    }).join('');
+    newsHtml='<div class="ci-section"><div class="ci-section-title">&#128240; Recent News &amp; Articles</div>'+newsItems+'</div>';
+  }
   /* Contacts */
   var contactsHtml='';
   if(c.contacts&&c.contacts.length>0){
@@ -349,7 +381,7 @@ function renderCompanyProfile(c){
     var pushAllBtn=c._allSent?'<button class="ci-push-all sent">&#10003; All Contacts in HubSpot</button>':'<button class="ci-push-all" onclick="ciPushAll()">&#8679; Push All Contacts + Company to HubSpot</button>';
     contactsHtml='<div class="ci-section" style="margin-top:16px;"><div class="ci-section-title">&#128101; Key Contacts ('+c.contacts.length+')</div>'+contactCards+pushAllBtn+'</div>';
   }
-  return headerHtml+'<div class="ci-grid">'+overviewHtml+(descHtml||'<div></div>')+'</div>'+(fundingHtml?'<div class="ci-grid">'+fundingHtml+(techHtml||'<div class="ci-section"><div class="ci-section-title">&#9881; Tech Stack</div><div style="color:#4a5568;font-size:13px;">No tech data available.</div></div>')+'</div>':techHtml?'<div>'+techHtml+'</div>':'')+(kwHtml?kwHtml:'')+contactsHtml;
+  return headerHtml+'<div class="ci-grid">'+overviewHtml+(descHtml||'<div></div>')+'</div>'+(fundingHtml?'<div class="ci-grid">'+fundingHtml+(techHtml||'<div class="ci-section"><div class="ci-section-title">&#9881; Tech Stack</div><div style="color:#4a5568;font-size:13px;">No tech data available.</div></div>')+'</div>':techHtml?'<div>'+techHtml+'</div>':'')+(kwHtml?kwHtml:'')+(jobsHtml?jobsHtml:'')+(newsHtml?newsHtml:'')+contactsHtml;
 }
 function ciSendContact(i){
   var c=ciState.profile;
