@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       first_name, last_name, email, title,
       company_name, company_domain, linkedin_url,
       city, state, country,
-      company_size, company_industry, score_label, twitter_url,
+      company_size, company_industry, score_label, twitter_url, personal_phone,
       company_city, company_state, company_country,
       company_street, company_zip, company_phone,
       company_description,
@@ -209,6 +209,7 @@ export default async function handler(req, res) {
     if (state) contactProps.state = state;
     if (country) contactProps.country = country;
     if (twitter_url) contactProps.twitterhandle = twitter_url;
+    if (personal_phone) contactProps.phone = personal_phone;
     if (score_label) contactProps.lifecyclestage = score_label === "hot" ? "salesqualifiedlead" : score_label === "warm" ? "marketingqualifiedlead" : "lead";
 
     if (existingContactId) {
