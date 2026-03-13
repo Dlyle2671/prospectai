@@ -95,19 +95,27 @@ export default async function handler(req, res) {
     const TECH_KEYWORDS = ["engineer", "developer", "devops", "cloud", "architect", "data", "software", "infrastructure", "platform", "backend", "frontend", "fullstack", "full-stack", "sre", "security", "machine learning", "ml", "ai", "analytics", "database", "network", "systems", "it ", "technical", "technology", "cyber", "devsecops", "kubernetes", "terraform"];
     let jobPostings = [];
     if (jobsResp && jobsResp.ok) {
-      const jobsData = await jobsResp.json();
-      const allJobs = jobsData.jobs || jobsData.job_postings || [];
-      const filteredJobs = allJobs.filter(j => {
-        const title = (j.title || j.job_title || "").toLowerCase();
-        return TECH_KEYWORDS.some(kw => title.includes(kw));
-      });
-      jobPostings = filteredJobs.slice(0, 15).map(j => ({
-        title: j.title || j.job_title || "",
-        location: [j.city, j.state, j.country].filter(Boolean).join(", ") || j.location || "",
-        url: j.url || j.job_url || j.linkedin_url || "",
-        posted_at: j.posted_at || j.created_at || "",
-      }));
+      try {
+        const jobsData = await jobsResp.json();
+        const allJobs = jobsData.jobs || jobsData.job_postings || [];
+        jobPostings = allJobs.filter(j => {
+          const title = (j.title || j.job_title || "").toLowerCase();
+          return TECH_KEYWORDS.some(kw => title.includes(kw));
+        }).slice(0, 15).map(j => ({
+          title: j.title || j.job_title || "",
+          location: [j.city, j.state, j.country].filter(Boolean).join(", ") || j.location || "",
+          url: j.url || j.job_url || j.linkedin_url || "",
+          date: j.posted_at ? new Date(j.posted_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "",
+        }));
+      } catch(_) {}
     }
+    // Build job board search links as fallback (always included)
+    const encodedName = encodeURIComponent((org.name || cleanDomain) + " engineer");
+    const jobBoardLinks = [
+      { label: "LinkedIn Jobs", url: "https://www.linkedin.com/jobs/search/?keywords=" + encodeURIComponent((org.name || cleanDomain)) + "&f_TPR=r604800" },
+      { label: "Indeed", url: "https://www.indeed.com/jobs?q=" + encodedName },
+      { label: "Glassdoor", url: "https://www.glassdoor.com/Jobs/" + encodeURIComponent((org.name||cleanDomain).replace(/\s+/g,"-")) + "-jobs-SRCH_KE0," + (org.name||cleanDomain).length + ".htm" },
+    ];
 
     // --- Parse news articles from Google RSS ---
     let newsArticles = [];
@@ -251,6 +259,7 @@ export default async function handler(req, res) {
       similar_companies: (org.similar_companies || []).map(c => c.name || c).filter(Boolean).slice(0, 6),
       contacts: validContacts,
       job_postings: jobPostings,
+      job_board_links: jobBoardLinks,
       news: newsArticles,
     });
   } catch (err) {
