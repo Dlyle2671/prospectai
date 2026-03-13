@@ -302,11 +302,11 @@ export default async function handler(req, res) {
     );
     const validContacts = contacts.filter(Boolean);
 
-    const allTech = (org.technology_names || org.technologies || []).map(t => typeof t === "string" ? t : t.name || "").filter(Boolean);
+    const allTech = (Array.isArray(org.technology_names) ? org.technology_names : Array.isArray(org.technologies) ? org.technologies : []).map(t => typeof t === "string" ? t : t.name || "").filter(Boolean);
     const AWS_PATTERNS = ["amazon", "aws ", "aws-", "amazon web services"];
     const awsServices = allTech.filter(t => AWS_PATTERNS.some(p => t.toLowerCase().includes(p)));
     const techStack = allTech.filter(t => !AWS_PATTERNS.some(p => t.toLowerCase().includes(p))).slice(0, 12);
-    const fundingEvents = org.funding_events || org.funding_rounds || [];
+    const fundingEvents = Array.isArray(org.funding_events) ? org.funding_events : Array.isArray(org.funding_rounds) ? org.funding_rounds : [];
     const sortedFunding = [...fundingEvents].sort((a, b) => new Date(b.date || b.announced_on || 0) - new Date(a.date || a.announced_on || 0));
 
     return res.status(200).json({
@@ -333,9 +333,9 @@ export default async function handler(req, res) {
       funding_events: sortedFunding.slice(0, 8).map(e => ({
         date: e.date || e.announced_on || "", type: e.type || e.round_type || "",
         amount: e.amount || e.raised_amount || null,
-        investors: (e.investors || e.lead_investors || []).map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 4),
+        investors: (Array.isArray(e.investors) ? e.investors : Array.isArray(e.lead_investors) ? e.lead_investors : []).map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 4),
       })),
-      top_investors: (org.investors || []).map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 6),
+      top_investors: (Array.isArray(org.investors) ? org.investors : []).map(i => typeof i === "string" ? i : i.name || "").filter(Boolean).slice(0, 6),
       alexa_rank: org.alexa_rank || null,
       linkedin_follower_count: org.linkedin_follower_count || null,
       job_postings_count: org.job_postings_count || org.open_jobs_count || null,
@@ -343,8 +343,8 @@ export default async function handler(req, res) {
       g2_review_count: org.g2_review_count || null,
       tech_stack: techStack,
       aws_services: awsServices.map(t => t.replace(/^Amazon\s+/i, "").replace(/^AWS\s+/i, "")).filter(t => t.toLowerCase() !== "amazon web services"),
-      keywords: (org.keywords || []).slice(0, 8),
-      similar_companies: (org.similar_companies || []).map(c => c.name || c).filter(Boolean).slice(0, 6),
+      keywords: (Array.isArray(org.keywords) ? org.keywords : []).slice(0, 8),
+      similar_companies: (Array.isArray(org.similar_companies) ? org.similar_companies : []).map(c => (c && c.name) ? c.name : (typeof c === "string" ? c : "")).filter(Boolean).slice(0, 6),
       contacts: validContacts,
       job_postings: jobPostings,
       job_sources: jobSources,
