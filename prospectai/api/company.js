@@ -10,11 +10,8 @@ export default async function handler(req, res) {
     if (!domain) return res.status(400).json({ error: "domain is required" });
     const apiKey = process.env.APOLLO_API_KEY;
     const cleanDomain = domain.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0].trim().toLowerCase();
-
-    // Derive slug candidates from domain
     const domainSlug = cleanDomain.split(".")[0].replace(/[^a-z0-9-]/g, "");
 
-    // --- 1. Enrich Organization ---
     const orgResp = await fetch("https://api.apollo.io/api/v1/organizations/enrich?domain=" + encodeURIComponent(cleanDomain), {
       method: "GET",
       headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
@@ -52,18 +49,15 @@ export default async function handler(req, res) {
       return TECH_KEYWORDS.some(kw => t.includes(kw));
     }
 
-    // --- 2. Parallel requests: people + Apollo jobs + external job boards + news ---
     const slugsToTry = [...new Set([domainSlug, orgNameSlug])];
 
-    // Helper: try Greenhouse
     async function tryGreenhouse(slug) {
       try {
         const r = await fetch(`https://boards-api.greenhouse.io/v1/boards/${slug}/jobs?content=true`, { headers: { "User-Agent": "ProspectAI/1.0" } });
         if (!r.ok) return [];
         const d = await r.json();
         return (d.jobs || []).filter(j => isTechRole(j.title)).slice(0, 15).map(j => ({
-          title: j.title || "",
-          location: (j.location && j.location.name) || "",
+          title: j.title || "", location: (j.location && j.location.name) || "",
           url: j.absolute_url || "",
           date: j.updated_at ? new Date(j.updated_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "",
           source: "Greenhouse",
@@ -71,15 +65,13 @@ export default async function handler(req, res) {
       } catch(_) { return []; }
     }
 
-    // Helper: try Lever
     async function tryLever(slug) {
       try {
         const r = await fetch(`https://api.lever.co/v0/postings/${slug}?mode=json`, { headers: { "User-Agent": "ProspectAI/1.0" } });
         if (!r.ok) return [];
         const d = await r.json();
         return (Array.isArray(d) ? d : []).filter(j => isTechRole(j.text)).slice(0, 15).map(j => ({
-          title: j.text || "",
-          location: (j.categories && j.categories.location) || (j.workplaceType) || "",
+          title: j.text || "", location: (j.categories && j.categories.location) || "",
           url: j.hostedUrl || j.applyUrl || "",
           date: j.createdAt ? new Date(j.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "",
           source: "Lever",
@@ -87,15 +79,13 @@ export default async function handler(req, res) {
       } catch(_) { return []; }
     }
 
-    // Helper: try Ashby
     async function tryAshby(slug) {
       try {
         const r = await fetch(`https://api.ashbyhq.com/posting-public/job-board/${slug}`, { headers: { "User-Agent": "ProspectAI/1.0" } });
         if (!r.ok) return [];
         const d = await r.json();
-        return ((d.jobPostings || d.jobs || [])).filter(j => isTechRole(j.title)).slice(0, 15).map(j => ({
-          title: j.title || "",
-          location: (j.locationName || j.location || ""),
+        return (Array.isArray(d.jobPostings) ? d.jobPostings : Array.isArray(d.jobs) ? d.jobs : []).filter(j => isTechRole(j.title)).slice(0, 15).map(j => ({
+          title: j.title || "", location: j.locationName || j.location || "",
           url: j.jobUrl || j.applyUrl || "",
           date: j.publishedDate ? new Date(j.publishedDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "",
           source: "Ashby",
@@ -103,7 +93,6 @@ export default async function handler(req, res) {
       } catch(_) { return []; }
     }
 
-    // Helper: try Workable
     async function tryWorkable(slug) {
       try {
         const r = await fetch(`https://apply.workable.com/api/v3/accounts/${slug}/jobs`, {
@@ -113,9 +102,8 @@ export default async function handler(req, res) {
         });
         if (!r.ok) return [];
         const d = await r.json();
-        return ((d.results || [])).filter(j => isTechRole(j.title)).slice(0, 15).map(j => ({
-          title: j.title || "",
-          location: j.location || j.city || "",
+        return (Array.isArray(d.results) ? d.results : []).filter(j => isTechRole(j.title)).slice(0, 15).map(j => ({
+          title: j.title || "", location: j.location || j.city || "",
           url: `https://apply.workable.com/${slug}/j/${j.shortcode}/`,
           date: j.published_on ? new Date(j.published_on).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "",
           source: "Workable",
@@ -123,24 +111,21 @@ export default async function handler(req, res) {
       } catch(_) { return []; }
     }
 
-    // Helper: try BambooHR
     async function tryBambooHR(slug) {
       try {
         const r = await fetch(`https://${slug}.bamboohr.com/careers/list`, { headers: { "User-Agent": "ProspectAI/1.0", "Accept": "application/json" } });
         if (!r.ok) return [];
         const d = await r.json();
-        return ((d.result || [])).filter(j => isTechRole(j.jobOpeningName)).slice(0, 15).map(j => ({
+        return (Array.isArray(d.result) ? d.result : []).filter(j => isTechRole(j.jobOpeningName)).slice(0, 15).map(j => ({
           title: j.jobOpeningName || "",
           location: j.location && j.location.city ? j.location.city + (j.location.state ? ", " + j.location.state : "") : "",
           url: `https://${slug}.bamboohr.com/careers/${j.id}`,
-          date: "",
-          source: "BambooHR",
+          date: "", source: "BambooHR",
         }));
       } catch(_) { return []; }
     }
 
     const [res1, res2, jobsResp, newsResp, ...externalJobResults] = await Promise.all([
-      // People by org_id
       fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
@@ -152,7 +137,6 @@ export default async function handler(req, res) {
           per_page: 50, page: 1,
         }),
       }),
-      // People by domain
       fetch("https://api.apollo.io/api/v1/mixed_people/api_search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
@@ -164,15 +148,12 @@ export default async function handler(req, res) {
           per_page: 50, page: 1,
         }),
       }),
-      // Apollo jobs
       (orgId ? fetch("https://api.apollo.io/api/v1/jobs/search", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
         body: JSON.stringify({ api_key: apiKey, organization_ids: [orgId], per_page: 50, page: 1 }),
       }).catch(() => null) : Promise.resolve(null)),
-      // Google News RSS
       fetch("https://news.google.com/rss/search?q=" + encodeURIComponent('"' + (org.name || cleanDomain) + '"') + "&hl=en-US&gl=US&ceid=US:en").catch(() => null),
-      // External job board APIs — try each slug variant
       ...slugsToTry.flatMap(slug => [
         tryGreenhouse(slug),
         tryLever(slug),
@@ -184,7 +165,6 @@ export default async function handler(req, res) {
 
     const [data1, data2] = await Promise.all([res1.json(), res2.json()]);
 
-    // --- Parse Apollo job postings ---
     let apolloJobs = [];
     if (jobsResp && jobsResp.ok) {
       try {
@@ -202,23 +182,16 @@ export default async function handler(req, res) {
       } catch(_) {}
     }
 
-    // Merge all external job results, deduplicate by title+source
     const allExternal = externalJobResults.flat();
     const seenJobTitles = new Set();
     const deduped = [];
     for (const j of [...apolloJobs, ...allExternal]) {
       const key = (j.title + "|" + j.source).toLowerCase();
-      if (!seenJobTitles.has(key)) {
-        seenJobTitles.add(key);
-        deduped.push(j);
-      }
+      if (!seenJobTitles.has(key)) { seenJobTitles.add(key); deduped.push(j); }
     }
     const jobPostings = deduped.slice(0, 20);
-
-    // Track which sources had results
     const jobSources = [...new Set(jobPostings.map(j => j.source).filter(Boolean))];
 
-    // Build job board search links (always included)
     const encodedName = encodeURIComponent((org.name || cleanDomain) + " engineer");
     const jobBoardLinks = [
       { label: "LinkedIn Jobs", url: "https://www.linkedin.com/jobs/search/?keywords=" + encodeURIComponent(org.name || cleanDomain) + "&f_TPR=r604800" },
@@ -229,7 +202,6 @@ export default async function handler(req, res) {
       { label: "Wellfound", url: "https://wellfound.com/company/" + domainSlug + "/jobs" },
     ];
 
-    // --- Parse news articles ---
     let newsArticles = [];
     if (newsResp && newsResp.ok) {
       const xmlText = await newsResp.text();
@@ -245,14 +217,12 @@ export default async function handler(req, res) {
       }).filter(a => a.title);
     }
 
-    // --- Merge and deduplicate people ---
     const seen = new Set();
     const candidates = [];
     for (const p of [...(data1.people || []), ...(data2.people || [])]) {
       if (p.has_email && !seen.has(p.id)) { seen.add(p.id); candidates.push(p); }
     }
 
-    // --- Enrich and validate contacts ---
     const contacts = await Promise.all(
       candidates.slice(0, 30).map(async (p) => {
         try {
