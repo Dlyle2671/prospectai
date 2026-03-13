@@ -214,7 +214,7 @@ export default async function handler(req, res) {
         const cleanTitle = title.replace(/ - [^-]+$/, "").trim();
         const sourceName = source || (link.match(/https?:\/\/(?:www\.)?([^/]+)/) || [])[1] || "";
         return { title: cleanTitle, url: link, date: pubDate ? new Date(pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "", source: sourceName };
-      }).filter(a => { if (!a.title) return false; const orgN = (org.name || cleanDomain).toLowerCase(); const tl = a.title.toLowerCase(); return tl.includes(orgN) || tl.includes(cleanDomain); });
+      }).filter(a => { if (!a.title) return false; const orgN = org.name || cleanDomain; const strictRe = new RegExp("\\b" + orgN + "\\b"); const looseRe = new RegExp("\\b" + orgN + "\\b", "i"); const urlMatch = !!(a.url && a.url.toLowerCase().includes(cleanDomain)); return strictRe.test(a.title) || urlMatch || (orgN.length > 8 && looseRe.test(a.title));});
     }
 
     const seen = new Set();
