@@ -2,6 +2,7 @@
     "name": "prospectai",
     "version": "1.0.0",
     "description": "AI-powered prospecting bot with Apollo integration",
+            "type": "module",
     "scripts": {
           "dev": "vercel dev",
           "deploy": "vercel --prod"
