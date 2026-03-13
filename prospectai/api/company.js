@@ -288,7 +288,7 @@ export default async function handler(req, res) {
       employee_count: org.estimated_num_employees || org.num_employees || null,
       founded_year: org.founded_year || null,
       headquarters: [org.city, org.state, org.country].filter(Boolean).join(", "),
-      street_address: org.street_address || org.raw_address || "",
+      street_address: org.street_address || "",
       postal_code: org.postal_code || "",
       phone: org.primary_phone?.number || org.phone || "",
       linkedin_url: org.linkedin_url || "", twitter_url: org.twitter_url || "",
