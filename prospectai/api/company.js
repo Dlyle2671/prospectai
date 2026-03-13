@@ -153,7 +153,7 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json", "X-Api-Key": apiKey },
         body: JSON.stringify({ api_key: apiKey, organization_ids: [orgId], per_page: 50, page: 1 }),
       }).catch(() => null) : Promise.resolve(null)),
-      fetch("https://news.google.com/rss/search?q=" + encodeURIComponent('"' + (org.name || cleanDomain) + '"') + "&hl=en-US&gl=US&ceid=US:en").catch(() => null),
+      fetch("https://news.google.com/rss/search?q=" + encodeURIComponent('"' + (org.name || cleanDomain) + '" ' + cleanDomain) + "&hl=en-US&gl=US&ceid=US:en").catch(() => null),
       ...slugsToTry.flatMap(slug => [
         tryGreenhouse(slug),
         tryLever(slug),
@@ -214,7 +214,7 @@ export default async function handler(req, res) {
         const cleanTitle = title.replace(/ - [^-]+$/, "").trim();
         const sourceName = source || (link.match(/https?:\/\/(?:www\.)?([^/]+)/) || [])[1] || "";
         return { title: cleanTitle, url: link, date: pubDate ? new Date(pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "", source: sourceName };
-      }).filter(a => a.title);
+      }).filter(a => { if (!a.title) return false; const orgN = (org.name || cleanDomain).toLowerCase(); const tl = a.title.toLowerCase(); return tl.includes(orgN) || tl.includes(cleanDomain); });
     }
 
     const seen = new Set();
