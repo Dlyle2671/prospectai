@@ -214,9 +214,7 @@ export default async function handler(req, res) {
         const cleanTitle = title.replace(/ - [^-]+$/, "").trim();
         const sourceName = source || (link.match(/https?:\/\/(?:www\.)?([^/]+)/) || [])[1] || "";
         return { title: cleanTitle, url: link, date: pubDate ? new Date(pubDate).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) : "", source: sourceName };
-      }).filter(a => { if (!a.title) return false; const orgN = org.name || cleanDomain; const strictRe = new RegExp("\\b" + orgN + "\\b"); const looseRe = new RegExp("\\b" + orgN + "\\b", "i"); const urlMatch = !!(a.url && a.url.toLowerCase().includes(cleanDomain)); return strictRe.test(a.title) || urlMatch || (orgN.length > 8 && looseRe.test(a.title));});
-    }
-
+      }).filter(a => { if (!a.title) return false; var orgN = org.name || cleanDomain; var urlOk = !!(a.url && a.url.toLowerCase().indexOf(cleanDomain) !== -1); if (urlOk) return true; var t4 = a.title; var startsOk = t4.indexOf(orgN) === 0; var verbRe = new RegExp("\\b" + orgN + "\\s+(and|or|announces|launches|raises|acquires|partners|releases|welcomes|named|wins|joins|hires|secures|is |has )", "i"); var verbOk = verbRe.test(t4); if (orgN.length <= 9) return startsOk || verbOk; return new RegExp("\\b" + orgN + "\\b", "i").test(t4);})
     const seen = new Set();
     const candidates = [];
     for (const p of [...(data1.people || []), ...(data2.people || [])]) {
