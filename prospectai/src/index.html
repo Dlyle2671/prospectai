@@ -317,7 +317,7 @@ function renderCompanyProfile(c){
   if(c.alexa_rank)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Website Rank</span><span class="ci-stat-value">#'+Number(c.alexa_rank).toLocaleString()+'</span></div>';
   if(c.g2_review_count)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">G2 Reviews</span><span class="ci-stat-value">'+c.g2_review_count+'</span></div>';
   if(c.phone)overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Phone</span><span class="ci-stat-value">'+c.phone+'</span></div>';
-  var _addr=[c.street_address,c.headquarters,c.postal_code].filter(function(x){return x&&x.trim();});if(_addr.length>0){overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Address</span><span class="ci-stat-value">'+_addr.join(', ')+'</span></div>';}
+  var _addr=[c.street_address,c.postal_code].filter(function(x){return x&&x.trim();});if(_addr.length>0){overviewRows+='<div class="ci-stat"><span class="ci-stat-label">Address</span><span class="ci-stat-value">'+_addr.join(', ')+'</span></div>';}
   var overviewHtml='<div class="ci-section"><div class="ci-section-title">&#128202; Overview</div><div class="ci-stat-row">'+overviewRows+'</div></div>';
   /* Description */
   var descHtml='';
