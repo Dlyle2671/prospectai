@@ -7,9 +7,10 @@ frontend:
         - npm install
     build:
       commands:
+        - cd prospectai-next
         - npm run build
   artifacts:
-    baseDirectory: prospectai-next/.next
+    baseDirectory: prospectai-next
     files:
       - '**/*'
   cache:
