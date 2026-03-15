@@ -19,10 +19,10 @@ function mapIndustry(raw) {
     consulting:'MANAGEMENT_CONSULTING','staffing':'STAFFING_AND_RECRUITING','recruiting':'STAFFING_AND_RECRUITING',
     telecommunications:'TELECOMMUNICATIONS','telecom':'TELECOMMUNICATIONS',
     aerospace:'AVIATION_AND_AEROSPACE','automotive':'AUTOMOTIVE','construction':'CONSTRUCTION',
-    legal:'LAW_PRACTICE','accounting':'ACCOUNTING','energy:'OIL_AND_ENERGY',
+    legal:'LAW_PRACTICE','accounting':'ACCOUNTING',''energy':'OIL_AND_ENERGY',
     renewables':'RENEWABLES_AND_ENVIRONMENT','nonprofit':'NON_PROFIT_ORGANIZATION_MANAGEMENT',
     government:'GOVERNMENT_ADMINISTRATION','defense':'DEFENSE_AND_SPACE',
-    research:'RESEARCH','entertainment':'ENTERTAINMENT','hospitality:'HOSPITALITY',
+    research:'RESEARCH','entertainment':'ENTERTAINMENT',''hospitality':'HOSPITALITY',
   };
   if(map[s]) return map[s];
   for(const [k,v] of Object.entries(map)) if(s.includes(k)||k.includes(s)) return v;
