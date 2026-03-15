@@ -1,16 +1,17 @@
 version: 1
+appRoot: prospectai-next
 frontend:
   phases:
     preBuild:
       commands:
-        - cd prospectai-next && npm install
+        - npm install
     build:
       commands:
-        - cd prospectai-next && npm run build
+        - npm run build
   artifacts:
-    baseDirectory: prospectai-next
+    baseDirectory: .next
     files:
       - '**/*'
   cache:
     paths:
-      - prospectai-next/node_modules/**/*
+      - node_modules/**/*
