@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-      output: 'standalone',
         images: {
     domains: ['zenprospect-production.s3.amazonaws.com', 'apollo-server.com'],
           remotePatterns: [
