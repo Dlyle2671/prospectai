@@ -1,0 +1,17 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - cd prospectai-next
+        - npm ci
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: prospectai-next/.next
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - prospectai-next/node_modules/**/*
