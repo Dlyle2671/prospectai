@@ -8,6 +8,12 @@ frontend:
     build:
       commands:
         - npm run build
+        - mkdir -p .amplify-hosting/compute/default
+        - cp -r .next/standalone/. .amplify-hosting/compute/default/
+        - mkdir -p .amplify-hosting/static/_next/static
+        - cp -r .next/static/. .amplify-hosting/static/_next/static/
+        - cp -r public/. .amplify-hosting/static/ 2>/dev/null || true
+        - echo '{"version":1,"routes":[{"path":"/_next/static/<*>","target":{"kind":"Static"},"definition":{"static":{}}},{"path":"/public/<*>","target":{"kind":"Static"},"definition":{"static":{}}},{"path":"/<*>","target":{"kind":"Compute","src":"default"},"definition":{"compute":{"id":"default"}}}]}' > .amplify-hosting/deploy-manifest.json
   artifacts:
     baseDirectory: .amplify-hosting
     files:
