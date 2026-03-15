@@ -3,12 +3,10 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd prospectai-next
-        - npm install
+        - cd prospectai-next && npm install
     build:
       commands:
-        - cd prospectai-next
-        - npm run build
+        - cd prospectai-next && npm run build
   artifacts:
     baseDirectory: prospectai-next
     files:
