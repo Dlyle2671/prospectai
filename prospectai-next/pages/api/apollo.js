@@ -278,7 +278,7 @@ export default async function handler(req, res) {
                       body:JSON.stringify(body)
           });
             const searchData = await searchResp.json();
-            console.log('[apollo] search result: total_entries=', searchData.pagination?.total_entries, 'people=', searchData.people?.length, 'error=', searchData.error);
+            console.log('[apollo] search result: total_entries=', searchData.pagination?.total_entries, 'people=', searchData.people?.length, 'error=', searchData.error); if(searchData.people?.length > 0) { const fp = searchData.people[0]; console.log('[apollo] sample person org:', JSON.stringify({name:fp.name, org_primary_domain: fp.organization?.primary_domain, org_name: fp.organization?.name, org_id: fp.organization?.id, org_domain: fp.organization?.domain, org_website: fp.organization?.website_url})); }
 
           if(!searchResp.ok) return res.status(searchResp.status).json({error:searchData.message||searchData.error||JSON.stringify(searchData)});
 
