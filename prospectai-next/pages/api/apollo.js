@@ -45,7 +45,7 @@ function fmtRevenue(rev) {
         return'$'+n;
 }
 
-async function enrichPerson(p, apiKey) {
+async function enrichPerson(p, apiKey, searchedDomain) {
         try {
                   const r = await fetch('https://api.apollo.io/api/v1/people/match', {
                               method:'POST',
@@ -58,7 +58,7 @@ async function enrichPerson(p, apiKey) {
                   });
                   const d = await r.json();
                   const ep = d.person||{};
-                  const org = ep.organization||p.organization||{};
+                  const org = (searchedDomain ? p.organization : ep.organization)||ep.organization||p.organization||{};
                   const email = ep.email||p.email||'';
                   
 
@@ -125,7 +125,7 @@ async function enrichPerson(p, apiKey) {
                       time_in_role_months:currentJob.start_date?Math.floor((Date.now()-new Date(currentJob.start_date))/(1000*60*60*24*30)):null,
                       intent_strength:ep.intent_strength||null,
                       company_name:org.name||p.organization?.name||'',
-                      company_domain:org.primary_domain||p.organization?.primary_domain||'',
+                      company_domain:searchedDomain||org.primary_domain||p.organization?.primary_domain||'',
                       company_industry:org.industry||p.organization?.industry||'',
                       subindustry:org.subindustry||'',
                       company_size:org.estimated_num_employees||p.organization?.estimated_num_employees||'',
@@ -289,7 +289,7 @@ export default async function handler(req, res) {
           console.log('[apollo] candidates after filter:', candidates.length, 'isDomainSearch:', isDomainSearch);
             if(!candidates.length) return res.status(200).json([]);
 
-          const enriched = await Promise.all(candidates.map(p => enrichPerson(p, apiKey)));
+          const enriched = await Promise.all(candidates.map(p => enrichPerson(p, apiKey, isDomainSearch ? organization_domains[0] : null)));
             return res.status(200).json(enriched.filter(Boolean).sort((a,b)=>b.score-a.score));
 
   } catch(err) {
