@@ -18,9 +18,8 @@ const EMAIL_PROVIDERS = [
   { id: 'custom', name: 'Custom SMTP', host: '', port: 587 },
   ];
 
+// Score weights that users can adjust. Title/seniority are handled automatically in apollo.js.
 export const DEFAULT_ICP = {
-    titleWeight: 40,
-    seniorityWeight: 30,
     companySizeWeight: 35,
     industryWeight: 20,
     fundingWeight: 8,
@@ -32,8 +31,14 @@ export const DEFAULT_ICP = {
     hotThreshold: 75,
     warmThreshold: 50,
     targetIndustries: ['technology', 'software', 'saas', 'cloud computing', 'cybersecurity', 'fintech', 'financial services', 'healthcare', 'biotech'],
-    targetSizes: [],
 };
+
+// Keys that count toward the 100-point total
+const WEIGHT_KEYS = ['companySizeWeight', 'industryWeight', 'fundingWeight', 'verifiedEmailBonus', 'linkedinBonus', 'phoneBonus', 'hiringSurgeBonus', 'awsBonus'];
+
+function calcTotal(icp) {
+    return WEIGHT_KEYS.reduce((sum, k) => sum + (Number(icp[k]) || 0), 0);
+}
 
 export default function Settings() {
     const [saved, setSaved] = useState({});
@@ -46,16 +51,30 @@ export default function Settings() {
     const [icp, setIcp] = useState(() => ({ ...DEFAULT_ICP, ...(paiLoad('icp_weights') || {}) }));
     const [icpSaved, setIcpSaved] = useState(false);
 
+  const total = calcTotal(icp);
+    const overBudget = total > 100;
+
   function handleSave(id) {
         setSaved(prev => ({ ...prev, [id]: true }));
         setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 2000);
   }
 
-  function setIcpField(key, val) {
-        setIcp(prev => ({ ...prev, [key]: val }));
+  function setIcpField(key, rawVal) {
+        const val = Number(rawVal);
+        setIcp(prev => {
+                const next = { ...prev, [key]: val };
+                // If total would exceed 100, cap the new value so total stays at 100
+                     const newTotal = calcTotal(next);
+                if (newTotal > 100) {
+                          const excess = newTotal - 100;
+                          next[key] = Math.max(0, val - excess);
+                }
+                return next;
+        });
   }
 
   function saveIcp() {
+        if (overBudget) return;
         paiSave('icp_weights', icp);
         setIcpSaved(true);
         setTimeout(() => setIcpSaved(false), 2000);
@@ -67,8 +86,7 @@ export default function Settings() {
   }
 
   const selectedProvider = EMAIL_PROVIDERS.find(p => p.id === emailProvider);
-
-  const sliderStyle = { width: '100%', accentColor: '#3b82f6', cursor: 'pointer' };
+    const sliderStyle = { width: '100%', accentColor: '#3b82f6', cursor: 'pointer' };
     const rowStyle = { marginBottom: 18 };
     const labelRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 };
     const labelStyle = { fontSize: 13, color: '#94a3b8', fontWeight: 500 };
@@ -83,45 +101,50 @@ export default function Settings() {
   {/* ICP Lead Scoring */}
         <div className="settings-card">
                   <div className="settings-title">🎯 ICP Lead Scoring</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-          Adjust scoring weights to match your ideal customer profile. Scores are recalculated on every search.
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+          Adjust scoring weights to match your ideal customer profile. All weights must total 100 or less.
             </div>
 
-        <div style={sectionStyle}>Score Weights (max points per category)</div>
+{/* Live total meter */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Total weight used</span>
+            <span style={{ fontSize: 15, fontWeight: 700, color: overBudget ? '#ef4444' : total === 100 ? '#22c55e' : '#3b82f6' }}>
+{total} / 100
+  </span>
+  </div>
+          <div style={{ background: '#0f172a', borderRadius: 6, overflow: 'hidden', height: 8, border: '1px solid #334155' }}>
+            <div style={{
+                height: '100%',
+                width: Math.min(total, 100) + '%',
+                                  background: overBudget ? '#ef4444' : total >= 90 ? '#f59e0b' : 'linear-gradient(90deg,#1d4ed8,#3b82f6)',
+                transition: 'width .2s, background .2s',
+}} />
+  </div>
+{overBudget && (
+              <div style={{ fontSize: 11, color: '#ef4444', marginTop: 5 }}>
+              ⚠️ Total exceeds 100. Reduce weights before saving.
+                </div>
+          )}
+</div>
+
+        <div style={sectionStyle}>Score Weights</div>
 
         <div style={rowStyle}>
-                      <div style={labelRowStyle}>
-                        <span style={labelStyle}>Job Title Match</span>
-            <span style={valStyle}>{icp.titleWeight}</span>
-            </div>
-          <input type="range" min={0} max={60} value={icp.titleWeight} onChange={e => setIcpField('titleWeight', Number(e.target.value))} style={sliderStyle} />
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points awarded when title matches your target titles (CTO, VP Eng, etc.)</div>
-            </div>
-
-        <div style={rowStyle}>
-                      <div style={labelRowStyle}>
-                        <span style={labelStyle}>Seniority</span>
-            <span style={valStyle}>{icp.seniorityWeight}</span>
-            </div>
-          <input type="range" min={0} max={50} value={icp.seniorityWeight} onChange={e => setIcpField('seniorityWeight', Number(e.target.value))} style={sliderStyle} />
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points for C-suite / VP / Director / Head seniority levels</div>
-            </div>
-
-        <div style={rowStyle}>
-                      <div style={labelRowStyle}>
-                        <span style={labelStyle}>Company Size</span>
+            <div style={labelRowStyle}>
+              <span style={labelStyle}>Company Size</span>
             <span style={valStyle}>{icp.companySizeWeight}</span>
-            </div>
-          <input type="range" min={0} max={50} value={icp.companySizeWeight} onChange={e => setIcpField('companySizeWeight', Number(e.target.value))} style={sliderStyle} />
-                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points for companies in your ideal headcount range (201–5000 scores highest)</div>
-            </div>
+  </div>
+          <input type="range" min={0} max={60} value={icp.companySizeWeight} onChange={e => setIcpField('companySizeWeight', e.target.value)} style={sliderStyle} />
+            <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points for companies in your ideal headcount range (201–5000 scores highest)</div>
+  </div>
 
         <div style={rowStyle}>
-                      <div style={labelRowStyle}>
-                        <span style={labelStyle}>Industry Match</span>
+            <div style={labelRowStyle}>
+              <span style={labelStyle}>Industry Match</span>
             <span style={valStyle}>{icp.industryWeight}</span>
-            </div>
-          <input type="range" min={0} max={40} value={icp.industryWeight} onChange={e => setIcpField('industryWeight', Number(e.target.value))} style={sliderStyle} />
+  </div>
+          <input type="range" min={0} max={50} value={icp.industryWeight} onChange={e => setIcpField('industryWeight', e.target.value)} style={sliderStyle} />
                       <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points when company industry matches your target industries</div>
             </div>
 
@@ -130,26 +153,26 @@ export default function Settings() {
                         <span style={labelStyle}>Recent Funding</span>
             <span style={valStyle}>{icp.fundingWeight}</span>
             </div>
-          <input type="range" min={0} max={20} value={icp.fundingWeight} onChange={e => setIcpField('fundingWeight', Number(e.target.value))} style={sliderStyle} />
+          <input type="range" min={0} max={30} value={icp.fundingWeight} onChange={e => setIcpField('fundingWeight', e.target.value)} style={sliderStyle} />
                       <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Bonus for companies funded in the last 18 months</div>
             </div>
 
         <div style={sectionStyle}>Signal Bonuses</div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
 {[
-  { key: 'verifiedEmailBonus', label: 'Verified Email', max: 10 },
-  { key: 'linkedinBonus', label: 'Has LinkedIn', max: 10 },
-  { key: 'phoneBonus', label: 'Has Phone', max: 10 },
-  { key: 'hiringSurgeBonus', label: 'Hiring Surge', max: 15 },
-  { key: 'awsBonus', label: 'AWS Stack (3+ services)', max: 15 },
+  { key: 'verifiedEmailBonus', label: 'Verified Email', max: 15 },
+  { key: 'linkedinBonus', label: 'Has LinkedIn', max: 15 },
+  { key: 'phoneBonus', label: 'Has Phone', max: 15 },
+  { key: 'hiringSurgeBonus', label: 'Hiring Surge', max: 20 },
+  { key: 'awsBonus', label: 'AWS Stack (3+ services)', max: 20 },
             ].map(({ key, label, max }) => (
                           <div key={key}>
                             <div style={labelRowStyle}>
                               <span style={{ fontSize: 12, color: '#94a3b8' }}>{label}</span>
                                   <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>+{icp[key]}</span>
                   </div>
-                                <input type="range" min={0} max={max} value={icp[key]} onChange={e => setIcpField(key, Number(e.target.value))} style={sliderStyle} />
+                                <input type="range" min={0} max={max} value={icp[key]} onChange={e => setIcpField(key, e.target.value)} style={sliderStyle} />
   </div>
            ))}
 </div>
@@ -162,14 +185,14 @@ export default function Settings() {
                 <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>🔴 Hot threshold</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#ef4444' }}>{icp.hotThreshold}+</span>
   </div>
-            <input type="range" min={50} max={95} value={icp.hotThreshold} onChange={e => setIcpField('hotThreshold', Number(e.target.value))} style={{ ...sliderStyle, accentColor: '#ef4444' }} />
+            <input type="range" min={50} max={95} value={icp.hotThreshold} onChange={e => setIcp(prev => ({ ...prev, hotThreshold: Number(e.target.value) }))} style={{ ...sliderStyle, accentColor: '#ef4444' }} />
   </div>
           <div>
               <div style={labelRowStyle}>
                 <span style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600 }}>🟡 Warm threshold</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{icp.warmThreshold}+</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{icp.warmThreshold}+</span>
   </div>
-            <input type="range" min={20} max={74} value={icp.warmThreshold} onChange={e => setIcpField('warmThreshold', Number(e.target.value))} style={{ ...sliderStyle, accentColor: '#f59e0b' }} />
+            <input type="range" min={20} max={74} value={icp.warmThreshold} onChange={e => setIcp(prev => ({ ...prev, warmThreshold: Number(e.target.value) }))} style={{ ...sliderStyle, accentColor: '#f59e0b' }} />
   </div>
   </div>
 
@@ -181,7 +204,7 @@ export default function Settings() {
               return (
                               <button key={ind} onClick={() => {
                                 const arr = active ? icp.targetIndustries.filter(i => i !== ind) : [...icp.targetIndustries, ind];
-                                setIcpField('targetIndustries', arr);
+                                setIcp(prev => ({ ...prev, targetIndustries: arr }));
               }} style={{
                   padding: '4px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer', border: '1px solid',
                   background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
@@ -193,25 +216,26 @@ export default function Settings() {
 })}
 </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={saveIcp} style={{
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button onClick={saveIcp} disabled={overBudget} style={{
               padding: '10px 24px', borderRadius: 8, border: 'none',
-              background: icpSaved ? '#14532d' : '#1d4ed8',
-              color: icpSaved ? '#4ade80' : '#fff',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer'
+              background: overBudget ? '#374151' : icpSaved ? '#14532d' : '#1d4ed8',
+              color: overBudget ? '#6b7280' : icpSaved ? '#4ade80' : '#fff',
+              fontSize: 14, fontWeight: 600, cursor: overBudget ? 'not-allowed' : 'pointer',
 }}>
 {icpSaved ? '✓ Saved' : 'Save ICP Settings'}
 </button>
           <button onClick={resetIcp} style={{
               padding: '10px 20px', borderRadius: 8, border: '1px solid #334155',
-              background: 'transparent', color: '#64748b', fontSize: 14, cursor: 'pointer'
+              background: 'transparent', color: '#64748b', fontSize: 14, cursor: 'pointer',
 }}>
             Reset to Defaults
               </button>
-              </div>
-              </div>
+{overBudget && <span style={{ fontSize: 12, color: '#ef4444' }}>Reduce weights to save</span>}
+  </div>
+  </div>
 
-{/* Data Sources & CRM Connections */}
+{/* Integrations */}
       <div className="settings-card">
                 <div className="settings-title">🔌 Integrations</div>
 {INTEGRATIONS.map(integration => (
@@ -245,20 +269,18 @@ export default function Settings() {
         <div className="form-row">
                   <label className="form-label">Email Provider</label>
           <select className="form-select" value={emailProvider} onChange={e => setEmailProvider(e.target.value)}>
-      {EMAIL_PROVIDERS.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-              </select>
-              </div>
+      {EMAIL_PROVIDERS.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+        </select>
+        </div>
         <div className="form-row">
-                        <label className="form-label">SMTP Host</label>
+                  <label className="form-label">SMTP Host</label>
 {emailProvider === 'custom'
              ? <input className="form-input" type="text" value={customHost} onChange={e => setCustomHost(e.target.value)} placeholder="smtp.yourdomain.com" />
               : <input className="form-input" type="text" value={selectedProvider?.host} disabled />
   }
   </div>
         <div className="form-row">
-            <label className="form-label">Port</label>
+                                                                                                                   <label className="form-label">Port</label>
 {emailProvider === 'custom'
              ? <input className="form-input" type="number" value={customPort} onChange={e => setCustomPort(e.target.value)} style={{ width: 100 }} />
             : <input className="form-input" type="number" value={selectedProvider?.port} disabled style={{ width: 100 }} />
@@ -279,14 +301,12 @@ export default function Settings() {
   </div>
           )}
 </div>
-        <button className={`save-btn ${emailSaved ? 'saved' : ''}`} onClick={() => {
-          handleSave('email'); setEmailSaved(true); setTimeout(() => setEmailSaved(false), 2000);
-          }}>
+        <button className={`save-btn ${emailSaved ? 'saved' : ''}`} onClick={() => { handleSave('email'); setEmailSaved(true); setTimeout(() => setEmailSaved(false), 2000); }}>
 {emailSaved ? '✓ Saved' : 'Save Email Settings'}
 </button>
   </div>
 
-{/* Environment Variables Guide */}
+{/* Environment Variables */}
       <div className="settings-card">
                 <div className="settings-title">⚙️ Environment Variables</div>
         <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
