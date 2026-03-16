@@ -1,4 +1,4 @@
-// ProspectAI — /api/apollo
+———───────────────────────────────────────────────────────────────────────────────────────────────────────// ProspectAI — /api/apollo
 // Full lead scoring + Apollo enrichment pipeline
 
 const SENIORITY_SCORE = { c_suite:40, founder:40, vp:35, head:30, director:25, manager:15, senior:10, entry:5 };
