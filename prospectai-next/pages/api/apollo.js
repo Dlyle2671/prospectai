@@ -240,7 +240,7 @@ export default async function handler(req, res) {
           }
 
           // ── Search mode ─────────────────────────────────────────────────────────
-          const body = { api_key: apiKey, page, per_page };
+          const body = { api_key: apiKey, page, per_page: isDomainSearch ? Math.min(per_page * 3, 100) : per_page };
 
           if(isDomainSearch) {
                       body.contact_email_status = ['verified','guessed','unavailable','bounced'];
@@ -283,7 +283,7 @@ export default async function handler(req, res) {
           if(!searchResp.ok) return res.status(searchResp.status).json({error:searchData.message||searchData.error||JSON.stringify(searchData)});
 
           const candidates = isDomainSearch
-              ? (searchData.people||[]).filter(p => p.email || p.has_email || p.contact_email_status !== 'notFound')
+              ? (searchData.people||[]).filter(p => { const pd = p.organization?.primary_domain||''; const match = !organization_domains[0] || pd === organization_domains[0] || pd.endsWith('.'+organization_domains[0]) || organization_domains[0].endsWith('.'+pd); return match && (p.email || p.has_email || p.contact_email_status !== 'notFound'); })
                       : (searchData.people||[]).filter(p => p.has_email);
 
           console.log('[apollo] candidates after filter:', candidates.length, 'isDomainSearch:', isDomainSearch);
