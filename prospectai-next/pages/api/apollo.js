@@ -60,7 +60,7 @@ async function enrichPerson(p, apiKey) {
                   const ep = d.person||{};
                   const org = ep.organization||p.organization||{};
                   const email = ep.email||p.email||'';
-                  if(!email) return null;
+                  if(!email) email = p.email || '';
 
           const allTech = (org.technology_names||org.technologies||[]).map(t=>typeof t==='string'?t:t.name||t.category||'').filter(Boolean);
                   const awsRaw = allTech.filter(t=>isAwsService(t));
