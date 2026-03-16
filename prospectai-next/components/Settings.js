@@ -1,4 +1,5 @@
-import { useState } from 'react';
+mport { useState, useEffect } from 'react';
+import { paiSave, paiLoad } from '../lib/utils';
 
 const INTEGRATIONS = [
   { id: 'apollo', name: 'Apollo.io', icon: '🚀', description: 'Contact & company data enrichment', envKey: 'APOLLO_API_KEY' },
@@ -7,7 +8,7 @@ const INTEGRATIONS = [
   { id: 'pipedrive', name: 'Pipedrive', icon: '🟢', description: 'CRM — push deals and contacts', envKey: 'PIPEDRIVE_API_KEY', comingSoon: true },
   { id: 'hunter', name: 'Hunter.io', icon: '🔍', description: 'Email finding and verification', envKey: 'HUNTER_API_KEY', comingSoon: true },
   { id: 'clearbit', name: 'Clearbit', icon: '🔷', description: 'Company and person enrichment', envKey: 'CLEARBIT_API_KEY', comingSoon: true },
-];
+  ];
 
 const EMAIL_PROVIDERS = [
   { id: 'office365', name: 'Office 365 / Outlook', host: 'smtp.office365.com', port: 587 },
@@ -15,124 +16,290 @@ const EMAIL_PROVIDERS = [
   { id: 'sendgrid', name: 'SendGrid', host: 'smtp.sendgrid.net', port: 587 },
   { id: 'mailgun', name: 'Mailgun', host: 'smtp.mailgun.org', port: 587 },
   { id: 'custom', name: 'Custom SMTP', host: '', port: 587 },
-];
+  ];
+
+export const DEFAULT_ICP = {
+    titleWeight: 40,
+    seniorityWeight: 30,
+    companySizeWeight: 35,
+    industryWeight: 20,
+    fundingWeight: 8,
+    verifiedEmailBonus: 3,
+    linkedinBonus: 2,
+    phoneBonus: 2,
+    hiringSurgeBonus: 3,
+    awsBonus: 3,
+    hotThreshold: 75,
+    warmThreshold: 50,
+    targetIndustries: ['technology', 'software', 'saas', 'cloud computing', 'cybersecurity', 'fintech', 'financial services', 'healthcare', 'biotech'],
+    targetSizes: [],
+};
 
 export default function Settings() {
-  const [saved, setSaved] = useState({});
-  const [emailProvider, setEmailProvider] = useState('office365');
-  const [emailUser, setEmailUser] = useState('');
-  const [emailPass, setEmailPass] = useState('');
-  const [customHost, setCustomHost] = useState('');
-  const [customPort, setCustomPort] = useState(587);
-  const [emailSaved, setEmailSaved] = useState(false);
+    const [saved, setSaved] = useState({});
+    const [emailProvider, setEmailProvider] = useState('office365');
+    const [emailUser, setEmailUser] = useState('');
+    const [emailPass, setEmailPass] = useState('');
+    const [customHost, setCustomHost] = useState('');
+    const [customPort, setCustomPort] = useState(587);
+    const [emailSaved, setEmailSaved] = useState(false);
+    const [icp, setIcp] = useState(() => ({ ...DEFAULT_ICP, ...(paiLoad('icp_weights') || {}) }));
+    const [icpSaved, setIcpSaved] = useState(false);
 
   function handleSave(id) {
-    setSaved(prev => ({ ...prev, [id]: true }));
-    setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 2000);
+        setSaved(prev => ({ ...prev, [id]: true }));
+        setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 2000);
+  }
+
+  function setIcpField(key, val) {
+        setIcp(prev => ({ ...prev, [key]: val }));
+  }
+
+  function saveIcp() {
+        paiSave('icp_weights', icp);
+        setIcpSaved(true);
+        setTimeout(() => setIcpSaved(false), 2000);
+  }
+
+  function resetIcp() {
+        setIcp({ ...DEFAULT_ICP });
+        paiSave('icp_weights', DEFAULT_ICP);
   }
 
   const selectedProvider = EMAIL_PROVIDERS.find(p => p.id === emailProvider);
 
+  const sliderStyle = { width: '100%', accentColor: '#3b82f6', cursor: 'pointer' };
+    const rowStyle = { marginBottom: 18 };
+    const labelRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 };
+    const labelStyle = { fontSize: 13, color: '#94a3b8', fontWeight: 500 };
+    const valStyle = { fontSize: 13, fontWeight: 700, color: '#3b82f6', minWidth: 32, textAlign: 'right' };
+    const sectionStyle = { fontSize: 11, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 600, marginBottom: 14, marginTop: 8 };
+
   return (
-    <div className="fade-up">
-      <div className="section-title">Settings</div>
-      <div className="section-sub">Connect your data sources and CRM integrations. Your API keys are stored securely as environment variables — never in the browser.</div>
+        <div className="fade-up">
+          <div className="section-title">Settings</div>
+        <div className="section-sub">Customize lead scoring to match your ICP, and manage your integrations.</div>
 
-      {/* Data Sources & CRM Connections */}
+  {/* ICP Lead Scoring */}
+        <div className="settings-card">
+                  <div className="settings-title">🎯 ICP Lead Scoring</div>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+          Adjust scoring weights to match your ideal customer profile. Scores are recalculated on every search.
+            </div>
+
+        <div style={sectionStyle}>Score Weights (max points per category)</div>
+
+        <div style={rowStyle}>
+                      <div style={labelRowStyle}>
+                        <span style={labelStyle}>Job Title Match</span>
+            <span style={valStyle}>{icp.titleWeight}</span>
+            </div>
+          <input type="range" min={0} max={60} value={icp.titleWeight} onChange={e => setIcpField('titleWeight', Number(e.target.value))} style={sliderStyle} />
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points awarded when title matches your target titles (CTO, VP Eng, etc.)</div>
+            </div>
+
+        <div style={rowStyle}>
+                      <div style={labelRowStyle}>
+                        <span style={labelStyle}>Seniority</span>
+            <span style={valStyle}>{icp.seniorityWeight}</span>
+            </div>
+          <input type="range" min={0} max={50} value={icp.seniorityWeight} onChange={e => setIcpField('seniorityWeight', Number(e.target.value))} style={sliderStyle} />
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points for C-suite / VP / Director / Head seniority levels</div>
+            </div>
+
+        <div style={rowStyle}>
+                      <div style={labelRowStyle}>
+                        <span style={labelStyle}>Company Size</span>
+            <span style={valStyle}>{icp.companySizeWeight}</span>
+            </div>
+          <input type="range" min={0} max={50} value={icp.companySizeWeight} onChange={e => setIcpField('companySizeWeight', Number(e.target.value))} style={sliderStyle} />
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points for companies in your ideal headcount range (201–5000 scores highest)</div>
+            </div>
+
+        <div style={rowStyle}>
+                      <div style={labelRowStyle}>
+                        <span style={labelStyle}>Industry Match</span>
+            <span style={valStyle}>{icp.industryWeight}</span>
+            </div>
+          <input type="range" min={0} max={40} value={icp.industryWeight} onChange={e => setIcpField('industryWeight', Number(e.target.value))} style={sliderStyle} />
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Points when company industry matches your target industries</div>
+            </div>
+
+        <div style={rowStyle}>
+                      <div style={labelRowStyle}>
+                        <span style={labelStyle}>Recent Funding</span>
+            <span style={valStyle}>{icp.fundingWeight}</span>
+            </div>
+          <input type="range" min={0} max={20} value={icp.fundingWeight} onChange={e => setIcpField('fundingWeight', Number(e.target.value))} style={sliderStyle} />
+                      <div style={{ fontSize: 11, color: '#475569', marginTop: 3 }}>Bonus for companies funded in the last 18 months</div>
+            </div>
+
+        <div style={sectionStyle}>Signal Bonuses</div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 18 }}>
+{[
+  { key: 'verifiedEmailBonus', label: 'Verified Email', max: 10 },
+  { key: 'linkedinBonus', label: 'Has LinkedIn', max: 10 },
+  { key: 'phoneBonus', label: 'Has Phone', max: 10 },
+  { key: 'hiringSurgeBonus', label: 'Hiring Surge', max: 15 },
+  { key: 'awsBonus', label: 'AWS Stack (3+ services)', max: 15 },
+            ].map(({ key, label, max }) => (
+                          <div key={key}>
+                            <div style={labelRowStyle}>
+                              <span style={{ fontSize: 12, color: '#94a3b8' }}>{label}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>+{icp[key]}</span>
+                  </div>
+                                <input type="range" min={0} max={max} value={icp[key]} onChange={e => setIcpField(key, Number(e.target.value))} style={sliderStyle} />
+  </div>
+           ))}
+</div>
+
+        <div style={sectionStyle}>Score Thresholds</div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+          <div>
+              <div style={labelRowStyle}>
+                <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>🔴 Hot threshold</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#ef4444' }}>{icp.hotThreshold}+</span>
+  </div>
+            <input type="range" min={50} max={95} value={icp.hotThreshold} onChange={e => setIcpField('hotThreshold', Number(e.target.value))} style={{ ...sliderStyle, accentColor: '#ef4444' }} />
+  </div>
+          <div>
+              <div style={labelRowStyle}>
+                <span style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600 }}>🟡 Warm threshold</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{icp.warmThreshold}+</span>
+  </div>
+            <input type="range" min={20} max={74} value={icp.warmThreshold} onChange={e => setIcpField('warmThreshold', Number(e.target.value))} style={{ ...sliderStyle, accentColor: '#f59e0b' }} />
+  </div>
+  </div>
+
+        <div style={sectionStyle}>Target Industries</div>
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>Companies in these industries get full industry points. Others get 5 pts.</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+{['technology', 'software', 'saas', 'cloud computing', 'cybersecurity', 'fintech', 'financial services', 'healthcare', 'biotech', 'e-commerce', 'media', 'education', 'real estate', 'logistics', 'manufacturing'].map(ind => {
+              const active = icp.targetIndustries.includes(ind);
+              return (
+                              <button key={ind} onClick={() => {
+                                const arr = active ? icp.targetIndustries.filter(i => i !== ind) : [...icp.targetIndustries, ind];
+                                setIcpField('targetIndustries', arr);
+              }} style={{
+                  padding: '4px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer', border: '1px solid',
+                  background: active ? 'rgba(59,130,246,0.15)' : 'transparent',
+                  borderColor: active ? '#3b82f6' : '#334155',
+                  color: active ? '#93c5fd' : '#64748b',
+                  fontWeight: active ? 600 : 400,
+}}>{ind}</button>
+            );
+})}
+</div>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={saveIcp} style={{
+              padding: '10px 24px', borderRadius: 8, border: 'none',
+              background: icpSaved ? '#14532d' : '#1d4ed8',
+              color: icpSaved ? '#4ade80' : '#fff',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer'
+}}>
+{icpSaved ? '✓ Saved' : 'Save ICP Settings'}
+</button>
+          <button onClick={resetIcp} style={{
+              padding: '10px 20px', borderRadius: 8, border: '1px solid #334155',
+              background: 'transparent', color: '#64748b', fontSize: 14, cursor: 'pointer'
+}}>
+            Reset to Defaults
+              </button>
+              </div>
+              </div>
+
+{/* Data Sources & CRM Connections */}
       <div className="settings-card">
-        <div className="settings-title">🔌 Integrations</div>
-        {INTEGRATIONS.map(integration => (
-          <div key={integration.id} className="connection-card">
-            <div className="connection-header">
-              <div>
-                <div className="connection-name">{integration.icon} {integration.name}</div>
+                <div className="settings-title">🔌 Integrations</div>
+{INTEGRATIONS.map(integration => (
+            <div key={integration.id} className="connection-card">
+              <div className="connection-header">
+                <div>
+                  <div className="connection-name">{integration.icon} {integration.name}</div>
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{integration.description}</div>
-              </div>
-              {integration.comingSoon
-                ? <span style={{ fontSize: 11, color: '#64748b', background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', padding: '3px 10px', borderRadius: 20 }}>Coming Soon</span>
+  </div>
+{integration.comingSoon
+                 ? <span style={{ fontSize: 11, color: '#64748b', background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', padding: '3px 10px', borderRadius: 20 }}>Coming Soon</span>
                 : <span className="connection-status connected">● Connected</span>
-              }
-            </div>
-            {!integration.comingSoon && (
-              <div className="form-row">
-                <label className="form-label">{integration.name} API Key / Token</label>
-                <input
-                  className="form-input"
-                  type="password"
-                  placeholder={`Set via environment variable: ${integration.envKey}`}
-                  disabled
-                />
-                <div style={{ fontSize: 11, color: '#22c55e', marginTop: 6 }}>
-                  <span className="status-dot" />
-                  Stored securely in server environment variables
-                </div>
-              </div>
+}
+</div>
+{!integration.comingSoon && (
+                <div className="form-row">
+                  <label className="form-label">{integration.name} API Key / Token</label>
+                <input className="form-input" type="password" placeholder={`Set via environment variable: ${integration.envKey}`} disabled />
+                  <div style={{ fontSize: 11, color: '#22c55e', marginTop: 6 }}>
+                  <span className="status-dot" /> Stored securely in server environment variables
+  </div>
+  </div>
             )}
-          </div>
+</div>
         ))}
-      </div>
+          </div>
 
-      {/* Email Configuration */}
+{/* Email Configuration */}
       <div className="settings-card">
-        <div className="settings-title">📧 Email Configuration</div>
+                <div className="settings-title">📧 Email Configuration</div>
         <div className="form-row">
-          <label className="form-label">Email Provider</label>
+                  <label className="form-label">Email Provider</label>
           <select className="form-select" value={emailProvider} onChange={e => setEmailProvider(e.target.value)}>
-            {EMAIL_PROVIDERS.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+      {EMAIL_PROVIDERS.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
             ))}
-          </select>
-        </div>
+              </select>
+              </div>
         <div className="form-row">
-          <label className="form-label">SMTP Host</label>
-          {emailProvider === 'custom'
-            ? <input className="form-input" type="text" value={customHost} onChange={e => setCustomHost(e.target.value)} placeholder="smtp.yourdomain.com" />
-            : <input className="form-input" type="text" value={selectedProvider?.host} disabled />
-          }
-        </div>
+                        <label className="form-label">SMTP Host</label>
+{emailProvider === 'custom'
+             ? <input className="form-input" type="text" value={customHost} onChange={e => setCustomHost(e.target.value)} placeholder="smtp.yourdomain.com" />
+              : <input className="form-input" type="text" value={selectedProvider?.host} disabled />
+  }
+  </div>
         <div className="form-row">
-          <label className="form-label">Port</label>
-          {emailProvider === 'custom'
-            ? <input className="form-input" type="number" value={customPort} onChange={e => setCustomPort(e.target.value)} style={{ width: 100 }} />
+            <label className="form-label">Port</label>
+{emailProvider === 'custom'
+             ? <input className="form-input" type="number" value={customPort} onChange={e => setCustomPort(e.target.value)} style={{ width: 100 }} />
             : <input className="form-input" type="number" value={selectedProvider?.port} disabled style={{ width: 100 }} />
-          }
-        </div>
+}
+</div>
         <div className="form-row">
-          <label className="form-label">Email Address (sender)</label>
+            <label className="form-label">Email Address (sender)</label>
           <input className="form-input" type="email" value={emailUser} onChange={e => setEmailUser(e.target.value)} placeholder="you@yourcompany.com" />
-        </div>
+  </div>
         <div className="form-row">
-          <label className="form-label">
-            {emailProvider === 'gmail' ? 'App Password (not your Google password)' : emailProvider === 'sendgrid' ? 'API Key' : 'Password'}
-          </label>
+            <label className="form-label">
+{emailProvider === 'gmail' ? 'App Password (not your Google password)' : emailProvider === 'sendgrid' ? 'API Key' : 'Password'}
+  </label>
           <input className="form-input" type="password" value={emailPass} onChange={e => setEmailPass(e.target.value)} placeholder="••••••••••••" />
-          {emailProvider === 'gmail' && (
-            <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
-              ⚠️ Gmail requires an App Password. Enable 2FA and create one at myaccount.google.com/apppasswords
-            </div>
+{emailProvider === 'gmail' && (
+              <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>
+                ⚠️ Gmail requires an App Password. Enable 2FA and create one at myaccount.google.com/apppasswords
+  </div>
           )}
-        </div>
-        <button className={`save-btn ${emailSaved ? 'saved' : ''}`} onClick={() => { handleSave('email'); setEmailSaved(true); setTimeout(() => setEmailSaved(false), 2000); }}>
-          {emailSaved ? '✓ Saved' : 'Save Email Settings'}
-        </button>
-      </div>
+</div>
+        <button className={`save-btn ${emailSaved ? 'saved' : ''}`} onClick={() => {
+          handleSave('email'); setEmailSaved(true); setTimeout(() => setEmailSaved(false), 2000);
+          }}>
+{emailSaved ? '✓ Saved' : 'Save Email Settings'}
+</button>
+  </div>
 
-      {/* Environment Variables Guide */}
+{/* Environment Variables Guide */}
       <div className="settings-card">
-        <div className="settings-title">⚙️ Environment Variables</div>
+                <div className="settings-title">⚙️ Environment Variables</div>
         <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
-          <p style={{ marginBottom: 12 }}>API keys are stored as environment variables on your server — never in the browser or database. Set them in your deployment environment:</p>
+          <p style={{ marginBottom: 12 }}>API keys are stored as environment variables on your server — never in the browser or database.</p>
           <div style={{ background: '#080c14', border: '1px solid #1a2540', borderRadius: 8, padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#e2e8f0' }}>
             <div>APOLLO_API_KEY=your_apollo_key</div>
             <div>HUBSPOT_ACCESS_TOKEN=your_hubspot_token</div>
             <div>EMAIL_USER=sender@yourdomain.com</div>
             <div>EMAIL_PASS=your_email_password</div>
             <div>EMAIL_FROM_NAME=ProspectAI</div>
-            <div style={{ color: '#475569', marginTop: 8 }}># AWS Amplify: set in App settings → Environment variables</div>
-            <div style={{ color: '#475569' }}># EC2/ECS: set in .env file or task definition</div>
-          </div>
         </div>
-      </div>
-    </div>
+        </div>
+        </div>
+        </div>
   );
 }
