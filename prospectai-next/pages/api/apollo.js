@@ -283,7 +283,7 @@ export default async function handler(req, res) {
           if(!searchResp.ok) return res.status(searchResp.status).json({error:searchData.message||searchData.error||JSON.stringify(searchData)});
 
           const candidates = isDomainSearch
-              ? (searchData.people||[]).filter(p => { const pd = p.organization?.primary_domain||''; const match = !organization_domains[0] || pd === organization_domains[0] || pd.endsWith('.'+organization_domains[0]) || organization_domains[0].endsWith('.'+pd); return match && (p.email || p.has_email || p.contact_email_status !== 'notFound'); })
+              ? (searchData.people||[]).filter(p => { const org = p.organization||{}; const pd = (org.primary_domain||org.website_url||org.domain||'').replace(/^https?:\/\/(www\.)?/,'').split('/')[0].toLowerCase(); const sd = (organization_domains[0]||'').toLowerCase(); const match = !sd || pd === sd || pd.endsWith('.'+sd) || sd.endsWith('.'+pd) || pd.includes(sd) || sd.includes(pd); console.log('[domain-filter] searched='+sd+' person_org_domain='+pd+' match='+match); return match && (p.email || p.has_email || p.contact_email_status !== 'notFound'); })
                       : (searchData.people||[]).filter(p => p.has_email);
 
           console.log('[apollo] candidates after filter:', candidates.length, 'isDomainSearch:', isDomainSearch);
