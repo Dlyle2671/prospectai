@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fmtFunding, fmtAmt, fmtGrowth, fmtTimeInRole, fmtRoundDate, fmtRoundAmount, fmtFollowers } from '../lib/utils';
+import { fmtFunding, fmtAmt, fmtGrowth, fmtTimeInRole, fmtRoundDate, fmtRoundAmount, fmtFollowers, paiLoad } from '../lib/utils';
 
 export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
   const [hsSent, setHsSent] = useState(p._hsSent || false);
@@ -15,12 +15,24 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsArticles, setNewsArticles] = useState(null);
   const [newsError, setNewsError] = useState(null);
+  // Draft email state
+  const [emailDrafting, setEmailDrafting] = useState(false);
+  const [emailError, setEmailError] = useState(null);
+  const [selectedSender, setSelectedSender] = useState('');
+  const [senderPickerOpen, setSenderPickerOpen] = useState(false);
 
   const sl = p.score_label || 'cold';
   const score = p.score || 0;
   const loc = [p.city, p.state, p.country].filter(Boolean).join(', ');
   const emailCls = p.email_status === 'verified' ? 'email' : 'email-guessed';
   const emailBadge = p.email_status === 'verified' ? '✅' : '✉️';
+
+  // Load sender emails from localStorage
+  const senderEmails = paiLoad('sender_emails') || [];
+  const defaultSender = senderEmails.find(s => s.isDefault) || senderEmails[0] || null;
+  const activeSender = selectedSender
+    ? senderEmails.find(s => s.email === selectedSender) || defaultSender
+    : defaultSender;
 
   async function handleHubspot() {
     setHsPushing(true);
@@ -75,7 +87,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
   async function handleToggleNews() {
     if (newsOpen) { setNewsOpen(false); return; }
     setNewsOpen(true);
-    if (newsArticles !== null) return; // already loaded
+    if (newsArticles !== null) return;
     setNewsLoading(true);
     setNewsError(null);
     try {
@@ -91,6 +103,54 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
       setNewsArticles([]);
     } finally {
       setNewsLoading(false);
+    }
+  }
+
+  async function handleDraftEmail() {
+    if (!p.email) { setEmailError('No email address for this lead.'); return; }
+    setEmailDrafting(true);
+    setEmailError(null);
+    setSenderPickerOpen(false);
+    try {
+      const resp = await fetch('/api/draft-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: p.name,
+          first_name: p.first_name,
+          title: p.title,
+          company_name: p.company_name,
+          company_description: p.company_description || p.seo_description || '',
+          keywords: p.keywords || [],
+          tech_stack: p.tech_stack || [],
+          aws_services: p.aws_services || [],
+          funding_stage: p.funding_stage || '',
+          recently_funded: p.recently_funded || false,
+          hiring_surge: p.hiring_surge || false,
+          location: [p.city, p.state, p.country].filter(Boolean).join(', '),
+        }),
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+
+      // Build mailto URL to open Outlook
+      const to = p.email;
+      const subject = encodeURIComponent(data.subject || '');
+      // Add sign-off if we have sender info
+      let body = data.body || '';
+      if (activeSender) {
+        const signoff = activeSender.name
+          ? '\n\nBest,\n' + activeSender.name
+          : '\n\nBest,';
+        body = body + signoff;
+      }
+      const encodedBody = encodeURIComponent(body);
+      const mailtoUrl = 'mailto:' + to + '?subject=' + subject + '&body=' + encodedBody;
+      window.location.href = mailtoUrl;
+    } catch (err) {
+      setEmailError(err.message);
+    } finally {
+      setEmailDrafting(false);
     }
   }
 
@@ -124,55 +184,42 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
 
   function fmtNewsDate(iso) {
     if (!iso) return '';
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch { return ''; }
+    try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+    catch { return ''; }
   }
 
   return (
     <div className={`card ${sl} fade-up`} style={{ animationDelay: `${index * 0.04}s` }}>
-      {/* Avatar */}
       <div className="avatar">
         {p.photo_url
           ? <img src={p.photo_url} alt={p.name} onError={e => { e.target.parentNode.innerHTML = '👤'; }} />
           : '👤'}
       </div>
       <div className="card-body">
-        {/* Intent strip for hot leads */}
         {sl === 'hot' && p.intent_signals && p.intent_signals.length > 0 && (
           <div className="intent-strip">
             <span className="intent-strip-label">🔥 Intent</span>
-            {p.intent_signals.map((sig, i) => (
-              <span key={i} className={`intent-chip ${sig.type}`}>{sig.label}</span>
-            ))}
+            {p.intent_signals.map((sig, i) => (<span key={i} className={`intent-chip ${sig.type}`}>{sig.label}</span>))}
           </div>
         )}
-        {/* Header row */}
         <div className="card-top">
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="person-name">{p.name || 'Unknown'}</div>
             <div className="person-title">{p.title || ''}</div>
-            <div className="person-company">
-              {p.company_name || ''}{p.company_domain ? ' · ' + p.company_domain : ''}
-            </div>
+            <div className="person-company">{p.company_name || ''}{p.company_domain ? ' · ' + p.company_domain : ''}</div>
           </div>
           <div className="score-badge">
             <div className={`score-num ${sl}`}>{score}</div>
             <div className={`score-lbl ${sl}`}>{sl}</div>
-            <div className="score-bar-wrap">
-              <div className={`score-bar ${sl}`} style={{ width: score + '%' }} />
-            </div>
+            <div className="score-bar-wrap"><div className={`score-bar ${sl}`} style={{ width: score + '%' }} /></div>
           </div>
         </div>
-        {/* Badges */}
         {(p.recently_funded || p.hiring_surge) && (
           <div className="card-meta">
             {p.recently_funded && <span className="badge-funded">💰 Recently Funded</span>}
             {p.hiring_surge && <span className="badge-hiring">📈 Hiring Surge</span>}
           </div>
         )}
-        {/* Contact */}
         <div className="lc-section">
           <div className="lc-label">👤 Contact</div>
           <div className="card-meta">
@@ -186,7 +233,6 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
             {p.github_url && <span className="meta-tag social"><a href={p.github_url} target="_blank" rel="noopener noreferrer">gh ↗</a></span>}
           </div>
         </div>
-        {/* Company */}
         {(p.company_size || p.company_founded || p.annual_revenue || p.subindustry || p.headcount_growth || p.time_in_role_months != null) && (
           <div className="lc-section">
             <div className="lc-label">🏢 Company</div>
@@ -202,34 +248,21 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
             </div>
           </div>
         )}
-        {/* Funding */}
         {(p.recently_funded || p.funding_stage || p.funding_round_date) && (
           <div className="card-meta">
             {p.funding_stage && <span className="meta-tag funding">💎 {p.funding_stage}{p.funding_total ? ' · ' + fmtFunding(p.funding_total) : ''}</span>}
-            {p.funding_round_date && (
-              <span className="meta-tag round">
-                📌 {fmtRoundDate(p.funding_round_date)}{p.funding_round_type ? ' ' + p.funding_round_type : ''}{p.funding_round_amount ? ' ' + fmtRoundAmount(p.funding_round_amount) : ''}
-              </span>
-            )}
-            {p.top_investors && p.top_investors.length > 0 && (
-              <span className="meta-tag investors">👑 {p.top_investors.join(', ')}</span>
-            )}
+            {p.funding_round_date && (<span className="meta-tag round">📌 {fmtRoundDate(p.funding_round_date)}{p.funding_round_type ? ' ' + p.funding_round_type : ''}{p.funding_round_amount ? ' ' + fmtRoundAmount(p.funding_round_amount) : ''}</span>)}
+            {p.top_investors && p.top_investors.length > 0 && (<span className="meta-tag investors">👑 {p.top_investors.join(', ')}</span>)}
           </div>
         )}
-        {/* Previous Roles */}
         {p.prev_jobs && p.prev_jobs.length > 0 && (
           <div className="lc-section">
             <div className="lc-label">↩ Previous Roles</div>
             <div className="card-meta">
-              {p.prev_jobs.map((j, i) => (
-                <span key={i} className="meta-tag prev-job">
-                  🔄 {j.title}{j.company ? ' @ ' + j.company : ''}
-                </span>
-              ))}
+              {p.prev_jobs.map((j, i) => (<span key={i} className="meta-tag prev-job">🔄 {j.title}{j.company ? ' @ ' + j.company : ''}</span>))}
             </div>
           </div>
         )}
-        {/* AWS Services */}
         {p.aws_services && p.aws_services.length > 0 && (
           <div className="lc-section">
             <div className="lc-label">☁️ AWS Services</div>
@@ -239,47 +272,32 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
             </div>
           </div>
         )}
-        {/* Tech Stack */}
         {p.tech_stack && p.tech_stack.length > 0 && (
           <div className="lc-section">
             <div className="lc-label">🛠 Tech Stack</div>
-            <div className="tech-pills">
-              {p.tech_stack.map((t, i) => <span key={i} className="tech-pill">{t}</span>)}
-            </div>
+            <div className="tech-pills">{p.tech_stack.map((t, i) => <span key={i} className="tech-pill">{t}</span>)}</div>
           </div>
         )}
-        {/* Keywords */}
         {p.keywords && p.keywords.length > 0 && (
           <div className="lc-section">
             <div className="lc-label">🔑 Keywords</div>
-            <div className="card-meta">
-              {p.keywords.map((k, i) => <span key={i} className="meta-tag keyword">{k}</span>)}
-            </div>
+            <div className="card-meta">{p.keywords.map((k, i) => <span key={i} className="meta-tag keyword">{k}</span>)}</div>
           </div>
         )}
-        {/* About */}
         {desc && (
           <div className="lc-section">
             <div className="lc-label">🏢 About {p.company_name}</div>
             <div className="company-desc">
               {descExpanded || !descTruncated ? desc : desc.slice(0, 155) + '…'}
               {descTruncated && !descExpanded && (
-                <button onClick={expandDesc} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#4f8ef7', cursor: 'pointer', fontSize: 11 }}>
-                  ↓ Show full description
-                </button>
+                <button onClick={expandDesc} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#4f8ef7', cursor: 'pointer', fontSize: 11 }}>↓ Show full description</button>
               )}
             </div>
           </div>
         )}
         {/* Recent News */}
         <div className="lc-section">
-          <button
-            onClick={handleToggleNews}
-            style={{
-              background: 'none', border: 'none', padding: 0, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6, width: '100%',
-            }}
-          >
+          <button onClick={handleToggleNews} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
             <span className="lc-label" style={{ margin: 0, cursor: 'pointer' }}>📰 Recent News</span>
             <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>{newsOpen ? '▲' : '▼'}</span>
             {newsLoading && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 4 }}>Loading…</span>}
@@ -287,106 +305,101 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
           {newsOpen && (
             <div style={{ marginTop: 8 }}>
               {newsError && <div style={{ fontSize: 11, color: '#ef4444' }}>⚠️ {newsError}</div>}
-              {!newsLoading && newsArticles && newsArticles.length === 0 && (
-                <div style={{ fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>No recent news found.</div>
-              )}
+              {!newsLoading && newsArticles && newsArticles.length === 0 && (<div style={{ fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>No recent news found.</div>)}
               {newsArticles && newsArticles.map(function(a, i) {
                 return (
                   <div key={i} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: i < newsArticles.length - 1 ? '1px solid #1e293b' : 'none' }}>
-                    <a
-                      href={a.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 12, lineHeight: 1.4, textDecoration: 'none', display: 'block', marginBottom: 3 }}
-                    >
-                      {a.title}
-                    </a>
-                    {a.description && (
-                      <div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4, marginBottom: 3 }}>
-                        {a.description.length > 120 ? a.description.slice(0, 120) + '…' : a.description}
-                      </div>
-                    )}
-                    <div style={{ fontSize: 10, color: '#475569' }}>
-                      {a.source && <span style={{ marginRight: 6 }}>{a.source}</span>}
-                      {a.publishedAt && <span>{fmtNewsDate(a.publishedAt)}</span>}
-                    </div>
+                    <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 12, lineHeight: 1.4, textDecoration: 'none', display: 'block', marginBottom: 3 }}>{a.title}</a>
+                    {a.description && (<div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4, marginBottom: 3 }}>{a.description.length > 120 ? a.description.slice(0, 120) + '…' : a.description}</div>)}
+                    <div style={{ fontSize: 10, color: '#475569' }}>{a.source && <span style={{ marginRight: 6 }}>{a.source}</span>}{a.publishedAt && <span>{fmtNewsDate(a.publishedAt)}</span>}</div>
                   </div>
                 );
               })}
             </div>
           )}
         </div>
+
         {/* Actions */}
         <div className="card-actions">
-          {/* Row 1: HubSpot + Apollo Sequence buttons side by side */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            {/* HubSpot button */}
-            <button
-              className={`btn-sm btn-hs${hsSent ? ' sent' : ''}`}
-              onClick={handleHubspot}
-              disabled={hsPushing || hsSent}
-            >
+            {/* HubSpot */}
+            <button className={`btn-sm btn-hs${hsSent ? ' sent' : ''}`} onClick={handleHubspot} disabled={hsPushing || hsSent}>
               {hsSent ? '✓ In HubSpot' : hsPushing ? 'Pushing…' : '⬆ Push to HubSpot'}
             </button>
-            {/* Apollo Sequence button */}
+            {/* Apollo Sequence */}
             {seqSent ? (
               <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>✓ Added to sequence</span>
             ) : (
-              <button
-                onClick={() => setSeqOpen(o => !o)}
-                style={{
-                  padding: '7px 14px', borderRadius: 8, border: 'none', fontSize: 12,
-                  fontWeight: 600, background: seqOpen ? '#6d28d9' : '#7c3aed',
-                  color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                }}
-              >
+              <button onClick={() => setSeqOpen(o => !o)} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, background: seqOpen ? '#6d28d9' : '#7c3aed', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                 🚀 Add to Apollo Sequence {seqOpen ? '▲' : '▼'}
               </button>
             )}
+            {/* Draft Email button */}
+            <div style={{ position: 'relative' }}>
+              <div style={{ display: 'flex', gap: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid #0e7490' }}>
+                <button
+                  onClick={handleDraftEmail}
+                  disabled={emailDrafting || !p.email}
+                  title={!p.email ? 'No email address for this lead' : 'Draft a personalized email with AI and open in Outlook'}
+                  style={{ padding: '7px 12px', border: 'none', fontSize: 12, fontWeight: 600, background: emailDrafting ? '#164e63' : '#0e7490', color: emailDrafting ? '#94a3b8' : '#fff', cursor: !p.email ? 'not-allowed' : emailDrafting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                >
+                  {emailDrafting ? '✍️ Drafting…' : '✉️ Draft Email'}
+                </button>
+                {senderEmails.length > 1 && (
+                  <button
+                    onClick={() => setSenderPickerOpen(o => !o)}
+                    style={{ padding: '7px 8px', border: 'none', borderLeft: '1px solid #0891b2', fontSize: 10, background: senderPickerOpen ? '#164e63' : '#0e7490', color: '#fff', cursor: 'pointer' }}
+                    title="Choose sender email"
+                  >
+                    {senderPickerOpen ? '▲' : '▼'}
+                  </button>
+                )}
+              </div>
+              {/* Sender picker dropdown */}
+              {senderPickerOpen && senderEmails.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 100, background: '#0f172a', border: '1px solid #334155', borderRadius: 8, padding: '6px 0', minWidth: 220, boxShadow: '0 4px 20px rgba(0,0,0,0.5)', marginTop: 4 }}>
+                  <div style={{ fontSize: 10, color: '#475569', padding: '4px 12px 8px', textTransform: 'uppercase', letterSpacing: '.06em' }}>Send from</div>
+                  {senderEmails.map(s => (
+                    <button key={s.email} onClick={() => { setSelectedSender(s.email); setSenderPickerOpen(false); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: activeSender && activeSender.email === s.email ? 'rgba(14,116,144,0.2)' : 'transparent', border: 'none', cursor: 'pointer', color: '#e2e8f0' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{s.email}</div>
+                      {s.name && <div style={{ fontSize: 11, color: '#64748b' }}>{s.name}</div>}
+                      {s.isDefault && !selectedSender && <div style={{ fontSize: 10, color: '#0e7490' }}>Default</div>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Active sender indicator */}
+              {activeSender && (
+                <div style={{ fontSize: 10, color: '#0e7490', marginTop: 3, paddingLeft: 2 }}>From: {activeSender.email}</div>
+              )}
+              {!activeSender && senderEmails.length === 0 && (
+                <div style={{ fontSize: 10, color: '#475569', marginTop: 3, paddingLeft: 2 }}>Add senders in Settings</div>
+              )}
+            </div>
           </div>
-          {/* Row 2: Sequence picker (expands when button clicked) */}
+
+          {/* Sequence picker */}
           {seqOpen && !seqSent && (
             <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
               {sequences.length === 0 ? (
-                <span style={{ fontSize: 12, color: '#94a3b8' }}>No sequences found in Apollo. Create one in your Apollo account first.</span>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>No sequences found in Apollo. Create one first.</span>
               ) : (
                 <>
-                  <select
-                    style={dropStyle}
-                    value={selectedSeq}
-                    onChange={e => { setSelectedSeq(e.target.value); setSeqError(null); }}
-                    disabled={seqSending}
-                  >
+                  <select style={dropStyle} value={selectedSeq} onChange={e => { setSelectedSeq(e.target.value); setSeqError(null); }} disabled={seqSending}>
                     <option value="">Select a sequence…</option>
-                    {sequences.map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}{s.num_steps ? ` (${s.num_steps} steps)` : ''}
-                      </option>
-                    ))}
+                    {sequences.map(s => (<option key={s.id} value={s.id}>{s.name}{s.num_steps ? ` (${s.num_steps} steps)` : ''}</option>))}
                   </select>
-                  <button
-                    onClick={handleAddToSequence}
-                    disabled={!selectedSeq || seqSending}
-                    style={{
-                      padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12,
-                      fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
-                      background: !selectedSeq || seqSending ? '#1e293b' : '#7c3aed',
-                      color: !selectedSeq || seqSending ? '#475569' : '#fff',
-                      cursor: !selectedSeq || seqSending ? 'not-allowed' : 'pointer',
-                    }}
-                  >
+                  <button onClick={handleAddToSequence} disabled={!selectedSeq || seqSending} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0, background: !selectedSeq || seqSending ? '#1e293b' : '#7c3aed', color: !selectedSeq || seqSending ? '#475569' : '#fff', cursor: !selectedSeq || seqSending ? 'not-allowed' : 'pointer' }}>
                     {seqSending ? 'Adding…' : '▶ Enroll'}
                   </button>
                 </>
               )}
             </div>
           )}
-          {/* Error */}
-          {seqError && (
-            <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {seqError}</div>
-          )}
+          {seqError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {seqError}</div>}
+          {emailError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {emailError}</div>}
         </div>
       </div>
     </div>
   );
-                  }
+                }
