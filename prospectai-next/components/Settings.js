@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { paiSave, paiLoad } from '../lib/utils';
 
 const INTEGRATIONS = [
@@ -35,10 +35,12 @@ export const DEFAULT_ICP = {
     targetIndustries: ['technology','software','saas','cloud computing','cybersecurity','fintech','financial services','healthcare','biotech'],
 };
 
-// Dropdown option sets
+// All keys that count toward the 100-point budget
+const BUDGET_KEYS = ['companySizeWeight','industryWeight','fundingWeight','verifiedEmailBonus','linkedinBonus','phoneBonus','hiringSurgeBonus','awsBonus'];
+
 const WEIGHT_OPTIONS = [0,5,10,15,20,25,30,35,40,45,50];
 const BONUS_OPTIONS  = [0,1,2,3,4,5,6,7,8,9,10,12,15,20];
-const THRESHOLD_OPTIONS = Array.from({length: 19}, (_, i) => (i + 1) * 5); // 5..95
+const THRESHOLD_OPTIONS = Array.from({length: 19}, (_, i) => (i + 1) * 5);
 
 const dropStyle = {
     background: '#0f172a',
@@ -74,6 +76,19 @@ export default function Settings() {
     const [icp, setIcp] = useState(() => ({ ...DEFAULT_ICP, ...(paiLoad('icp_weights') || {}) }));
     const [icpSaved, setIcpSaved] = useState(false);
 
+  // Live total and remaining points
+  const total = useMemo(() => BUDGET_KEYS.reduce((sum, k) => sum + (Number(icp[k]) || 0), 0), [icp]);
+    const remaining = 100 - total;
+    const overBudget = total > 100;
+    const nearBudget = total >= 85 && total <= 100;
+
+  const totalColor = overBudget ? '#ef4444' : nearBudget ? '#f59e0b' : total === 100 ? '#22c55e' : '#3b82f6';
+    const remainingLabel = overBudget
+      ? `${Math.abs(remaining)} pts over budget`
+          : remaining === 0
+      ? 'Budget fully allocated'
+          : `${remaining} pts remaining`;
+
   function handleSave(id) {
         setSaved(prev => ({ ...prev, [id]: true }));
         setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 2000);
@@ -93,6 +108,7 @@ export default function Settings() {
   }
 
   function saveIcp() {
+        if (overBudget) return;
         paiSave('icp_weights', icp);
         setIcpSaved(true);
         setTimeout(() => setIcpSaved(false), 2000);
@@ -105,16 +121,69 @@ export default function Settings() {
 
   const selectedProvider = EMAIL_PROVIDERS.find(p => p.id === emailProvider);
 
+  // Per-field highlight: red border if over budget
+  function fieldDrop(key, options) {
+        const val = icp[key];
+        const isOver = overBudget;
+        return (
+                <select
+            style={{ ...dropStyle, borderColor: isOver && val > 0 ? '#ef444488' : '#334155' }}
+        value={val}
+        onChange={e => setIcpField(key, e.target.value)}
+                >
+        {options.map(v => <option key={v} value={v}>{v > 0 && options === BONUS_OPTIONS ? `+${v} points` : `${v} points`}</option>)}
+                     </select>
+                         );
+        }
+
   return (
         <div className="fade-up">
           <div className="section-title">Settings</div>
-        <div className="section-sub">Customize lead scoring to match your ICP, and manage your integrations.</div>
+      <div className="section-sub">Customize lead scoring to match your ICP, and manage your integrations.</div>
 
       <div className="settings-card">
             <div className="settings-title">🎯 ICP Lead Scoring</div>
-          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-          Select scoring values for each category to match your ideal customer profile.
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
+          Select scoring values for each category. All weights must total 100 or less.
             </div>
+
+{/* ── LIVE BUDGET TRACKER ── */}
+        <div style={{ background: '#080c14', border: `1px solid ${totalColor}44`, borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Points budget</span>
+            <span style={{ fontSize: 22, fontWeight: 800, color: totalColor, letterSpacing: '-0.5px' }}>
+{total} <span style={{ fontSize: 14, color: '#475569', fontWeight: 500 }}>/ 100</span>
+  </span>
+  </div>
+{/* Progress bar */}
+          <div style={{ background: '#1e293b', borderRadius: 6, height: 10, overflow: 'hidden', marginBottom: 10 }}>
+            <div style={{
+                          height: '100%',
+                          width: Math.min(total, 100) + '%',
+                          background: overBudget ? '#ef4444' : nearBudget ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : total === 100 ? '#22c55e' : 'linear-gradient(90deg,#1d4ed8,#3b82f6)',
+                          borderRadius: 6,
+                          transition: 'width 0.2s, background 0.2s',
+          }} />
+            </div>
+{/* Per-field breakdown pills */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+{BUDGET_KEYS.map(k => {
+                const v = Number(icp[k]) || 0;
+                if (!v) return null;
+                const pct = Math.round((v / 100) * 100);
+                const labels = { companySizeWeight:'Size', industryWeight:'Industry', fundingWeight:'Funding', verifiedEmailBonus:'Email', linkedinBonus:'LinkedIn', phoneBonus:'Phone', hiringSurgeBonus:'Hiring', awsBonus:'AWS' };
+                return (
+                                  <span key={k} style={{ fontSize: 11, background: '#1e293b', border: '1px solid #334155', borderRadius: 20, padding: '2px 10px', color: '#94a3b8' }}>
+                 {labels[k]}: <strong style={{ color: '#e2e8f0' }}>{v}pts</strong> <span style={{ color: '#475569' }}>({pct}%)</span>
+  </span>
+              );
+})}
+</div>
+{/* Status message */}
+          <div style={{ marginTop: 10, fontSize: 12, fontWeight: 600, color: totalColor }}>
+{overBudget ? `⚠️ ${remainingLabel} — reduce weights before saving` : remaining === 0 ? '✓ Budget fully allocated' : `ℹ️ ${remainingLabel}`}
+</div>
+  </div>
 
         <div style={sectionStyle}>Score Weights</div>
 
@@ -122,15 +191,13 @@ export default function Settings() {
         <div style={rowStyle}>
                     <div style={labelRowStyle}>
                       <span style={labelStyle}>Company Size Weight</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>{icp.companySizeWeight} pts</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.companySizeWeight} pts</span>
           </div>
-          <select style={dropStyle} value={icp.companySizeWeight} onChange={e => setIcpField('companySizeWeight', e.target.value)}>
-        {WEIGHT_OPTIONS.map(v => <option key={v} value={v}>{v} points</option>)}
-                            </select>
-                                      <div style={{ fontSize: 11, color: '#475569', marginTop: 6, marginBottom: 8 }}>
+{fieldDrop('companySizeWeight', WEIGHT_OPTIONS)}
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 6, marginBottom: 8 }}>
             Select which headcount ranges are ideal for your ICP.
-          </div>
-                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
 {SIZE_OPTIONS.map(s => {
                 const active = Array.isArray(icp.targetSizeRanges) && icp.targetSizeRanges.includes(s);
                 return (
@@ -146,28 +213,24 @@ export default function Settings() {
         <div style={rowStyle}>
                     <div style={labelRowStyle}>
                       <span style={labelStyle}>Industry Match Weight</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>{icp.industryWeight} pts</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.industryWeight} pts</span>
           </div>
-          <select style={dropStyle} value={icp.industryWeight} onChange={e => setIcpField('industryWeight', e.target.value)}>
-        {WEIGHT_OPTIONS.map(v => <option key={v} value={v}>{v} points</option>)}
-                            </select>
-                                      <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Points when company industry matches your target industries</div>
-          </div>
+{fieldDrop('industryWeight', WEIGHT_OPTIONS)}
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Points when company industry matches your target industries</div>
+            </div>
 
-         {/* Recent Funding */}
-                 <div style={rowStyle}>
-                             <div style={labelRowStyle}>
-                               <span style={labelStyle}>Recent Funding Weight</span>
-                     <span style={{ fontSize: 13, fontWeight: 700, color: '#3b82f6' }}>{icp.fundingWeight} pts</span>
+{/* Recent Funding */}
+        <div style={rowStyle}>
+                    <div style={labelRowStyle}>
+                      <span style={labelStyle}>Recent Funding Weight</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.fundingWeight} pts</span>
           </div>
-          <select style={dropStyle} value={icp.fundingWeight} onChange={e => setIcpField('fundingWeight', e.target.value)}>
-        {WEIGHT_OPTIONS.map(v => <option key={v} value={v}>{v} points</option>)}
-                            </select>
-                                      <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Bonus for companies funded in the last 18 months</div>
-          </div>
+{fieldDrop('fundingWeight', WEIGHT_OPTIONS)}
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Bonus for companies funded in the last 18 months</div>
+            </div>
 
         <div style={sectionStyle}>Signal Bonuses</div>
-                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
 {[
   { key: 'verifiedEmailBonus', label: 'Verified Email', hint: 'Bonus when email is verified' },
   { key: 'linkedinBonus', label: 'Has LinkedIn', hint: 'Bonus when LinkedIn URL is present' },
@@ -178,43 +241,41 @@ export default function Settings() {
                           <div key={key}>
                             <div style={labelRowStyle}>
                               <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{label}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6' }}>+{icp[key]}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: totalColor }}>+{icp[key]}</span>
                   </div>
-                                <select style={{ ...dropStyle, fontSize: 13 }} value={icp[key]} onChange={e => setIcpField(key, e.target.value)}>
-{BONUS_OPTIONS.map(v => <option key={v} value={v}>+{v} points</option>)}
-                   </select>
-                                 <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>{hint}</div>
-                   </div>
-                             ))}
-</div>
+                  {fieldDrop(key, BONUS_OPTIONS)}
+               <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>{hint}</div>
+  </div>
+          ))}
+            </div>
 
         <div style={sectionStyle}>Score Thresholds</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
           <div>
-              <div style={labelRowStyle}>
-                <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>🔴 Hot threshold</span>
+                        <div style={labelRowStyle}>
+                          <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>🔴 Hot threshold</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#ef4444' }}>{icp.hotThreshold}+</span>
-  </div>
-            <select style={{ ...dropStyle, accentColor: '#ef4444', borderColor: '#ef444455' }} value={icp.hotThreshold} onChange={e => setIcp(prev => ({ ...prev, hotThreshold: Number(e.target.value) }))}>
-{THRESHOLD_OPTIONS.filter(v => v > icp.warmThreshold).map(v => <option key={v} value={v}>{v}+</option>)}
-                                                          </select>
-                                                          </div>
-                                                                    <div>
-                                                                      <div style={labelRowStyle}>
-                                                                        <span style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600 }}>🟡 Warm threshold</span>
-                                                                        <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{icp.warmThreshold}+</span>
-  </div>
+            </div>
+            <select style={{ ...dropStyle, borderColor: '#ef444455' }} value={icp.hotThreshold} onChange={e => setIcp(prev => ({ ...prev, hotThreshold: Number(e.target.value) }))}>
+          {THRESHOLD_OPTIONS.filter(v => v > icp.warmThreshold).map(v => <option key={v} value={v}>{v}+</option>)}
+                                                                    </select>
+                                                                    </div>
+                                                                              <div>
+                                                                                <div style={labelRowStyle}>
+                                                                                  <span style={{ fontSize: 13, color: '#f59e0b', fontWeight: 600 }}>🟡 Warm threshold</span>
+                                                                                  <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{icp.warmThreshold}+</span>
+            </div>
             <select style={{ ...dropStyle, borderColor: '#f59e0b55' }} value={icp.warmThreshold} onChange={e => setIcp(prev => ({ ...prev, warmThreshold: Number(e.target.value) }))}>
-{THRESHOLD_OPTIONS.filter(v => v < icp.hotThreshold).map(v => <option key={v} value={v}>{v}+</option>)}
-                                                         </select>
-                                                         </div>
-                                                         </div>
+          {THRESHOLD_OPTIONS.filter(v => v < icp.hotThreshold).map(v => <option key={v} value={v}>{v}+</option>)}
+                                                                   </select>
+                                                                   </div>
+                                                                   </div>
 
-                                                                 <div style={sectionStyle}>Target Industries</div>
-                                                                 <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
+                                                                           <div style={sectionStyle}>Target Industries</div>
+                                                                           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
           Companies in these industries get full industry points. Others get 5 pts.
-  </div>
-         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+            </div>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
 {['technology','software','saas','cloud computing','cybersecurity','fintech','financial services','healthcare','biotech','e-commerce','media','education','real estate','logistics','manufacturing'].map(ind => {
               const active = icp.targetIndustries.includes(ind);
               return (
@@ -226,17 +287,18 @@ export default function Settings() {
 </div>
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={saveIcp} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: icpSaved ? '#14532d' : '#1d4ed8', color: icpSaved ? '#4ade80' : '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+          <button onClick={saveIcp} disabled={overBudget} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: overBudget ? '#1e293b' : icpSaved ? '#14532d' : '#1d4ed8', color: overBudget ? '#475569' : icpSaved ? '#4ade80' : '#fff', fontSize: 14, fontWeight: 600, cursor: overBudget ? 'not-allowed' : 'pointer', transition: 'all .2s' }}>
 {icpSaved ? '✓ Saved' : 'Save ICP Settings'}
 </button>
           <button onClick={resetIcp} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #334155', background: 'transparent', color: '#64748b', fontSize: 14, cursor: 'pointer' }}>
             Reset to Defaults
               </button>
-              </div>
-              </div>
+{overBudget && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Reduce weights to save</span>}
+  </div>
+  </div>
 
       <div className="settings-card">
-                      <div className="settings-title">🔌 Integrations</div>
+          <div className="settings-title">🔌 Integrations</div>
 {INTEGRATIONS.map(integration => (
             <div key={integration.id} className="connection-card">
               <div className="connection-header">
