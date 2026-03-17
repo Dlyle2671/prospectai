@@ -38,9 +38,10 @@ export const DEFAULT_ICP = {
 // All keys that count toward the 100-point budget
 const BUDGET_KEYS = ['companySizeWeight','industryWeight','fundingWeight','verifiedEmailBonus','linkedinBonus','phoneBonus','hiringSurgeBonus','awsBonus'];
 
-const WEIGHT_OPTIONS = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
-const BONUS_OPTIONS  = [0,1,2,3,4,5,6,7,8,9,10,12,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
-const THRESHOLD_OPTIONS = Array.from({length: 19}, (_, i) => (i + 1) * 5);
+// Single 0-100 option list used by every scoring dropdown
+const POINT_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
+
+const THRESHOLD_OPTIONS = Array.from({ length: 19 }, (_, i) => (i + 1) * 5);
 
 const dropStyle = {
     background: '#0f172a',
@@ -76,18 +77,12 @@ export default function Settings() {
     const [icp, setIcp] = useState(() => ({ ...DEFAULT_ICP, ...(paiLoad('icp_weights') || {}) }));
     const [icpSaved, setIcpSaved] = useState(false);
 
-  // Live total and remaining points
   const total = useMemo(() => BUDGET_KEYS.reduce((sum, k) => sum + (Number(icp[k]) || 0), 0), [icp]);
     const remaining = 100 - total;
     const overBudget = total > 100;
     const nearBudget = total >= 85 && total <= 100;
-
-  const totalColor = overBudget ? '#ef4444' : nearBudget ? '#f59e0b' : total === 100 ? '#22c55e' : '#3b82f6';
-    const remainingLabel = overBudget
-      ? `${Math.abs(remaining)} pts over budget`
-          : remaining === 0
-      ? 'Budget fully allocated'
-          : `${remaining} pts remaining`;
+    const totalColor = overBudget ? '#ef4444' : nearBudget ? '#f59e0b' : total === 100 ? '#22c55e' : '#3b82f6';
+    const remainingLabel = overBudget ? `${Math.abs(remaining)} pts over budget` : remaining === 0 ? 'Budget fully allocated' : `${remaining} pts remaining`;
 
   function handleSave(id) {
         setSaved(prev => ({ ...prev, [id]: true }));
@@ -121,19 +116,17 @@ export default function Settings() {
 
   const selectedProvider = EMAIL_PROVIDERS.find(p => p.id === emailProvider);
 
-  // Per-field highlight: red border if over budget
-  function fieldDrop(key, options) {
+  function fieldDrop(key) {
         const val = icp[key];
-        const isOver = overBudget;
         return (
                 <select
-            style={{ ...dropStyle, borderColor: isOver && val > 0 ? '#ef444488' : '#334155' }}
+            style={{ ...dropStyle, borderColor: overBudget && val > 0 ? '#ef444488' : '#334155' }}
         value={val}
         onChange={e => setIcpField(key, e.target.value)}
                 >
-        {options.map(v => <option key={v} value={v}>{v > 0 && options === BONUS_OPTIONS ? `+${v} points` : `${v} points`}</option>)}
-                     </select>
-                         );
+        {POINT_OPTIONS.map(v => <option key={v} value={v}>{v} points</option>)}
+                           </select>
+                               );
         }
 
   return (
@@ -144,7 +137,7 @@ export default function Settings() {
       <div className="settings-card">
             <div className="settings-title">🎯 ICP Lead Scoring</div>
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-          Select scoring values for each category. All weights must total 100 or less.
+          Assign point values to each category. All points must total 100 or less.
             </div>
 
 {/* ── LIVE BUDGET TRACKER ── */}
@@ -155,48 +148,35 @@ export default function Settings() {
 {total} <span style={{ fontSize: 14, color: '#475569', fontWeight: 500 }}>/ 100</span>
   </span>
   </div>
-{/* Progress bar */}
           <div style={{ background: '#1e293b', borderRadius: 6, height: 10, overflow: 'hidden', marginBottom: 10 }}>
-            <div style={{
-                          height: '100%',
-                          width: Math.min(total, 100) + '%',
-                          background: overBudget ? '#ef4444' : nearBudget ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : total === 100 ? '#22c55e' : 'linear-gradient(90deg,#1d4ed8,#3b82f6)',
-                          borderRadius: 6,
-                          transition: 'width 0.2s, background 0.2s',
-          }} />
-            </div>
-{/* Per-field breakdown pills */}
+            <div style={{ height: '100%', width: Math.min(total, 100) + '%', background: overBudget ? '#ef4444' : nearBudget ? 'linear-gradient(90deg,#f59e0b,#fbbf24)' : total === 100 ? '#22c55e' : 'linear-gradient(90deg,#1d4ed8,#3b82f6)', borderRadius: 6, transition: 'width 0.2s, background 0.2s' }} />
+  </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
 {BUDGET_KEYS.map(k => {
                 const v = Number(icp[k]) || 0;
                 if (!v) return null;
-                const pct = Math.round((v / 100) * 100);
                 const labels = { companySizeWeight:'Size', industryWeight:'Industry', fundingWeight:'Funding', verifiedEmailBonus:'Email', linkedinBonus:'LinkedIn', phoneBonus:'Phone', hiringSurgeBonus:'Hiring', awsBonus:'AWS' };
                 return (
                                   <span key={k} style={{ fontSize: 11, background: '#1e293b', border: '1px solid #334155', borderRadius: 20, padding: '2px 10px', color: '#94a3b8' }}>
-                 {labels[k]}: <strong style={{ color: '#e2e8f0' }}>{v}pts</strong> <span style={{ color: '#475569' }}>({pct}%)</span>
+                 {labels[k]}: <strong style={{ color: '#e2e8f0' }}>{v}pts</strong>
   </span>
               );
 })}
 </div>
-{/* Status message */}
           <div style={{ marginTop: 10, fontSize: 12, fontWeight: 600, color: totalColor }}>
-{overBudget ? `⚠️ ${remainingLabel} — reduce weights before saving` : remaining === 0 ? '✓ Budget fully allocated' : `ℹ️ ${remainingLabel}`}
+{overBudget ? `⚠️ ${remainingLabel} — reduce points before saving` : remaining === 0 ? '✓ Budget fully allocated' : `ℹ️ ${remainingLabel}`}
 </div>
   </div>
 
         <div style={sectionStyle}>Score Weights</div>
 
-{/* Company Size */}
         <div style={rowStyle}>
-                    <div style={labelRowStyle}>
-                      <span style={labelStyle}>Company Size Weight</span>
+            <div style={labelRowStyle}>
+              <span style={labelStyle}>Company Size</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.companySizeWeight} pts</span>
-          </div>
-{fieldDrop('companySizeWeight', WEIGHT_OPTIONS)}
-          <div style={{ fontSize: 11, color: '#475569', marginTop: 6, marginBottom: 8 }}>
-            Select which headcount ranges are ideal for your ICP.
-              </div>
+  </div>
+{fieldDrop('companySizeWeight')}
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 6, marginBottom: 8 }}>Select which headcount ranges are ideal for your ICP.</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
 {SIZE_OPTIONS.map(s => {
                 const active = Array.isArray(icp.targetSizeRanges) && icp.targetSizeRanges.includes(s);
@@ -209,23 +189,21 @@ export default function Settings() {
 </div>
   </div>
 
-{/* Industry Match */}
         <div style={rowStyle}>
-                    <div style={labelRowStyle}>
-                      <span style={labelStyle}>Industry Match Weight</span>
+            <div style={labelRowStyle}>
+              <span style={labelStyle}>Industry Match</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.industryWeight} pts</span>
-          </div>
-{fieldDrop('industryWeight', WEIGHT_OPTIONS)}
+  </div>
+{fieldDrop('industryWeight')}
           <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Points when company industry matches your target industries</div>
             </div>
 
-{/* Recent Funding */}
         <div style={rowStyle}>
-                    <div style={labelRowStyle}>
-                      <span style={labelStyle}>Recent Funding Weight</span>
+                      <div style={labelRowStyle}>
+                        <span style={labelStyle}>Recent Funding</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.fundingWeight} pts</span>
-          </div>
-{fieldDrop('fundingWeight', WEIGHT_OPTIONS)}
+            </div>
+{fieldDrop('fundingWeight')}
           <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Bonus for companies funded in the last 18 months</div>
             </div>
 
@@ -241,13 +219,13 @@ export default function Settings() {
                           <div key={key}>
                             <div style={labelRowStyle}>
                               <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 500 }}>{label}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: totalColor }}>+{icp[key]}</span>
-                  </div>
-                  {fieldDrop(key, BONUS_OPTIONS)}
-               <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>{hint}</div>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: totalColor }}>{icp[key]} pts</span>
   </div>
+{fieldDrop(key)}
+              <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>{hint}</div>
+                </div>
           ))}
-            </div>
+</div>
 
         <div style={sectionStyle}>Score Thresholds</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
@@ -272,9 +250,7 @@ export default function Settings() {
                                                                    </div>
 
                                                                            <div style={sectionStyle}>Target Industries</div>
-                                                                           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>
-          Companies in these industries get full industry points. Others get 5 pts.
-            </div>
+                                                                           <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>Companies in these industries get full industry points. Others get 5 pts.</div>
                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
 {['technology','software','saas','cloud computing','cybersecurity','fintech','financial services','healthcare','biotech','e-commerce','media','education','real estate','logistics','manufacturing'].map(ind => {
               const active = icp.targetIndustries.includes(ind);
@@ -293,7 +269,7 @@ export default function Settings() {
           <button onClick={resetIcp} style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #334155', background: 'transparent', color: '#64748b', fontSize: 14, cursor: 'pointer' }}>
             Reset to Defaults
               </button>
-{overBudget && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Reduce weights to save</span>}
+{overBudget && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Reduce points to save</span>}
   </div>
   </div>
 
