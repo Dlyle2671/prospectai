@@ -49,49 +49,65 @@ export default async function handler(req, res) {
     if (!email) return res.status(400).json({ error: 'email is required' });
 
     try {
-      // Always resolve contact by email in THIS account - never use an ID from another account
-      // Step 1: try people/match to find or create the contact
-      console.log('[sequences] matching contact by email:', email);
-      const matchResp = await fetch('https://api.apollo.io/api/v1/people/match', {
+      // Step 1: Create or update contact in THIS account via POST /contacts
+      // Apollo will return the existing contact if email already exists in the account
+      // This guarantees we get an account-scoped contact ID (not a global people ID)
+      const nameParts = (body.name || '').split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      console.log('[sequences] creating/upserting contact for email:', email);
+      const createResp = await fetch('https://api.apollo.io/api/v1/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
-        body: JSON.stringify({ api_key: apiKey, email: email, reveal_personal_emails: false }),
+        body: JSON.stringify({
+          api_key: apiKey,
+          first_name: firstName,
+          last_name: lastName,
+          email: email,
+          title: body.title || '',
+          organization_name: body.company_name || '',
+        }),
       });
-      const matchText = await matchResp.text();
-      console.log('[sequences] match status:', matchResp.status, 'body:', matchText.slice(0, 300));
-      let matchData;
-      try { matchData = JSON.parse(matchText); } catch (e) { matchData = {}; }
-      let resolvedId = (matchData.person && matchData.person.id) ? matchData.person.id : null;
+      const createText = await createResp.text();
+      console.log('[sequences] create contact status:', createResp.status, 'body:', createText.slice(0, 400));
+      let createData;
+      try { createData = JSON.parse(createText); } catch (e) { createData = {}; }
 
-      // Step 2: if not found, create a new contact
-      if (!resolvedId) {
-        console.log('[sequences] contact not found, creating new contact for email:', email);
-        const nameParts = (body.name || '').split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        const createResp = await fetch('https://api.apollo.io/api/v1/contacts', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
-          body: JSON.stringify({
-            api_key: apiKey,
-            first_name: firstName,
-            last_name: lastName,
-            email: email,
-            title: body.title || '',
-            organization_name: body.company_name || '',
-          }),
-        });
-        const createText = await createResp.text();
-        console.log('[sequences] create contact status:', createResp.status, 'body:', createText.slice(0, 300));
-        let createData;
-        try { createData = JSON.parse(createText); } catch (e) { createData = {}; }
-        resolvedId = (createData.contact && createData.contact.id) ? createData.contact.id : null;
+      // Handle duplicate - Apollo returns 422 with existing contact ID in some cases
+      // Try to extract contact id from response or error
+      let resolvedId = null;
+      if (createData.contact && createData.contact.id) {
+        resolvedId = createData.contact.id;
+      } else if (createData.id) {
+        resolvedId = createData.id;
       }
 
-      if (!resolvedId) return res.status(404).json({ error: 'Could not find or create contact in Apollo for email: ' + email });
+      // If contact creation failed with 422 (duplicate), search for existing contact
+      if (!resolvedId) {
+        console.log('[sequences] contact create failed, searching by email:', email);
+        const searchResp = await fetch('https://api.apollo.io/api/v1/contacts/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+          body: JSON.stringify({ api_key: apiKey, q_keywords: email, per_page: 1 }),
+        });
+        const searchText = await searchResp.text();
+        console.log('[sequences] contact search status:', searchResp.status, 'body:', searchText.slice(0, 400));
+        let searchData;
+        try { searchData = JSON.parse(searchText); } catch (e) { searchData = {}; }
+        const contacts = searchData.contacts || [];
+        for (let i = 0; i < contacts.length; i++) {
+          if (contacts[i].email && contacts[i].email.toLowerCase() === email.toLowerCase()) {
+            resolvedId = contacts[i].id;
+            break;
+          }
+        }
+        if (!resolvedId && contacts.length > 0) resolvedId = contacts[0].id;
+      }
+
+      if (!resolvedId) return res.status(404).json({ error: 'Could not create or find contact in Apollo for: ' + email });
       console.log('[sequences] resolved contact id:', resolvedId);
 
-      // Step 3: get mailbox
+      // Step 2: Get mailbox
       let mailboxId = null;
       const mbResp = await fetch('https://api.apollo.io/api/v1/email_accounts?per_page=25', {
         method: 'GET',
@@ -106,7 +122,7 @@ export default async function handler(req, res) {
       if (!mailboxId) return res.status(400).json({ error: 'No email account found. Connect a mailbox in Apollo first.' });
       console.log('[sequences] mailbox id:', mailboxId);
 
-      // Step 4: add contact to sequence
+      // Step 3: Add contact to sequence
       const addUrl = 'https://api.apollo.io/api/v1/emailer_campaigns/' + sequence_id + '/add_contact_ids';
       const addPayload = {
         api_key: apiKey,
@@ -136,8 +152,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Apollo skipped this contact: ' + skipped[resolvedId] });
       }
 
-      const contacts = addData.contacts || [];
-      const c = contacts[0] || {};
+      const cts = addData.contacts || [];
+      const c = cts[0] || {};
       const statuses = c.contact_campaign_statuses || [];
       return res.status(200).json({
         success: true,
