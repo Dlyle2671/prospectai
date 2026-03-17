@@ -9,47 +9,35 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const apiKey = process.env.APOLLO_API_KEY;
-  console.log('[sequences] apiKey present:', !!apiKey, 'length:', apiKey ? apiKey.length : 0);
 
   if (req.method === 'GET') {
     try {
-      const searchUrl = 'https://api.apollo.io/api/v1/emailer_campaigns/search';
-      const resp = await fetch(searchUrl, {
+      const resp = await fetch('https://api.apollo.io/api/v1/emailer_campaigns/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
         body: JSON.stringify({ api_key: apiKey, per_page: 100, page: 1 }),
       });
       const text = await resp.text();
-      console.log('[sequences] search status:', resp.status, 'body:', text.slice(0, 300));
       let data;
       try { data = JSON.parse(text); } catch (e) { data = {}; }
-
       if (resp.ok) {
-        const sequences = (data.emailer_campaigns || []).map(function(s) {
+        return res.status(200).json((data.emailer_campaigns || []).map(function(s) {
           return { id: s.id, name: s.name, active: s.active, num_steps: s.num_steps || 0 };
-        });
-        console.log('[sequences] found', sequences.length, 'via search');
-        return res.status(200).json(sequences);
+        }));
       }
-
-      // Fallback: GET base endpoint
+      // Fallback
       const resp2 = await fetch('https://api.apollo.io/api/v1/emailer_campaigns?per_page=100', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
       });
       const text2 = await resp2.text();
-      console.log('[sequences] fallback status:', resp2.status, 'body:', text2.slice(0, 300));
       let data2;
       try { data2 = JSON.parse(text2); } catch (e) { data2 = {}; }
-      if (!resp2.ok) {
-        return res.status(resp2.status).json({ error: data2.message || data2.error || 'Failed to fetch sequences', detail: text2.slice(0, 200) });
-      }
-      const sequences2 = (data2.emailer_campaigns || []).map(function(s) {
+      if (!resp2.ok) return res.status(resp2.status).json({ error: data2.error || 'Failed to fetch sequences' });
+      return res.status(200).json((data2.emailer_campaigns || []).map(function(s) {
         return { id: s.id, name: s.name, active: s.active, num_steps: s.num_steps || 0 };
-      });
-      return res.status(200).json(sequences2);
+      }));
     } catch (err) {
-      console.error('[sequences] GET error:', err.message);
       return res.status(500).json({ error: err.message });
     }
   }
@@ -63,82 +51,93 @@ export default async function handler(req, res) {
     if (!contact_id && !email) return res.status(400).json({ error: 'contact_id or email is required' });
 
     try {
-      // Step 1: resolve contact id via people/match if we only have email
+      // Step 1: resolve contact id
       let resolvedId = contact_id || null;
       if (!resolvedId && email) {
-        console.log('[sequences] matching contact by email:', email);
         const matchResp = await fetch('https://api.apollo.io/api/v1/people/match', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
           body: JSON.stringify({ api_key: apiKey, email: email, reveal_personal_emails: false }),
         });
-        const matchText = await matchResp.text();
-        console.log('[sequences] match status:', matchResp.status, 'body:', matchText.slice(0, 300));
-        let matchData;
-        try { matchData = JSON.parse(matchText); } catch (e) { matchData = {}; }
+        const matchData = await matchResp.json();
         resolvedId = (matchData.person && matchData.person.id) ? matchData.person.id : null;
       }
-      if (!resolvedId) return res.status(404).json({ error: 'Could not resolve contact in Apollo. Make sure the email exists in Apollo.' });
-      console.log('[sequences] resolved contact id:', resolvedId);
+      if (!resolvedId) return res.status(404).json({ error: 'Could not resolve contact in Apollo.' });
+      console.log('[sequences] contact id:', resolvedId, 'sequence id:', sequence_id);
 
-      // Step 2: get mailbox id
-      console.log('[sequences] fetching email accounts...');
+      // Step 2: get mailbox
+      let mailboxId = null;
       const mbResp = await fetch('https://api.apollo.io/api/v1/email_accounts?per_page=25', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
       });
-      const mbText = await mbResp.text();
-      console.log('[sequences] email_accounts status:', mbResp.status, 'body:', mbText.slice(0, 500));
-      let mbData;
-      try { mbData = JSON.parse(mbText); } catch (e) { mbData = {}; }
+      const mbData = await mbResp.json();
       const accounts = mbData.email_accounts || [];
-      console.log('[sequences] total accounts:', accounts.length, 'accounts:', JSON.stringify(accounts.map(function(a) { return { id: a.id, email: a.email, active: a.active }; })));
-      let sendFromMailboxId = null;
       for (let i = 0; i < accounts.length; i++) {
-        if (accounts[i].active) { sendFromMailboxId = accounts[i].id; break; }
+        if (accounts[i].active) { mailboxId = accounts[i].id; break; }
       }
-      // If no active account, use first available
-      if (!sendFromMailboxId && accounts.length > 0) {
-        sendFromMailboxId = accounts[0].id;
-        console.log('[sequences] no active account found, using first:', sendFromMailboxId);
-      }
-      if (!sendFromMailboxId) {
-        return res.status(400).json({ error: 'No email account found in Apollo. Connect a mailbox first.' });
-      }
-      console.log('[sequences] using mailbox id:', sendFromMailboxId);
+      if (!mailboxId && accounts.length > 0) mailboxId = accounts[0].id;
+      if (!mailboxId) return res.status(400).json({ error: 'No email account found. Connect a mailbox in Apollo first.' });
+      console.log('[sequences] mailbox id:', mailboxId);
 
-      // Step 3: add contact to sequence using emailer_campaign_addcontacts
-      // Apollo requires emailer_campaign_id in the body along with contact_ids
-      const addBody = {
+      // Step 3: Try URL-path endpoint first (add_contact_ids)
+      const urlPath = 'https://api.apollo.io/api/v1/emailer_campaigns/' + sequence_id + '/add_contact_ids';
+      const bodyPath = {
         api_key: apiKey,
         emailer_campaign_id: sequence_id,
         contact_ids: [resolvedId],
-        send_email_from_email_account_id: sendFromMailboxId,
+        send_email_from_email_account_id: mailboxId,
         sequence_active_in_other_campaigns: false,
       };
-      console.log('[sequences] adding contact, body:', JSON.stringify(addBody));
-      const addResp = await fetch('https://api.apollo.io/api/v1/emailer_campaign_addcontacts', {
+      console.log('[sequences] trying URL-path endpoint:', urlPath);
+      const addResp1 = await fetch(urlPath, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
-        body: JSON.stringify(addBody),
+        body: JSON.stringify(bodyPath),
       });
-      const addText = await addResp.text();
-      console.log('[sequences] add contact status:', addResp.status, 'body:', addText.slice(0, 500));
-      let addData;
-      try { addData = JSON.parse(addText); } catch (e) { addData = {}; }
-      if (!addResp.ok) {
-        return res.status(addResp.status).json({ error: addData.message || addData.error || addText.slice(0, 300) });
+      const addText1 = await addResp1.text();
+      console.log('[sequences] url-path status:', addResp1.status, 'body:', addText1.slice(0, 400));
+
+      if (addResp1.ok) {
+        let addData1;
+        try { addData1 = JSON.parse(addText1); } catch (e) { addData1 = {}; }
+        const contacts = addData1.contacts || [];
+        const c = contacts[0] || {};
+        const statuses = c.contact_campaign_statuses || [];
+        return res.status(200).json({ success: true, contact_id: resolvedId, sequence_id: sequence_id, status: statuses[0] ? statuses[0].status : 'added' });
       }
 
-      const contacts = addData.contacts || [];
-      const contact = contacts[0] || {};
-      const statuses = contact.contact_campaign_statuses || [];
-      return res.status(200).json({
-        success: true,
-        contact_id: resolvedId,
-        sequence_id: sequence_id,
-        status: statuses[0] ? statuses[0].status : 'added',
+      // Step 4: Fallback to emailer_campaign_addcontacts (body-only endpoint)
+      const urlBody = 'https://api.apollo.io/api/v1/emailer_campaign_addcontacts';
+      const bodyAlt = {
+        api_key: apiKey,
+        emailer_campaign_id: sequence_id,
+        contact_ids: [resolvedId],
+        send_email_from_email_account_id: mailboxId,
+        sequence_active_in_other_campaigns: false,
+      };
+      console.log('[sequences] trying body endpoint:', urlBody);
+      const addResp2 = await fetch(urlBody, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+        body: JSON.stringify(bodyAlt),
       });
+      const addText2 = await addResp2.text();
+      console.log('[sequences] body-endpoint status:', addResp2.status, 'body:', addText2.slice(0, 400));
+
+      let addData2;
+      try { addData2 = JSON.parse(addText2); } catch (e) { addData2 = {}; }
+      if (!addResp2.ok) {
+        return res.status(addResp2.status).json({
+          error: addData2.message || addData2.error || addText2.slice(0, 200),
+          urlPathStatus: addResp1.status,
+          urlPathError: addText1.slice(0, 200),
+        });
+      }
+      const contacts2 = addData2.contacts || [];
+      const c2 = contacts2[0] || {};
+      const statuses2 = c2.contact_campaign_statuses || [];
+      return res.status(200).json({ success: true, contact_id: resolvedId, sequence_id: sequence_id, status: statuses2[0] ? statuses2[0].status : 'added' });
     } catch (err) {
       console.error('[sequences] POST error:', err.message);
       return res.status(500).json({ error: err.message });
