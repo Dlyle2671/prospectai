@@ -146,7 +146,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
       }
       const encodedBody = encodeURIComponent(body);
       const mailtoUrl = 'mailto:' + to + '?subject=' + subject + '&body=' + encodedBody;
-      window.location.href = mailtoUrl;
+      const a = document.createElement('a'); a.href = mailtoUrl; document.body.appendChild(a); a.click(); document.body.removeChild(a);
     } catch (err) {
       setEmailError(err.message);
     } finally {
