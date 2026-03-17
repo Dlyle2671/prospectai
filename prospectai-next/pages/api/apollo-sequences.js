@@ -25,17 +25,7 @@ export default async function handler(req, res) {
           return { id: s.id, name: s.name, active: s.active, num_steps: s.num_steps || 0 };
         }));
       }
-      const resp2 = await fetch('https://api.apollo.io/api/v1/emailer_campaigns?per_page=100', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
-      });
-      const text2 = await resp2.text();
-      let data2;
-      try { data2 = JSON.parse(text2); } catch (e) { data2 = {}; }
-      if (!resp2.ok) return res.status(resp2.status).json({ error: data2.error || 'Failed to fetch sequences' });
-      return res.status(200).json((data2.emailer_campaigns || []).map(function(s) {
-        return { id: s.id, name: s.name, active: s.active, num_steps: s.num_steps || 0 };
-      }));
+      return res.status(resp.status).json({ error: data.error || 'Failed to fetch sequences' });
     } catch (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -49,13 +39,12 @@ export default async function handler(req, res) {
     if (!email) return res.status(400).json({ error: 'email is required' });
 
     try {
-      // Step 1: Create or update contact in THIS account via POST /contacts
-      // Apollo will return the existing contact if email already exists in the account
-      // This guarantees we get an account-scoped contact ID (not a global people ID)
+      // Step 1: Create or upsert contact to get account-scoped ID
       const nameParts = (body.name || '').split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       console.log('[sequences] creating/upserting contact for email:', email);
+
       const createResp = await fetch('https://api.apollo.io/api/v1/contacts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
@@ -73,8 +62,6 @@ export default async function handler(req, res) {
       let createData;
       try { createData = JSON.parse(createText); } catch (e) { createData = {}; }
 
-      // Handle duplicate - Apollo returns 422 with existing contact ID in some cases
-      // Try to extract contact id from response or error
       let resolvedId = null;
       if (createData.contact && createData.contact.id) {
         resolvedId = createData.contact.id;
@@ -82,7 +69,6 @@ export default async function handler(req, res) {
         resolvedId = createData.id;
       }
 
-      // If contact creation failed with 422 (duplicate), search for existing contact
       if (!resolvedId) {
         console.log('[sequences] contact create failed, searching by email:', email);
         const searchResp = await fetch('https://api.apollo.io/api/v1/contacts/search', {
@@ -107,20 +93,65 @@ export default async function handler(req, res) {
       if (!resolvedId) return res.status(404).json({ error: 'Could not create or find contact in Apollo for: ' + email });
       console.log('[sequences] resolved contact id:', resolvedId);
 
-      // Step 2: Get mailbox
+      // Step 2: Get mailbox - try multiple endpoints
       let mailboxId = null;
-      const mbResp = await fetch('https://api.apollo.io/api/v1/email_accounts?per_page=25', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
-      });
-      const mbData = await mbResp.json();
-      const accounts = mbData.email_accounts || [];
-      for (let i = 0; i < accounts.length; i++) {
-        if (accounts[i].active) { mailboxId = accounts[i].id; break; }
+
+      // Try endpoint 1: email_accounts
+      try {
+        const mbResp = await fetch('https://api.apollo.io/api/v1/email_accounts?per_page=25', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+        });
+        const mbText = await mbResp.text();
+        console.log('[sequences] email_accounts status:', mbResp.status, 'body:', mbText.slice(0, 300));
+        const mbData = JSON.parse(mbText);
+        const accounts = mbData.email_accounts || [];
+        console.log('[sequences] email_accounts count:', accounts.length);
+        for (let i = 0; i < accounts.length; i++) {
+          if (accounts[i].active) { mailboxId = accounts[i].id; break; }
+        }
+        if (!mailboxId && accounts.length > 0) mailboxId = accounts[0].id;
+      } catch (e) {
+        console.log('[sequences] email_accounts error:', e.message);
       }
-      if (!mailboxId && accounts.length > 0) mailboxId = accounts[0].id;
-      if (!mailboxId) return res.status(400).json({ error: 'No email account found. Connect a mailbox in Apollo first.' });
-      console.log('[sequences] mailbox id:', mailboxId);
+
+      // Try endpoint 2: emailer_accounts (different path)
+      if (!mailboxId) {
+        try {
+          const mbResp2 = await fetch('https://api.apollo.io/api/v1/emailer_accounts?per_page=25', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+          });
+          const mbText2 = await mbResp2.text();
+          console.log('[sequences] emailer_accounts status:', mbResp2.status, 'body:', mbText2.slice(0, 300));
+          const mbData2 = JSON.parse(mbText2);
+          const accounts2 = mbData2.emailer_accounts || mbData2.email_accounts || [];
+          console.log('[sequences] emailer_accounts count:', accounts2.length);
+          for (let i = 0; i < accounts2.length; i++) {
+            if (accounts2[i].active) { mailboxId = accounts2[i].id; break; }
+          }
+          if (!mailboxId && accounts2.length > 0) mailboxId = accounts2[0].id;
+        } catch (e) {
+          console.log('[sequences] emailer_accounts error:', e.message);
+        }
+      }
+
+      // Try endpoint 3: users/me may have email account info
+      if (!mailboxId) {
+        try {
+          const meResp = await fetch('https://api.apollo.io/api/v1/users/me', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
+          });
+          const meText = await meResp.text();
+          console.log('[sequences] users/me status:', meResp.status, 'body:', meText.slice(0, 400));
+        } catch (e) {
+          console.log('[sequences] users/me error:', e.message);
+        }
+      }
+
+      console.log('[sequences] final mailboxId:', mailboxId);
+      if (!mailboxId) return res.status(400).json({ error: 'No email account (mailbox) found in Apollo. Please connect a mailbox under Settings > Mailboxes in your Apollo account, then try again.' });
 
       // Step 3: Add contact to sequence
       const addUrl = 'https://api.apollo.io/api/v1/emailer_campaigns/' + sequence_id + '/add_contact_ids';
@@ -131,7 +162,8 @@ export default async function handler(req, res) {
         send_email_from_email_account_id: mailboxId,
         sequence_active_in_other_campaigns: false,
       };
-      console.log('[sequences] adding to sequence, contact:', resolvedId, 'sequence:', sequence_id);
+      console.log('[sequences] adding to sequence, contact:', resolvedId, 'sequence:', sequence_id, 'mailbox:', mailboxId);
+
       const addResp = await fetch(addUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
@@ -146,7 +178,6 @@ export default async function handler(req, res) {
         return res.status(addResp.status).json({ error: addData.message || addData.error || addText.slice(0, 200) });
       }
 
-      // Check for skipped contacts
       const skipped = addData.skipped_contact_ids || {};
       if (skipped[resolvedId]) {
         return res.status(400).json({ error: 'Apollo skipped this contact: ' + skipped[resolvedId] });
@@ -161,6 +192,7 @@ export default async function handler(req, res) {
         sequence_id: sequence_id,
         status: statuses[0] ? statuses[0].status : 'added',
       });
+
     } catch (err) {
       console.error('[sequences] POST error:', err.message);
       return res.status(500).json({ error: err.message });
