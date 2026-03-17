@@ -6,7 +6,6 @@ function buildTemplateDraft(body) {
   const { name, first_name, title, company_name, tech_stack, aws_services, keywords, recently_funded, hiring_surge, funding_stage } = body;
   const fn = first_name || (name || '').split(' ')[0] || 'there';
   const co = company_name || 'your company';
-  const role = title || 'your role';
 
   // Pick personalization hook
   let hook = '';
@@ -25,20 +24,21 @@ function buildTemplateDraft(body) {
   // Pain point based on signals
   let pain = '';
   if (aws_services && aws_services.length > 0) {
-    pain = 'As you scale those services, AWS spend tends to creep up fast - often 30-40% higher than it needs to be. Most teams don't have visibility into where the waste is until it shows up as a line item shock.';
+    pain = 'As you scale those services, AWS spend tends to creep up fast - often 30-40% higher than it needs to be. Most teams do not have visibility into where the waste is until it shows up as a surprise on the bill.';
   } else if (recently_funded || hiring_surge) {
-    pain = 'With growth comes cloud spend that can get away from you quickly. Most scaling companies find 20-35% of their AWS bill is avoidable waste they just haven't had time to track down.';
+    pain = 'With growth comes cloud spend that can get away from you quickly. Most scaling companies find 20-35% of their AWS bill is avoidable waste they just have not had time to track down.';
   } else {
-    pain = 'Most engineering-focused companies have cloud spend that's grown faster than their visibility into it. We typically find 20-40% in recoverable savings in the first 30 days.';
+    pain = 'Most engineering-focused companies have cloud spend that has grown faster than their visibility into it. We typically find 20-40% in recoverable savings in the first 30 days.';
   }
 
-  const subject = hook.length < 60 ? hook : 'Quick question about ' + co + ''s cloud spend';
+  const coSpend = 'Quick question about ' + co + 's cloud spend';
+  const subject = hook.length < 60 ? hook : coSpend;
 
   const emailBody = fn + ',\n\n' +
     hook + ' - wanted to reach out.\n\n' +
     pain + '\n\n' +
-    'At RRIL Solutions, we specialize in FinOps for AWS-heavy companies. We've helped similar teams cut their cloud bills 20-40% within 90 days through rightsizing, commitment strategies, and spend governance - without slowing down engineering.\n\n' +
-    'Worth a 15-min call to see if there's a fit? No pitch deck, just a straight conversation.';
+    'At RRIL Solutions, we specialize in FinOps for AWS-heavy companies. We have helped similar teams cut their cloud bills 20-40% within 90 days through rightsizing, commitment strategies, and spend governance - without slowing down engineering.\n\n' +
+    'Worth a 15-min call to see if there is a fit? No pitch deck, just a straight conversation.';
 
   return { subject, body: emailBody };
 }
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
   if (hiring_surge) contextLines.push('Hiring surge detected: yes');
   const contextStr = contextLines.join('\n');
 
-  const prompt = 'You are a B2B sales expert writing a short, personalized cold outreach email on behalf of RRIL Solutions, a FinOps consulting firm.\n\nLEAD INFORMATION:\nName: ' + name + '\n' + contextStr + '\n\nOFFER: RRIL Solutions helps companies reduce their AWS/cloud spend through FinOps best practices - cost visibility, rightsizing, commitment strategies, and governance. We typically save clients 20-40% on their cloud bills within 90 days.\n\nTONE: Casual and direct. No fluff. No corporate speak. Sound like a real person who did their homework.\n\nRULES:\n- Subject line: short, specific, references something real about them or their company\n- Body: 3-4 short paragraphs max\n- First line: a specific, personalized observation about their company/role/stack (NOT a generic opener)\n- Second paragraph: one concrete pain point they likely have based on their profile\n- Third paragraph: very brief mention of what RRIL does and a specific result (e.g. "saved [similar company type] 30% in 60 days")\n- CTA: one clear ask - reply to schedule a 15-min call. Keep it low pressure.\n- NO sign-off name - leave that blank, just end with the CTA\n- Do NOT use phrases like "I hope this email finds you well", "I wanted to reach out", "synergy", "leverage", "touch base"\n\nReturn ONLY valid JSON in this exact format, nothing else:\n{ "subject": "subject line here", "body": "full email body here with \\n for line breaks" }';
+  const prompt = 'You are a B2B sales expert writing a short, personalized cold outreach email on behalf of RRIL Solutions, a FinOps consulting firm.\n\nLEAD INFORMATION:\nName: ' + name + '\n' + contextStr + '\n\nOFFER: RRIL Solutions helps companies reduce their AWS/cloud spend through FinOps best practices - cost visibility, rightsizing, commitment strategies, and governance. We typically save clients 20-40% on their cloud bills within 90 days.\n\nTONE: Casual and direct. No fluff. No corporate speak. Sound like a real person.\n\nRULES:\n- Subject line: short, specific, references something real about them or their company\n- Body: 3-4 short paragraphs max\n- First line: a specific, personalized observation about their company (NOT a generic opener)\n- Second paragraph: one concrete pain point they likely have\n- Third paragraph: very brief mention of RRIL and a specific result\n- CTA: reply to schedule a 15-min call\n- NO sign-off name\n- Do NOT use: synergy, leverage, touch base, I hope this email finds you\n\nReturn ONLY valid JSON:\n{ "subject": "subject line here", "body": "full email body here with \\n for line breaks" }';
 
   try {
     console.log('[draft-email] calling Claude for:', name, company_name);
@@ -97,38 +97,30 @@ export default async function handler(req, res) {
     const data = await resp.json();
     console.log('[draft-email] Claude status:', resp.status);
 
-    // Handle credit/billing errors - fall back to template
     if (!resp.ok) {
-      const errMsg = data.error?.message || '';
-      const errType = data.error?.type || '';
+      const errMsg = (data.error && data.error.message) || '';
+      const errType = (data.error && data.error.type) || '';
       console.log('[draft-email] Claude error type:', errType, 'msg:', errMsg.slice(0, 100));
-
-      // Fall back to template for credit/billing issues
       if (errType === 'credit_balance_too_low' || errMsg.toLowerCase().includes('credit') || errMsg.toLowerCase().includes('billing') || resp.status === 529) {
         console.log('[draft-email] credits exhausted - using template fallback');
         return res.status(200).json(buildTemplateDraft(body));
       }
-
       return res.status(resp.status).json({ error: errMsg || 'Claude API error' });
     }
 
-    const text = data.content?.[0]?.text || '';
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
     console.log('[draft-email] raw response:', text.slice(0, 200));
 
-    // Parse JSON from Claude response
     let parsed;
     try {
-      const cleaned = text.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+      const cleaned = text.replace(/^[^{]*/, '').replace(/[^}]*$/, '').trim();
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      console.error('[draft-email] JSON parse error:', e.message, 'raw:', text.slice(0, 300));
-      // Fall back to template on parse failure too
-      console.log('[draft-email] parse failed - using template fallback');
+      console.error('[draft-email] JSON parse error:', e.message);
       return res.status(200).json(buildTemplateDraft(body));
     }
 
     if (!parsed.subject || !parsed.body) {
-      console.log('[draft-email] incomplete response - using template fallback');
       return res.status(200).json(buildTemplateDraft(body));
     }
 
@@ -136,8 +128,6 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('[draft-email] error:', err.message);
-    // Fall back to template on network/other errors
-    console.log('[draft-email] exception - using template fallback');
     return res.status(200).json(buildTemplateDraft(body));
   }
 }
