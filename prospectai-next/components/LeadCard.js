@@ -55,7 +55,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
                     const resp = await fetch('/api/apollo-sequences', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ contact_id: p.id, email: p.email, sequence_id: selectedSeq }),
+                                body: JSON.stringify({ email: p.email, sequence_id: selectedSeq, name: p.name || '', title: p.title || '', company_name: p.company_name || '' }),
                     });
                     const data = await resp.json();
                     if (data.error) throw new Error(data.error);
