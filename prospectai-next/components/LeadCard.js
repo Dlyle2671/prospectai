@@ -138,6 +138,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
       const subject = encodeURIComponent(data.subject || '');
       // Add sign-off if we have sender info
       let body = data.body || '';
+        if (activeSender) { body = '[Send from: ' + activeSender.email + ']\n\n' + body; }
       if (activeSender) {
         const signoff = activeSender.name
           ? '\n\nBest,\n' + activeSender.name
