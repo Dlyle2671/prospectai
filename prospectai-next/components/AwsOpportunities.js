@@ -1,67 +1,98 @@
 import { useState, useMemo } from 'react';
 import { paiSave, paiLoad } from '../lib/utils';
 
-const AI_ML_SERVICES = [
-  'amazon bedrock', 'bedrock', 'sagemaker', 'rekognition', 'comprehend',
-  'textract', 'lex', 'kendra', 'personalize', 'forecast', 'polly', 'transcribe',
-];
-const SECURITY_SERVICES = [
-  'guardduty', 'shield', 'waf', 'secrets manager', 'aws secrets manager',
-  'security hub', 'macie', 'inspector', 'iam', 'cognito',
-];
-const HIGH_VALUE_VERTICALS = ['healthcare', 'financial services', 'fintech', 'insurance'];
-const FAST_MOVING_VERTICALS = ['software & internet', 'software', 'saas', 'technology'];
+// ─── Default Scoring Config ───────────────────────────────────────────────────
 
-function scoreOpportunity(opp, allOpps) {
+const DEFAULT_CONFIG = {
+  mrrHigh:       { label: 'MRR ≥ $5,000/mo',                         points: 30, tier: 'hot'  },
+  mrrMid:        { label: 'MRR $2,000–$4,999/mo',                    points: 20, tier: 'warm' },
+  mrrLow:        { label: 'MRR $500–$1,999/mo',                      points: 10, tier: 'cold' },
+  stageQualified:{ label: 'Stage = Qualified',                            points: 20, tier: 'hot'  },
+  stageProspect: { label: 'Stage = Prospect',                             points: 10, tier: 'warm' },
+  aiMl:          { label: 'AI/ML Services (Bedrock, SageMaker…)',     points: 15, tier: 'hot'  },
+  security:      { label: 'Security Services (GuardDuty, Shield…)',   points: 10, tier: 'warm' },
+  manyProducts:  { label: '5+ AWS Products in scope',                     points: 10, tier: 'warm' },
+  highVertical:  { label: 'High-value vertical (Healthcare, Fintech…)',points: 5, tier: 'warm' },
+  fastVertical:  { label: 'Fast-moving vertical (SaaS, Software…)',   points:  5, tier: 'warm' },
+  sameDayApproval:{ label: 'Same-day approval',                           points:  5, tier: 'warm' },
+  multiOpp:      { label: 'Multiple opps from same customer',             points:  5, tier: 'warm' },
+  hotThreshold:  { label: 'Hot threshold (score ≥)',                  points: 70, tier: 'hot'  },
+  warmThreshold: { label: 'Warm threshold (score ≥)',                 points: 40, tier: 'warm' },
+};
+
+const AI_ML_SERVICES    = ['amazon bedrock','bedrock','sagemaker','rekognition','comprehend','textract','lex','kendra','personalize','forecast','polly','transcribe'];
+const SECURITY_SERVICES = ['guardduty','shield','waf','secrets manager','aws secrets manager','security hub','macie','inspector','iam','cognito'];
+const HIGH_VALUE_VERTICALS  = ['healthcare','financial services','fintech','insurance'];
+const FAST_MOVING_VERTICALS = ['software & internet','software','saas','technology'];
+
+function loadConfig() {
+  const saved = paiLoad('aws_scoring_config');
+  if (!saved) return DEFAULT_CONFIG;
+  // Merge saved points into DEFAULT_CONFIG (preserves labels/tiers)
+  const merged = {};
+  Object.keys(DEFAULT_CONFIG).forEach(k => {
+    merged[k] = { ...DEFAULT_CONFIG[k], points: saved[k] !== undefined ? saved[k] : DEFAULT_CONFIG[k].points };
+  });
+  return merged;
+}
+
+// ─── Scoring Engine ───────────────────────────────────────────────────────────
+
+function scoreOpportunity(opp, allOpps, cfg) {
   let score = 0;
   const breakdown = [];
+
   const mrr = parseFloat(opp['Estimated AWS Monthly Recurring Revenue']) || 0;
-  if (mrr >= 5000) {
-    score += 30; breakdown.push({ label: 'MRR $' + mrr.toLocaleString() + '/mo', points: 30, tier: 'hot' });
-  } else if (mrr >= 2000) {
-    score += 20; breakdown.push({ label: 'MRR $' + mrr.toLocaleString() + '/mo', points: 20, tier: 'warm' });
-  } else if (mrr >= 500) {
-    score += 10; breakdown.push({ label: 'MRR $' + mrr.toLocaleString() + '/mo', points: 10, tier: 'cold' });
+  if (mrr >= 5000 && cfg.mrrHigh.points > 0) {
+    score += cfg.mrrHigh.points; breakdown.push({ label: 'MRR $' + mrr.toLocaleString() + '/mo (≥$5k)', points: cfg.mrrHigh.points, tier: 'hot' });
+  } else if (mrr >= 2000 && cfg.mrrMid.points > 0) {
+    score += cfg.mrrMid.points; breakdown.push({ label: 'MRR $' + mrr.toLocaleString() + '/mo ($2k–$5k)', points: cfg.mrrMid.points, tier: 'warm' });
+  } else if (mrr >= 500 && cfg.mrrLow.points > 0) {
+    score += cfg.mrrLow.points; breakdown.push({ label: 'MRR $' + mrr.toLocaleString() + '/mo ($500–$2k)', points: cfg.mrrLow.points, tier: 'cold' });
   }
+
   const stage = (opp['Stage'] || '').trim().toLowerCase();
-  if (stage === 'qualified') {
-    score += 20; breakdown.push({ label: 'Stage: Qualified', points: 20, tier: 'hot' });
-  } else if (stage === 'prospect') {
-    score += 10; breakdown.push({ label: 'Stage: Prospect', points: 10, tier: 'warm' });
+  if (stage === 'qualified' && cfg.stageQualified.points > 0) {
+    score += cfg.stageQualified.points; breakdown.push({ label: 'Stage: Qualified', points: cfg.stageQualified.points, tier: 'hot' });
+  } else if (stage === 'prospect' && cfg.stageProspect.points > 0) {
+    score += cfg.stageProspect.points; breakdown.push({ label: 'Stage: Prospect', points: cfg.stageProspect.points, tier: 'warm' });
   }
+
   const products = (opp['AWS Products'] || '').toLowerCase();
-  const hasAI = AI_ML_SERVICES.some(s => products.includes(s));
-  if (hasAI) {
-    score += 15; breakdown.push({ label: 'AI/ML Services (Bedrock etc.)', points: 15, tier: 'hot' });
+  if (AI_ML_SERVICES.some(s => products.includes(s)) && cfg.aiMl.points > 0) {
+    score += cfg.aiMl.points; breakdown.push({ label: 'AI/ML Services (Bedrock etc.)', points: cfg.aiMl.points, tier: 'hot' });
   }
-  const hasSecurity = SECURITY_SERVICES.some(s => products.includes(s));
-  if (hasSecurity) {
-    score += 10; breakdown.push({ label: 'Security Services', points: 10, tier: 'warm' });
+  if (SECURITY_SERVICES.some(s => products.includes(s)) && cfg.security.points > 0) {
+    score += cfg.security.points; breakdown.push({ label: 'Security Services', points: cfg.security.points, tier: 'warm' });
   }
+
   const productList = (opp['AWS Products'] || '').split(';').map(s => s.trim()).filter(Boolean);
-  if (productList.length >= 5) {
-    score += 10; breakdown.push({ label: productList.length + ' AWS Products in scope', points: 10, tier: 'warm' });
+  if (productList.length >= 5 && cfg.manyProducts.points > 0) {
+    score += cfg.manyProducts.points; breakdown.push({ label: productList.length + ' AWS Products in scope', points: cfg.manyProducts.points, tier: 'warm' });
   }
+
   const vertical = (opp['Industry Vertical'] || '').toLowerCase();
-  if (HIGH_VALUE_VERTICALS.some(v => vertical.includes(v))) {
-    score += 5; breakdown.push({ label: 'High-value vertical: ' + opp['Industry Vertical'], points: 5, tier: 'warm' });
-  } else if (FAST_MOVING_VERTICALS.some(v => vertical.includes(v))) {
-    score += 5; breakdown.push({ label: 'Fast-moving vertical: ' + opp['Industry Vertical'], points: 5, tier: 'warm' });
+  if (HIGH_VALUE_VERTICALS.some(v => vertical.includes(v)) && cfg.highVertical.points > 0) {
+    score += cfg.highVertical.points; breakdown.push({ label: 'High-value vertical: ' + opp['Industry Vertical'], points: cfg.highVertical.points, tier: 'warm' });
+  } else if (FAST_MOVING_VERTICALS.some(v => vertical.includes(v)) && cfg.fastVertical.points > 0) {
+    score += cfg.fastVertical.points; breakdown.push({ label: 'Fast-moving vertical: ' + opp['Industry Vertical'], points: cfg.fastVertical.points, tier: 'warm' });
   }
-  const created = opp['Date Created'];
-  const approved = opp['Date Approved/Rejected'];
-  if (created && approved && created === approved) {
-    score += 5; breakdown.push({ label: 'Same-day approval', points: 5, tier: 'warm' });
+
+  if (opp['Date Created'] && opp['Date Approved/Rejected'] && opp['Date Created'] === opp['Date Approved/Rejected'] && cfg.sameDayApproval.points > 0) {
+    score += cfg.sameDayApproval.points; breakdown.push({ label: 'Same-day approval', points: cfg.sameDayApproval.points, tier: 'warm' });
   }
+
   const customerName = (opp['Customer Company Name'] || '').toLowerCase();
-  const multiOpp = allOpps.filter(o => (o['Customer Company Name'] || '').toLowerCase() === customerName).length > 1;
-  if (multiOpp) {
-    score += 5; breakdown.push({ label: 'Multiple active opportunities', points: 5, tier: 'warm' });
+  if (allOpps.filter(o => (o['Customer Company Name'] || '').toLowerCase() === customerName).length > 1 && cfg.multiOpp.points > 0) {
+    score += cfg.multiOpp.points; breakdown.push({ label: 'Multiple active opportunities', points: cfg.multiOpp.points, tier: 'warm' });
   }
+
   const capped = Math.min(100, score);
-  const label = capped >= 70 ? 'hot' : capped >= 40 ? 'warm' : 'cold';
+  const label = capped >= cfg.hotThreshold.points ? 'hot' : capped >= cfg.warmThreshold.points ? 'warm' : 'cold';
   return { score: capped, label, breakdown };
 }
+
+// ─── CSV/TSV Parser ───────────────────────────────────────────────────────────
 
 function parseTSV(text) {
   const lines = text.trim().split('\n').filter(l => l.trim());
@@ -75,6 +106,95 @@ function parseTSV(text) {
     return obj;
   });
 }
+
+// ─── Scoring Config Editor ────────────────────────────────────────────────────
+
+const CRITERIA_KEYS   = ['mrrHigh','mrrMid','mrrLow','stageQualified','stageProspect','aiMl','security','manyProducts','highVertical','fastVertical','sameDayApproval','multiOpp'];
+const THRESHOLD_KEYS  = ['hotThreshold','warmThreshold'];
+
+function ScoringConfigEditor({ config, onChange, onReset }) {
+  const inputStyle = {
+    width: 60, padding: '4px 6px', borderRadius: 6, border: '1px solid #334155',
+    background: '#0a0f1a', color: '#e2e8f0', fontSize: 13, fontWeight: 700,
+    textAlign: 'center', outline: 'none',
+  };
+  const rowStyle = {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '7px 10px', borderRadius: 6, background: '#0a0f1a', gap: 10,
+  };
+
+  function handleChange(key, val) {
+    const num = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
+    onChange({ ...config, [key]: { ...config[key], points: num } });
+  }
+
+  return (
+    <div style={{ marginTop: 24, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '18px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="lc-label" style={{ margin: 0 }}>⚙️ Scoring Criteria</div>
+        <button onClick={onReset} style={{ fontSize: 11, color: '#64748b', background: 'none', border: '1px solid #334155', borderRadius: 6, padding: '3px 10px', cursor: 'pointer' }}>
+          Reset to defaults
+        </button>
+      </div>
+
+      <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8, paddingLeft: 10 }}>Point Values (0–100)</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
+        {CRITERIA_KEYS.map(key => {
+          const item = config[key];
+          const tierColor = item.tier === 'hot' ? '#ef4444' : item.tier === 'warm' ? '#f59e0b' : '#4f8ef7';
+          return (
+            <div key={key} style={rowStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: tierColor, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{item.label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number" min={0} max={100}
+                  value={item.points}
+                  onChange={e => handleChange(key, e.target.value)}
+                  style={{ ...inputStyle, color: item.points === 0 ? '#475569' : tierColor }}
+                />
+                <span style={{ fontSize: 11, color: '#475569', width: 20 }}>pts</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8, paddingLeft: 10 }}>Tier Thresholds</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {THRESHOLD_KEYS.map(key => {
+          const item = config[key];
+          const tierColor = item.tier === 'hot' ? '#ef4444' : '#f59e0b';
+          return (
+            <div key={key} style={rowStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: tierColor, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{item.label}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number" min={0} max={100}
+                  value={item.points}
+                  onChange={e => handleChange(key, e.target.value)}
+                  style={{ ...inputStyle, color: tierColor }}
+                />
+                <span style={{ fontSize: 11, color: '#475569', width: 20 }}>pts</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 12, fontSize: 11, color: '#475569', paddingLeft: 10 }}>
+        Set any criterion to 0 to disable it. Changes apply instantly and persist across sessions.
+      </div>
+    </div>
+  );
+}
+
+// ─── OppCard ─────────────────────────────────────────────────────────────────
 
 function OppCard({ opp, scored, index }) {
   const [expanded, setExpanded] = useState(false);
@@ -91,45 +211,23 @@ function OppCard({ opp, scored, index }) {
     setHsPushing(true);
     try {
       const resp = await fetch('/api/hubspot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name: '',
-          last_name: opp['Customer Company Name'],
-          email: opp['Customer Email'],
-          company_name: opp['Customer Company Name'],
-          company_domain: opp['Customer Website'],
-          title: 'AWS Opportunity Contact',
-          score_label: scored.label,
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ first_name: '', last_name: opp['Customer Company Name'], email: opp['Customer Email'], company_name: opp['Customer Company Name'], company_domain: opp['Customer Website'], title: 'AWS Opportunity Contact', score_label: scored.label }),
       });
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
       setHsSent(true);
-    } catch (err) {
-      alert('HubSpot error: ' + err.message);
-    } finally {
-      setHsPushing(false);
-    }
+    } catch (err) { alert('HubSpot error: ' + err.message); }
+    finally { setHsPushing(false); }
   }
 
   async function handleDraftEmail() {
     if (!opp['Customer Email']) { setEmailError('No email address for this opportunity.'); return; }
-    setEmailDrafting(true);
-    setEmailError(null);
+    setEmailDrafting(true); setEmailError(null);
     try {
       const resp = await fetch('/api/draft-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: opp['Customer Company Name'],
-          first_name: '',
-          title: 'Decision Maker',
-          company_name: opp['Customer Company Name'],
-          company_description: 'They are working on: ' + opp['Partner Project Title'],
-          aws_services: productList,
-          keywords: [opp['Industry Vertical'], opp['Stage'], 'AWS migration'],
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: opp['Customer Company Name'], first_name: '', title: 'Decision Maker', company_name: opp['Customer Company Name'], company_description: 'They are working on: ' + opp['Partner Project Title'], aws_services: productList, keywords: [opp['Industry Vertical'], opp['Stage'], 'AWS migration'] }),
       });
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
@@ -137,14 +235,9 @@ function OppCard({ opp, scored, index }) {
       const body = encodeURIComponent((data.body || '') + '\n\nBest,');
       const a = document.createElement('a');
       a.href = 'mailto:' + opp['Customer Email'] + '?subject=' + subject + '&body=' + body;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (err) {
-      setEmailError(err.message);
-    } finally {
-      setEmailDrafting(false);
-    }
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    } catch (err) { setEmailError(err.message); }
+    finally { setEmailDrafting(false); }
   }
 
   return (
@@ -215,6 +308,8 @@ function OppCard({ opp, scored, index }) {
   );
 }
 
+// ─── Sample Data ──────────────────────────────────────────────────────────────
+
 const SAMPLE_DATA = [
   'Opportunity id\tCreated By\tDate Created\tLast Updated Date\tCustomer Company Name\tCustomer Email\tPartner Project Title\tAWS Products\tStage\tEstimated AWS Monthly Recurring Revenue\tCustomer Website\tDate Approved/Rejected\tIndustry Vertical',
   'O17379160\tAWS Sync Service Account\t3/18/26\t3/18/26\tAthena Index\tdivinee@athenaindex.com\tAthena Index - Website Hosting & Content Delivery Modernization\tAWS Shield;Amazon GuardDuty;Amazon Route 53;Amazon CloudFront;AWS Amplify\tQualified\t1700\tathenaindex.com\t3/18/26\tSoftware & Internet',
@@ -222,14 +317,31 @@ const SAMPLE_DATA = [
   'O17378986\tAWS Sync Service Account\t3/18/26\t3/18/26\tAthena Index\tdivinee@athenaindex.com\tAthena Index - Storage Optimization & Historical Archive Migration\tAmazon S3;Cross-Region Data Transfer;S3 Glacier Deep Archive;S3 Intelligent-Tiering\tQualified\t2350\tathenaindex.com\t3/18/26\tSoftware & Internet',
 ].join('\n');
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function AwsOpportunities() {
   const [rawInput, setRawInput] = useState('');
   const [opps, setOpps] = useState(() => paiLoad('aws_opps') || []);
   const [stage, setStage] = useState(() => (paiLoad('aws_opps') || []).length > 0 ? 'results' : 'input');
   const [activeFilters, setActiveFilters] = useState([]);
   const [sortBy, setSortBy] = useState('score');
+  const [config, setConfig] = useState(() => loadConfig());
+  const [configOpen, setConfigOpen] = useState(false);
 
-  const scoredOpps = useMemo(() => opps.map(opp => ({ opp, scored: scoreOpportunity(opp, opps) })), [opps]);
+  function handleConfigChange(newCfg) {
+    setConfig(newCfg);
+    // Persist just the points values
+    const toSave = {};
+    Object.keys(newCfg).forEach(k => { toSave[k] = newCfg[k].points; });
+    paiSave('aws_scoring_config', toSave);
+  }
+
+  function handleConfigReset() {
+    setConfig(DEFAULT_CONFIG);
+    paiSave('aws_scoring_config', null);
+  }
+
+  const scoredOpps = useMemo(() => opps.map(opp => ({ opp, scored: scoreOpportunity(opp, opps, config) })), [opps, config]);
 
   const sorted = useMemo(() => [...scoredOpps].sort((a, b) => {
     if (sortBy === 'mrr') return (parseFloat(b.opp['Estimated AWS Monthly Recurring Revenue']) || 0) - (parseFloat(a.opp['Estimated AWS Monthly Recurring Revenue']) || 0);
@@ -260,8 +372,21 @@ export default function AwsOpportunities() {
 
   if (stage === 'results') return (
     <div className="fade-up">
-      <button className="btn-back" onClick={() => setStage('input')}>← Back / Load New Data</button>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <button className="btn-back" style={{ margin: 0 }} onClick={() => setStage('input')}>← Back / Load New Data</button>
+        <button
+          onClick={() => setConfigOpen(o => !o)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid ' + (configOpen ? '#6d28d9' : '#334155'), background: configOpen ? 'rgba(109,40,217,0.15)' : 'transparent', color: configOpen ? '#a78bfa' : '#94a3b8', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+        >
+          ⚙️ Scoring Criteria {configOpen ? '▲' : '▼'}
+        </button>
+      </div>
+
+      {configOpen && (
+        <ScoringConfigEditor config={config} onChange={handleConfigChange} onReset={handleConfigReset} />
+      )}
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, marginTop: configOpen ? 20 : 0 }}>
         {[
           { label: 'Total Opps', value: opps.length, color: '#e2e8f0' },
           { label: 'Total MRR', value: '$' + totalMRR.toLocaleString(), color: '#22c55e' },
@@ -276,6 +401,7 @@ export default function AwsOpportunities() {
           </div>
         ))}
       </div>
+
       <div className="results-filter-bar" style={{ marginBottom: 16 }}>
         <span className="results-filter-label">Filter:</span>
         {[['hot','active-hot','🔥 Hot'],['warm','active-warm','🟡 Warm'],['cold','active-cold','🔵 Cold']].map(([val,cls,label]) => (
@@ -287,12 +413,13 @@ export default function AwsOpportunities() {
           <button key={val} className={'rf-chip ' + (sortBy === val ? 'active-warm' : '')} onClick={() => setSortBy(val)}>{label}</button>
         ))}
       </div>
+
       <div className="results-header">
         <div className="results-count">{filtered.length === scoredOpps.length ? scoredOpps.length + ' opportunities scored' : 'Showing ' + filtered.length + ' of ' + scoredOpps.length + ' opportunities'}</div>
         <div className="legend">
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#ef4444' }} /> Hot (70+)</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#f59e0b' }} /> Warm (40–69)</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#4f8ef7' }} /> Cold (&lt;40)</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: '#ef4444' }} /> Hot (≥{config.hotThreshold.points})</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: '#f59e0b' }} /> Warm (≥{config.warmThreshold.points})</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: '#4f8ef7' }} /> Cold (&lt;{config.warmThreshold.points})</div>
         </div>
       </div>
       {filtered.map((item, i) => <OppCard key={item.opp['Opportunity id'] || i} opp={item.opp} scored={item.scored} index={i} />)}
@@ -318,31 +445,15 @@ export default function AwsOpportunities() {
           </button>
         )}
       </div>
-      <div style={{ marginTop: 32, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '18px 20px' }}>
-        <div className="lc-label" style={{ marginBottom: 12 }}>📐 Scoring Rubric</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {[
-            ['MRR ≥ $5,000/mo', '+30', 'hot'],
-            ['MRR $2,000–$4,999/mo', '+20', 'warm'],
-            ['MRR $500–$1,999/mo', '+10', 'cold'],
-            ['Stage = Qualified', '+20', 'hot'],
-            ['Stage = Prospect', '+10', 'warm'],
-            ['AI/ML Services (Bedrock, SageMaker…)', '+15', 'hot'],
-            ['Security Services (GuardDuty, Shield, WAF…)', '+10', 'warm'],
-            ['5+ AWS Products in scope', '+10', 'warm'],
-            ['High-value vertical (Healthcare, Fintech…)', '+5', 'warm'],
-            ['Fast-moving vertical (SaaS, Software…)', '+5', 'warm'],
-            ['Same-day approval', '+5', 'warm'],
-            ['Multiple opportunities from same customer', '+5', 'warm'],
-          ].map(([lbl, pts, tier]) => (
-            <div key={lbl} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '5px 8px', borderRadius: 6, background: '#0a0f1a' }}>
-              <span style={{ color: '#94a3b8' }}>{lbl}</span>
-              <span style={{ fontWeight: 700, color: tier === 'hot' ? '#ef4444' : tier === 'warm' ? '#f59e0b' : '#4f8ef7' }}>{pts}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 12, fontSize: 11, color: '#475569' }}>🔥 Hot = 70+ · 🟡 Warm = 40–69 · 🔵 Cold = &lt;40 · Max: 100</div>
-      </div>
+
+      <button
+        onClick={() => setConfigOpen(o => !o)}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 20, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (configOpen ? '#6d28d9' : '#334155'), background: configOpen ? 'rgba(109,40,217,0.15)' : 'transparent', color: configOpen ? '#a78bfa' : '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+      >
+        ⚙️ Configure Scoring Criteria {configOpen ? '▲' : '▼'}
+      </button>
+
+      {configOpen && <ScoringConfigEditor config={config} onChange={handleConfigChange} onReset={handleConfigReset} />}
     </div>
   );
 }
