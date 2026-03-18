@@ -8,21 +8,22 @@ import PeopleLookup from '../components/PeopleLookup';
 import Credits from '../components/Credits';
 import LookalikSearch from '../components/LookalikSearch';
 import Settings from '../components/Settings';
+import AwsOpportunities from '../components/AwsOpportunities';
 
 const TABS = [
-  { id: 'leads',     label: 'Find Leads' },
-  { id: 'company',   label: 'Company Intel' },
-  { id: 'bulk',      label: '⚡ Bulk Prospector' },
+  { id: 'leads',    label: 'Find Leads' },
+  { id: 'company',  label: 'Company Intel' },
+  { id: 'bulk',     label: '⚡ Bulk Prospector' },
   { id: 'jobchanges',label: '🔄 Job Changes' },
-  { id: 'people',    label: '👤 People Lookup' },
-  { id: 'credits',   label: '📊 Credits' },
-  { id: 'lookalike', label: '🎯 Lookalike' },
-  { id: 'settings',  label: 'Settings' },
+  { id: 'people',   label: '👤 People Lookup' },
+  { id: 'credits',  label: '📊 Credits' },
+  { id: 'lookalike',label: '🎯 Lookalike' },
+  { id: 'awsopps',  label: '☁️ AWS Opportunities' },
+  { id: 'settings', label: 'Settings' },
 ];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('leads');
-
   return (
     <>
       <Head>
@@ -30,12 +31,8 @@ export default function Home() {
         <meta name="description" content="AI-powered prospecting platform" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
-
       <nav>
         <div className="nav-logo">Prospect<span>AI</span></div>
         <div className="nav-tabs">
@@ -50,7 +47,6 @@ export default function Home() {
           ))}
         </div>
       </nav>
-
       <main>
         {activeTab === 'leads'      && <FindLeads />}
         {activeTab === 'company'    && <CompanyIntel />}
@@ -59,6 +55,7 @@ export default function Home() {
         {activeTab === 'people'     && <PeopleLookup />}
         {activeTab === 'credits'    && <Credits />}
         {activeTab === 'lookalike'  && <LookalikSearch />}
+        {activeTab === 'awsopps'    && <AwsOpportunities />}
         {activeTab === 'settings'   && <Settings />}
       </main>
     </>
