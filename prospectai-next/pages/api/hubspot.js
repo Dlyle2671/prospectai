@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       first_name, last_name, email, title,
       company_name, company_domain,
       linkedin_url, city, state, country,
-      company_size, company_industry, score_label,
+      company_size, company_industry, score_label, score,
       twitter_url, personal_phone,
       company_city, company_state, company_country,
       company_street, company_zip, company_phone,
@@ -240,6 +240,8 @@ export default async function handler(req, res) {
     if (score_label) contactProps.lifecyclestage =
       score_label === "hot" ? "salesqualifiedlead" :
       score_label === "warm" ? "marketingqualifiedlead" : "lead";
+    if (score != null && score !== '') contactProps.hs_lead_score = String(Math.round(Number(score)));
+    if (score_label) contactProps.pai_score_label = score_label;
 
     if (existingContactId) {
       const updateResp = await fetch(
