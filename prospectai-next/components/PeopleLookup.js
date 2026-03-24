@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import LeadCard from './LeadCard';
-import { paiSave, paiLoad } from '../lib/utils';
+import { paiSave, paiLoad , trackCredits } from '../lib/utils';
 
 export default function PeopleLookup() {
   const saved = paiLoad('people');
@@ -24,6 +24,7 @@ export default function PeopleLookup() {
       const exact = results.find(p => p.email?.toLowerCase() === e.toLowerCase()) || results[0] || null;
       setResult(exact);
       paiSave('people', { email: e, result: exact });
+      if (exact) trackCredits('lookup', 1, 'People Lookup: ' + e);
       setStage(exact ? 2 : 3);
     } catch (err) {
       setStage(0);
