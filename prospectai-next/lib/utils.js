@@ -99,3 +99,30 @@ export function makeFilterKey(state) {
     g: state.selectedLocations,
   });
 }
+
+
+// ─── Credit Tracking ─────────────────────────────────────────────────────────
+// Call this after every successful Apollo API response to record usage.
+// type: 'search' | 'bulk' | 'jobchange' | 'lookup' | 'lookalike' | 'company'
+// count: number of contacts/results returned
+// label: human-readable description for the activity log
+export function trackCredits(type, count, label) {
+  if (!count || count <= 0) return;
+  try {
+    const month = new Date().toISOString().slice(0, 7);
+    const store = (() => {
+      try { const r = localStorage.getItem('pai_creditStore'); return r ? JSON.parse(r) : {}; } catch(e) { return {}; }
+    })();
+    const months = store.months || {};
+    const m = months[month] || { searches: 0, bulk: 0, company: 0, jobchange: 0, total: 0, activity: [] };
+    m.total = (m.total || 0) + count;
+    if (type === 'search')    m.searches   = (m.searches   || 0) + 1;
+    if (type === 'bulk')      m.bulk       = (m.bulk       || 0) + 1;
+    if (type === 'jobchange') m.jobchange  = (m.jobchange  || 0) + 1;
+    const activity = m.activity || [];
+    activity.push({ type, count, label: label || type, date: new Date().toLocaleString() });
+    m.activity = activity.slice(-50); // keep last 50 entries
+    const next = { ...store, months: { ...months, [month]: m } };
+    localStorage.setItem('pai_creditStore', JSON.stringify(next));
+  } catch(e) {}
+}
