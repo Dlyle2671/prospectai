@@ -327,6 +327,11 @@ export default function AwsOpportunities() {
   const [sortBy, setSortBy] = useState('score');
   const [config, setConfig] = useState(() => loadConfig());
   const [configOpen, setConfigOpen] = useState(false);
+  const [snapshotName, setSnapshotName] = useState('');
+  const [snapshots, setSnapshots] = useState([]);
+  const [snapshotsOpen, setSnapshotsOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [snapshotsLoading, setSnapshotsLoading] = useState(false);
 
   function handleConfigChange(newCfg) {
     setConfig(newCfg);
@@ -339,6 +344,48 @@ export default function AwsOpportunities() {
   function handleConfigReset() {
     setConfig(DEFAULT_CONFIG);
     paiSave('aws_scoring_config', null);
+  }
+
+  async function saveSnapshot() {
+    const name = snapshotName.trim() || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    setSaving(true);
+    try {
+      const resp = await fetch('/api/kv', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, opps }) });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setSnapshotName('');
+      alert('Saved: ' + name);
+    } catch (err) { alert('Save error: ' + err.message); } finally { setSaving(false); }
+  }
+
+  async function loadSnapshots() {
+    setSnapshotsLoading(true);
+    try {
+      const resp = await fetch('/api/kv?action=list');
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setSnapshots(data.snapshots || []);
+      setSnapshotsOpen(true);
+    } catch (err) { alert('Load error: ' + err.message); } finally { setSnapshotsLoading(false); }
+  }
+
+  async function loadSnapshot(key) {
+    try {
+      const resp = await fetch('/api/kv?action=load&key=' + encodeURIComponent(key));
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setOpps(data.opps); paiSave('aws_opps', data.opps); setStage('results'); setActiveFilters([]); setSnapshotsOpen(false);
+    } catch (err) { alert('Load error: ' + err.message); }
+  }
+
+  async function deleteSnapshot(key) {
+    if (!confirm('Delete this snapshot?')) return;
+    try {
+      const resp = await fetch('/api/kv?action=delete&key=' + encodeURIComponent(key));
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      setSnapshots(prev => prev.filter(s => s.key !== key));
+    } catch (err) { alert('Delete error: ' + err.message); }
   }
 
   const scoredOpps = useMemo(() => opps.map(opp => ({ opp, scored: scoreOpportunity(opp, opps, config) })), [opps, config]);
@@ -386,6 +433,19 @@ export default function AwsOpportunities() {
         <ScoringConfigEditor config={config} onChange={handleConfigChange} onReset={handleConfigReset} />
       )}
 
+      {/* Save Snapshot Controls */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={snapshotName}
+            onChange={e => setSnapshotName(e.target.value)}
+            placeholder="Snapshot name (optional)…"
+            style={{ flex: 1, minWidth: 180, padding: '7px 12px', borderRadius: 8, border: '1px solid #334155', background: '#0a0f1a', color: '#e2e8f0', fontSize: 12, outline: 'none' }}
+          />
+          <button onClick={saveSnapshot} disabled={saving} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, background: saving ? '#1e3a5f' : '#1d4ed8', color: '#fff', cursor: saving ? 'wait' : 'pointer' }}>
+            {saving ? '💾 Saving…' : '💾 Save Snapshot'}
+          </button>
+        </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20, marginTop: configOpen ? 20 : 0 }}>
         {[
           { label: 'Total Opps', value: opps.length, color: '#e2e8f0' },
@@ -443,6 +503,27 @@ export default function AwsOpportunities() {
           <button onClick={() => setStage('results')} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid #334155', background: 'transparent', color: '#94a3b8', fontSize: 14, cursor: 'pointer' }}>
             View Last Results ({opps.length})
           </button>
+        )}
+        <button onClick={loadSnapshots} disabled={snapshotsLoading} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid #1d4ed8', background: 'transparent', color: '#60a5fa', fontSize: 14, cursor: snapshotsLoading ? 'wait' : 'pointer' }}>
+          {snapshotsLoading ? '⏳ Loading…' : '📂 Saved Results'}
+        </button>
+        {snapshotsOpen && snapshots.length === 0 && (
+          <div style={{ marginTop: 12, color: '#64748b', fontSize: 13 }}>No saved snapshots yet.</div>
+        )}
+        {snapshotsOpen && snapshots.length > 0 && (
+          <div style={{ marginTop: 12, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 16px' }}>
+            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.06em' }}>Saved Snapshots</div>
+            {snapshots.map(s => (
+              <div key={s.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1e293b', gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: '#e2e8f0', fontWeight: 600 }}>{s.name}</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>{s.count} opps · {new Date(s.savedAt).toLocaleDateString()}</div>
+                </div>
+                <button onClick={() => loadSnapshot(s.key)} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#1d4ed8', color: '#fff', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Load</button>
+                <button onClick={() => deleteSnapshot(s.key)} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #334155', background: 'transparent', color: '#ef4444', fontSize: 11, cursor: 'pointer' }}>✕</button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
