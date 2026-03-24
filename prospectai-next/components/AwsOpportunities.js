@@ -319,6 +319,20 @@ function OppCard({ opp, scored, index }) {
 const SAMPLE_DATA = `Opportunity id\tStage\tCustomer Company Name\tCustomer Email\tCustomer Website\tIndustry Vertical\tPartner Project Title\tAWS Products\tEstimated AWS Monthly Recurring Revenue\tDate Created\tDate Approved/Rejected
 opp-001\tQualified\tAcme Corp\tacme@example.com\tacme.com\tFintech\tCloud Migration\tAmazon Bedrock;AWS Shield;Amazon SageMaker;AWS IAM;Amazon S3\t8500\t2026-03-01\t2026-03-01`;
 
+const AWS_STYLES = `
+.lc-textarea{width:100%;padding:14px 16px;background:#080c14;border:1px solid #1a2540;border-radius:10px;color:#c8d4e8;font-size:13px;font-family:inherit;outline:none;resize:vertical;transition:border-color .2s;line-height:1.6}
+.lc-textarea:focus{border-color:#4f8ef7}
+.lc-textarea::placeholder{color:#3a4a6a}
+.lc-btn{padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,#4f8ef7,#2563eb);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}
+.lc-btn:hover{opacity:.88}
+.lc-btn:disabled{opacity:.5;cursor:not-allowed}
+.opp-card{background:#0d1424;border:1px solid #1a2540;border-radius:14px;padding:18px 20px;margin-bottom:10px;transition:border-color .2s}
+.opp-card:hover{border-color:#2d3f6b}
+.opp-card.hot{border-left:3px solid #ef4444}
+.opp-card.warm{border-left:3px solid #f59e0b}
+.opp-card.cold{border-left:3px solid #4f8ef7}
+`;
+
 export default function AwsOpportunities() {
     const [rawInput, setRawInput]   = useState('');
     const [opps, setOpps]           = useState(() => paiLoad('aws_opps') || []);
@@ -396,6 +410,7 @@ export default function AwsOpportunities() {
 
   if (stage === 'results') return (
         <div className="fade-up">
+    <style dangerouslySetInnerHTML={{ __html: AWS_STYLES }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <button className="btn-back" style={{ margin: 0 }} onClick={() => setStage('input')}>← Back / Load New Data</button>
         <button
@@ -466,7 +481,7 @@ export default function AwsOpportunities() {
 
     return (
       <div className="fade-up">
-          <style>{'.lc-textarea{width:100%;padding:14px 16px;background:#080c14;border:1px solid #1a2540;border-radius:10px;color:#c8d4e8;font-size:13px;font-family:inherit;outline:none;resize:vertical;transition:border-color .2s;line-height:1.6}.lc-textarea:focus{border-color:#4f8ef7}.lc-textarea::placeholder{color:#3a4a6a}.lc-btn{padding:12px 28px;border-radius:10px;border:none;background:linear-gradient(135deg,#4f8ef7,#2563eb);color:#fff;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer}.lc-btn:hover{opacity:.88}.lc-btn:disabled{opacity:.5;cursor:not-allowed}.opp-card{background:#0d1424;border:1px solid #1a2540;border-radius:14px;padding:18px 20px;margin-bottom:10px;transition:border-color .2s}.opp-card:hover{border-color:#2d3f6b}.opp-card.hot{border-left:3px solid #ef4444}.opp-card.warm{border-left:3px solid #f59e0b}.opp-card.cold{border-left:3px solid #4f8ef7}'}</style>
+          <style dangerouslySetInnerHTML={{ __html: AWS_STYLES }} />
         <div className="section-title">📋 AWS Co-Sell Opportunity Scorer</div>
         <div className="section-sub">Paste your AWS opportunity data (TSV/CSV with headers) to score and prioritize your pipeline.</div>
         <div className="settings-card">
