@@ -93,6 +93,62 @@ function buildPainPoint(hook, body) {
   }
 }
 
+// Subject line template library keyed by hook tier
+// Pick one at random so each lead gets variety
+const SUBJECT_TEMPLATES = {
+  funding_rich: [
+    function(co, amt) { return 'Protecting runway at ' + co; },
+    function(co, amt) { return amt ? amt + ' raise → cutting AWS costs next?' : 'Fresh capital → cutting AWS costs next?'; },
+    function(co, amt) { return 'Post-raise cloud efficiency at ' + co; },
+    function(co, amt) { return 'Quick question for ' + co + ' post-raise'; }
+  ],
+  funding: [
+    function(co, amt) { return 'Protecting runway at ' + co; },
+    function(co, amt) { return 'Fresh capital — is AWS spend under control?'; },
+    function(co, amt) { return co + ' + AWS savings — quick thought'; },
+    function(co, amt) { return 'Post-raise, is cloud spend a priority?'; }
+  ],
+  aws: [
+    function(co) { return 'Are you leaving 18-30% on the table?'; },
+    function(co) { return co + 's AWS bill — quick thought'; },
+    function(co) { return 'Cutting ' + co + 's cloud spend by 18-30%'; },
+    function(co) { return 'Free AWS savings assessment for ' + co; }
+  ],
+  hiring: [
+    function(co) { return 'Scaling fast — is AWS keeping pace?'; },
+    function(co) { return co + ' growth + cloud costs — a thought'; },
+    function(co) { return 'Headcount up. AWS bill too?'; },
+    function(co) { return 'Rapid growth → hidden cloud costs at ' + co; }
+  ],
+  new_role: [
+    function(co, fn) { return fn + ', quick win for your first 30 days'; },
+    function(co, fn) { return 'New role at ' + co + ' — low-hanging fruit?'; },
+    function(co, fn) { return 'Fast cloud savings win at ' + co; },
+    function(co, fn) { return fn + ', inherit any AWS bloat at ' + co + '?'; }
+  ],
+  background: [
+    function(co) { return 'Quick question about ' + co + 's AWS spend'; },
+    function(co) { return '18-30% AWS savings — worth 15 min?'; },
+    function(co) { return 'Free optimization assessment for ' + co; },
+    function(co) { return 'Cutting cloud costs at ' + co; }
+  ],
+  generic: [
+    function(co) { return 'Are you leaving money on the table with AWS?'; },
+    function(co) { return 'Quick question about ' + co + 's cloud bill'; },
+    function(co) { return '18-30% AWS savings — free assessment'; },
+    function(co) { return 'Free AWS optimization for ' + co; }
+  ]
+};
+
+function pickSubject(tier, body) {
+  const co = body.company_name || 'your company';
+  const fn = body.first_name || (body.name || '').split(' ')[0] || 'there';
+  const amt = body.funding_round_amount ? fmtFundingAmt(body.funding_round_amount) : null;
+  const templates = SUBJECT_TEMPLATES[tier] || SUBJECT_TEMPLATES.generic;
+  const idx = Math.floor(Math.random() * templates.length);
+  return templates[idx](co, amt || fn);
+}
+
 const PROGRAM_BULLETS = [
   '- You receive a discount on your AWS bill',
   '- 100% funded by AWS — no cost to you',
@@ -107,7 +163,7 @@ function buildTemplateDraft(body) {
   const co = company_name || 'your company';
   const { hook, tier } = pickBestHook(body);
   const pain = buildPainPoint({ tier }, body);
-  const subject = hook.length <= 60 ? hook : 'Quick question about ' + co + ' cloud spend';
+  const subject = pickSubject(tier, body);
   const emailBody = [
     fn + ',',
     '',
@@ -150,6 +206,7 @@ export default async function handler(req, res) {
 
   const { hook: bestHook, tier: hookTier } = pickBestHook(body);
   const suggestedPain = buildPainPoint({ tier: hookTier }, body);
+  const suggestedSubject = pickSubject(hookTier, body);
 
   const ctx = [];
   if (title) ctx.push('Title: ' + title);
@@ -191,6 +248,14 @@ export default async function handler(req, res) {
     '- Requires no changes to existing infrastructure',
   ].join('\n');
 
+  const subjectExamples = [
+    'SUBJECT LINE STYLE GUIDE (pick the best fit, do not copy verbatim):',
+    '- Curiosity: "Are you leaving 18-30% on the table?" or "Scaling fast — is AWS keeping pace?"',
+    '- Specific + personal: "Protecting runway at [Company]" or "[Name], quick win for your first 30 days"',
+    '- Direct value: "Free AWS optimization for [Company]" or "Cutting [Company] cloud spend 18-30%"',
+    '- Suggested subject (use or improve): ' + suggestedSubject,
+  ].join('\n');
+
   const prompt = [
     'You are a B2B sales expert writing a short, personalized cold outreach email for RRIL Solutions, a FinOps firm that cuts AWS spend.',
     '',
@@ -201,12 +266,14 @@ export default async function handler(req, res) {
     'BEST HOOK: ' + bestHook,
     'PAIN ANGLE: ' + suggestedPain,
     '',
+    subjectExamples,
+    '',
     programInfo,
     '',
     'OFFER: RRIL runs a free optimization assessment. Average savings are 18-30% on AWS bills within 30 days.',
     '',
     'RULES:',
-    '- Subject: under 8 words, reference something real about them',
+    '- Subject: max 8 words, punchy and curiosity-driven, personalized to this lead, do NOT just restate the hook',
     '- Open with the BEST HOOK above',
     '- Para 2: specific pain point (2-3 sentences)',
     '- Para 3: header "Benefits of the Altus Cloud AWS FinOps Program:" then list all 5 program details as bullet points',
