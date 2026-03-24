@@ -194,3 +194,7 @@ main{max-width:960px;width:100%;margin:0 auto;padding:40px 24px}
 .ci-news-title a:hover{color:#4f8ef7}
 .ci-news-meta{font-size:11px;color:#4a5568;display:flex;gap:8px}
 .ci-news-source{color:#6b7a99}
+
+.btn-action{padding:6px 14px;border-radius:8px;border:1px solid #1a2540;background:#111827;color:#c8d4e8;font-size:12px;font-family:inherit;cursor:pointer;transition:all .2s}
+.btn-action:hover{border-color:#4f8ef7;color:#fff}
+.btn-action:disabled{opacity:.5;cursor:not-allowed}
