@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import LeadCard from './LeadCard';
-import { paiSave, paiLoad, pickPage, addSeenIds, filterSeenIds, makeFilterKey } from '../lib/utils';
+import { paiSave, paiLoad, pickPage, addSeenIds, filterSeenIds, makeFilterKey, trackCredits } from '../lib/utils';
 
 const INDUSTRIES = ['Technology','Software','SaaS','Cloud Computing','Cybersecurity','Fintech','Healthcare','Biotech','E-commerce','Marketing','Real Estate','Education','Manufacturing','Logistics','Media'];
 const EMP_RANGES = [{label:'1-10',val:'1,10'},{label:'11-50',val:'11,50'},{label:'51-200',val:'51,200'},{label:'201-500',val:'201,500'},{label:'501-1000',val:'501,1000'},{label:'1001-5000',val:'1001,5000'},{label:'5001+',val:'5001,10000000'}];
@@ -88,6 +88,7 @@ export default function FindLeads() {
                 const results = Array.isArray(data) ? data : [];
                 const fresh = filterSeenIds(results);
                 addSeenIds(results.map(r => r.id));
+    trackCredits('search', results.length, 'Find Leads search (' + results.length + ' contacts)');
                 setState(prev => ({ ...prev, results: fresh.length > 0 ? fresh : results, activeResultFilters: [], stage: 2, lastPage: page }));
         } catch (err) {
                 setState(prev => ({ ...prev, stage: 0 }));
