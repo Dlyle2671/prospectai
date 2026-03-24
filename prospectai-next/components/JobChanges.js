@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { paiSave, paiLoad } from '../lib/utils';
+import { paiSave, paiLoad , trackCredits } from '../lib/utils';
 
 const TITLE_OPTIONS = ['VP of Engineering','CTO','Head of Infrastructure','Cloud Architect','DevOps Manager','Director of Engineering','Head of Platform','VP of IT','Engineering Manager','Solutions Architect'];
 const INDUSTRY_OPTIONS = ['Information Technology','Software Development','Financial Services','Healthcare','Cybersecurity','Telecommunications'];
@@ -44,6 +44,7 @@ export default function JobChanges() {
       });
       setResults(filtered.length > 0 ? filtered : allResults);
       paiSave('jobchanges', { titles, industries, sizes, timeWindow, results: filtered });
+      trackCredits('jobchange', filtered.length, 'Job Changes search (' + filtered.length + ' contacts)');
       setStage(2);
     } catch (err) { setStage(0); alert('Search failed: ' + err.message); }
   }
