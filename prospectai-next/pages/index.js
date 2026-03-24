@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'; 
 import Head from 'next/head';
 import FindLeads from '../components/FindLeads';
 import CompanyIntel from '../components/CompanyIntel';
