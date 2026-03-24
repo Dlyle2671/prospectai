@@ -263,10 +263,10 @@ function OppCard({ opp, scored, index }) {
         <button className="btn-action" onClick={() => setExpanded(e => !e)}>
 {expanded ? '▲ Less' : '▼ Details'}
 </button>
-        <button className="btn-action" onClick={handleHubspot} disabled={hsPushing || hsSent}>
+        <button className="btn-action btn-action-hs" onClick={handleHubspot} disabled={hsPushing || hsSent}>
 {hsSent ? '✓ Sent to HubSpot' : hsPushing ? 'Pushing…' : '🔗 HubSpot'}
 </button>
-        <button className="btn-action" onClick={handleDraftEmail} disabled={emailDrafting}>
+        <button className="btn-action btn-action-email" onClick={handleDraftEmail} disabled={emailDrafting}>
 {emailDrafting ? 'Drafting…' : '✉ Draft Email'}
 </button>
 {emailError && <div style={{ fontSize: 11, color: '#ef4444', alignSelf: 'center' }}>{emailError}</div>}
