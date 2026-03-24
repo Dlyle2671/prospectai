@@ -198,3 +198,7 @@ main{max-width:960px;width:100%;margin:0 auto;padding:40px 24px}
 .btn-action{padding:6px 14px;border-radius:8px;border:1px solid #1a2540;background:#111827;color:#c8d4e8;font-size:12px;font-family:inherit;cursor:pointer;transition:all .2s}
 .btn-action:hover{border-color:#4f8ef7;color:#fff}
 .btn-action:disabled{opacity:.5;cursor:not-allowed}
+.btn-action-hs{background:#ff7a59;border-color:#ff7a59;color:#fff}
+.btn-action-hs:hover{background:#ff6240}
+.btn-action-email{background:#0e7490;border-color:#0e7490;color:#fff}
+.btn-action-email:hover{background:#0891b2}
