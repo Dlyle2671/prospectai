@@ -232,7 +232,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
                   onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.email).then(() => { setEmailCopied(true); setTimeout(() => setEmailCopied(false), 1500); }); }}
                   title="Copy email"
                   style={{ padding: '2px 7px', fontSize: 12, cursor: 'pointer', border: '1px solid #334155', borderRadius: 4, background: '#1e293b', color: emailCopied ? '#4ade80' : '#94a3b8', lineHeight: 1.4, flexShrink: 0 }}
-                >{emailCopied ? '' : '=�'}</button>
+                >{emailCopied ? '✓' : '📋'}</button>
               </span>
             )}
             {loc && <span className="meta-tag location">📍 {loc}</span>}
