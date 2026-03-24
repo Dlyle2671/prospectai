@@ -464,25 +464,24 @@ export default function AwsOpportunities() {
   </div>
   );
 
-  return (
-        <div className="fade-up">
-          <div className="lc-label">📋 AWS Co-Sell Opportunity Scorer</div>
-      <p style={{ color: '#64748b', fontSize: 14, marginBottom: 20 }}>
-        Paste your AWS opportunity data below (TSV/CSV with headers), then click Score.
-          </p>
-      <textarea
-        className="lc-textarea"
-        placeholder={'Paste spreadsheet data here (TSV or CSV with headers)…\n\nExample columns: Opportunity id, Stage, Customer Company Name, AWS Products, Estimated AWS Monthly Recurring Revenue…'}
-        value={rawInput}
-        onChange={e => setRawInput(e.target.value)}
-                  style={{ minHeight: 220 }}
-      />
-      <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button className="lc-btn" onClick={handleParse}>⚡ Score Opportunities</button>
-{opps.length > 0 && (
-            <button className="btn-back" onClick={() => setStage('results')}>← Back to Results</button>
-        )}
-</div>
+    return (
+      <div className="fade-up">
+        <div className="section-title">📋 AWS Co-Sell Opportunity Scorer</div>
+        <div className="section-sub">Paste your AWS opportunity data (TSV/CSV with headers) to score and prioritize your pipeline.</div>
+        <div className="settings-card">
+          <textarea
+            className="lc-textarea"
+            placeholder={'Paste spreadsheet data here (TSV or CSV with headers)…\n\nExample columns: Opportunity id, Stage, Customer Company Name, AWS Products, Estimated AWS Monthly Recurring Revenue…'}
+            value={rawInput}
+            onChange={e => setRawInput(e.target.value)}
+            style={{ minHeight: 260 }}
+          />
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="lc-btn" onClick={handleParse}>⚡ Score Opportunities</button>
+            {onReset && <button onClick={onReset} className="btn-back" style={{ marginBottom: 0 }}>← Back to Results</button>}
+          </div>
+        </div>
+      </div>
           </div>
   );
 }
