@@ -26,7 +26,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
   const score = p.score || 0;
   const loc = [p.city, p.state, p.country].filter(Boolean).join(', ');
   const emailCls = p.email_status === 'verified' ? 'email' : 'email-guessed';
-  const emailBadge = p.email_status === 'verified' ? 'Ã¢ÂÂ' : 'Ã¢ÂÂÃ¯Â¸Â';
+  const emailBadge = p.email_status === 'verified' ? '✅' : '✉️';
 
   // Load sender emails from localStorage
   const senderEmails = paiLoad('sender_emails') || [];
@@ -194,13 +194,13 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
     <div className={`card ${sl} fade-up`} style={{ animationDelay: `${index * 0.04}s` }}>
       <div className="avatar">
         {p.photo_url
-          ? <img src={p.photo_url} alt={p.name} onError={e => { e.target.parentNode.innerHTML = 'Ã°ÂÂÂ¤'; }} />
-          : 'Ã°ÂÂÂ¤'}
+          ? <img src={p.photo_url} alt={p.name} onError={e => { e.target.parentNode.innerHTML = '👤'; }} />
+          : '👤'}
       </div>
       <div className="card-body">
         {sl === 'hot' && p.intent_signals && p.intent_signals.length > 0 && (
           <div className="intent-strip">
-            <span className="intent-strip-label">Ã°ÂÂÂ¥ Intent</span>
+            <span className="intent-strip-label">🔥 Intent</span>
             {p.intent_signals.map((sig, i) => (<span key={i} className={`intent-chip ${sig.type}`}>{sig.label}</span>))}
           </div>
         )}
@@ -208,7 +208,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="person-name">{p.name || 'Unknown'}</div>
             <div className="person-title">{p.title || ''}</div>
-            <div className="person-company">{p.company_name || ''}{p.company_domain ? ' ÃÂ· ' + p.company_domain : ''}</div>
+            <div className="person-company">{p.company_name || ''}{p.company_domain ? ' · ' + p.company_domain : ''}</div>
           </div>
           <div className="score-badge">
             <div className={`score-num ${sl}`}>{score}</div>
@@ -218,12 +218,12 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
         </div>
         {(p.recently_funded || p.hiring_surge) && (
           <div className="card-meta">
-            {p.recently_funded && <span className="badge-funded">Ã°ÂÂÂ° Recently Funded</span>}
-            {p.hiring_surge && <span className="badge-hiring">Ã°ÂÂÂ Hiring Surge</span>}
+            {p.recently_funded && <span className="badge-funded">💰 Recently Funded</span>}
+            {p.hiring_surge && <span className="badge-hiring">📈 Hiring Surge</span>}
           </div>
         )}
         <div className="lc-section">
-          <div className="lc-label">Ã°ÂÂÂ¤ Contact</div>
+          <div className="lc-label">👤 Contact</div>
           <div className="card-meta">
             {p.email && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -232,76 +232,76 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
                   onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.email).then(() => { setEmailCopied(true); setTimeout(() => setEmailCopied(false), 1500); }); }}
                   title="Copy email"
                   style={{ padding: '2px 7px', fontSize: 12, cursor: 'pointer', border: '1px solid #334155', borderRadius: 4, background: '#1e293b', color: emailCopied ? '#4ade80' : '#94a3b8', lineHeight: 1.4, flexShrink: 0 }}
-                >{emailCopied ? 'â' : 'ð'}</button>
+                >{emailCopied ? '' : '=�'}</button>
               </span>
             )}
-            {loc && <span className="meta-tag location">Ã°ÂÂÂ {loc}</span>}
-            {p.department && <span className="meta-tag dept">Ã°ÂÂÂ¢ {p.department}</span>}
-            {p.seniority && <span className="meta-tag">Ã¢Â­Â {p.seniority}</span>}
-            {p.personal_phone && <span className="meta-tag">Ã°ÂÂÂ {p.personal_phone}</span>}
-            {p.linkedin_url && <span className="meta-tag social"><a href={p.linkedin_url} target="_blank" rel="noopener noreferrer">in Ã¢ÂÂ</a></span>}
-            {p.twitter_url && <span className="meta-tag social"><a href={p.twitter_url} target="_blank" rel="noopener noreferrer">Ã°ÂÂÂ Ã¢ÂÂ</a></span>}
-            {p.github_url && <span className="meta-tag social"><a href={p.github_url} target="_blank" rel="noopener noreferrer">gh Ã¢ÂÂ</a></span>}
+            {loc && <span className="meta-tag location">📍 {loc}</span>}
+            {p.department && <span className="meta-tag dept">🏢 {p.department}</span>}
+            {p.seniority && <span className="meta-tag">⭐ {p.seniority}</span>}
+            {p.personal_phone && <span className="meta-tag">📞 {p.personal_phone}</span>}
+            {p.linkedin_url && <span className="meta-tag social"><a href={p.linkedin_url} target="_blank" rel="noopener noreferrer">in ↗</a></span>}
+            {p.twitter_url && <span className="meta-tag social"><a href={p.twitter_url} target="_blank" rel="noopener noreferrer">𝕏 ↗</a></span>}
+            {p.github_url && <span className="meta-tag social"><a href={p.github_url} target="_blank" rel="noopener noreferrer">gh ↗</a></span>}
           </div>
         </div>
         {(p.company_size || p.company_founded || p.annual_revenue || p.subindustry || p.headcount_growth || p.time_in_role_months != null) && (
           <div className="lc-section">
-            <div className="lc-label">Ã°ÂÂÂ¢ Company</div>
+            <div className="lc-label">🏢 Company</div>
             <div className="card-meta">
-              {p.company_size && <span className="meta-tag">Ã°ÂÂÂ¥ {Number(p.company_size).toLocaleString()} employees</span>}
-              {p.company_founded && <span className="meta-tag">Ã°ÂÂÂ Founded {p.company_founded}</span>}
-              {p.annual_revenue && <span className="meta-tag revenue">Ã°ÂÂÂ° {p.annual_revenue}</span>}
+              {p.company_size && <span className="meta-tag">👥 {Number(p.company_size).toLocaleString()} employees</span>}
+              {p.company_founded && <span className="meta-tag">📅 Founded {p.company_founded}</span>}
+              {p.annual_revenue && <span className="meta-tag revenue">💰 {p.annual_revenue}</span>}
               {p.subindustry && <span className="meta-tag dept">{p.subindustry}</span>}
-              {p.headcount_growth && <span className="meta-tag growth">Ã°ÂÂÂ {fmtGrowth(p.headcount_growth)}</span>}
-              {p.time_in_role_months != null && <span className="meta-tag">Ã°ÂÂÂ {fmtTimeInRole(p.time_in_role_months)}</span>}
-              {p.company_phone && <span className="meta-tag">Ã°ÂÂÂ {p.company_phone}</span>}
-              {p.company_linkedin && <span className="meta-tag social"><a href={p.company_linkedin} target="_blank" rel="noopener noreferrer">Co. in Ã¢ÂÂ</a></span>}
+              {p.headcount_growth && <span className="meta-tag growth">📈 {fmtGrowth(p.headcount_growth)}</span>}
+              {p.time_in_role_months != null && <span className="meta-tag">🕐 {fmtTimeInRole(p.time_in_role_months)}</span>}
+              {p.company_phone && <span className="meta-tag">📞 {p.company_phone}</span>}
+              {p.company_linkedin && <span className="meta-tag social"><a href={p.company_linkedin} target="_blank" rel="noopener noreferrer">Co. in ↗</a></span>}
             </div>
           </div>
         )}
         {(p.recently_funded || p.funding_stage || p.funding_round_date) && (
           <div className="card-meta">
-            {p.funding_stage && <span className="meta-tag funding">Ã°ÂÂÂ {p.funding_stage}{p.funding_total ? ' ÃÂ· ' + fmtFunding(p.funding_total) : ''}</span>}
-            {p.funding_round_date && (<span className="meta-tag round">Ã°ÂÂÂ {fmtRoundDate(p.funding_round_date)}{p.funding_round_type ? ' ' + p.funding_round_type : ''}{p.funding_round_amount ? ' ' + fmtRoundAmount(p.funding_round_amount) : ''}</span>)}
-            {p.top_investors && p.top_investors.length > 0 && (<span className="meta-tag investors">Ã°ÂÂÂ {p.top_investors.join(', ')}</span>)}
+            {p.funding_stage && <span className="meta-tag funding">💎 {p.funding_stage}{p.funding_total ? ' · ' + fmtFunding(p.funding_total) : ''}</span>}
+            {p.funding_round_date && (<span className="meta-tag round">📌 {fmtRoundDate(p.funding_round_date)}{p.funding_round_type ? ' ' + p.funding_round_type : ''}{p.funding_round_amount ? ' ' + fmtRoundAmount(p.funding_round_amount) : ''}</span>)}
+            {p.top_investors && p.top_investors.length > 0 && (<span className="meta-tag investors">👑 {p.top_investors.join(', ')}</span>)}
           </div>
         )}
         {p.prev_jobs && p.prev_jobs.length > 0 && (
           <div className="lc-section">
-            <div className="lc-label">Ã¢ÂÂ© Previous Roles</div>
+            <div className="lc-label">↩ Previous Roles</div>
             <div className="card-meta">
-              {p.prev_jobs.map((j, i) => (<span key={i} className="meta-tag prev-job">Ã°ÂÂÂ {j.title}{j.company ? ' @ ' + j.company : ''}</span>))}
+              {p.prev_jobs.map((j, i) => (<span key={i} className="meta-tag prev-job">🔄 {j.title}{j.company ? ' @ ' + j.company : ''}</span>))}
             </div>
           </div>
         )}
         {p.aws_services && p.aws_services.length > 0 && (
           <div className="lc-section">
-            <div className="lc-label">Ã¢ÂÂÃ¯Â¸Â AWS Services</div>
+            <div className="lc-label">☁️ AWS Services</div>
             <div className="aws-services-row">
-              <span className="aws-services-label">Ã¢ÂÂ AWS</span>
+              <span className="aws-services-label">☁ AWS</span>
               {p.aws_services.map((s, i) => <span key={i} className="aws-service-pill">{s}</span>)}
             </div>
           </div>
         )}
         {p.tech_stack && p.tech_stack.length > 0 && (
           <div className="lc-section">
-            <div className="lc-label">Ã°ÂÂÂ  Tech Stack</div>
+            <div className="lc-label">🛠 Tech Stack</div>
             <div className="tech-pills">{p.tech_stack.map((t, i) => <span key={i} className="tech-pill">{t}</span>)}</div>
           </div>
         )}
         {p.keywords && p.keywords.length > 0 && (
           <div className="lc-section">
-            <div className="lc-label">Ã°ÂÂÂ Keywords</div>
+            <div className="lc-label">🔑 Keywords</div>
             <div className="card-meta">{p.keywords.map((k, i) => <span key={i} className="meta-tag keyword">{k}</span>)}</div>
           </div>
         )}
         {desc && (
           <div className="lc-section">
-            <div className="lc-label">Ã°ÂÂÂ¢ About {p.company_name}</div>
+            <div className="lc-label">🏢 About {p.company_name}</div>
             <div className="company-desc">
-              {descExpanded || !descTruncated ? desc : desc.slice(0, 155) + 'Ã¢ÂÂ¦'}
+              {descExpanded || !descTruncated ? desc : desc.slice(0, 155) + '…'}
               {descTruncated && !descExpanded && (
-                <button onClick={expandDesc} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#4f8ef7', cursor: 'pointer', fontSize: 11 }}>Ã¢ÂÂ Show full description</button>
+                <button onClick={expandDesc} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#4f8ef7', cursor: 'pointer', fontSize: 11 }}>↓ Show full description</button>
               )}
             </div>
           </div>
@@ -309,19 +309,19 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
         {/* Recent News */}
         <div className="lc-section">
           <button onClick={handleToggleNews} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
-            <span className="lc-label" style={{ margin: 0, cursor: 'pointer' }}>Ã°ÂÂÂ° Recent News</span>
-            <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>{newsOpen ? 'Ã¢ÂÂ²' : 'Ã¢ÂÂ¼'}</span>
-            {newsLoading && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 4 }}>LoadingÃ¢ÂÂ¦</span>}
+            <span className="lc-label" style={{ margin: 0, cursor: 'pointer' }}>📰 Recent News</span>
+            <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>{newsOpen ? '▲' : '▼'}</span>
+            {newsLoading && <span style={{ fontSize: 10, color: '#64748b', marginLeft: 4 }}>Loading…</span>}
           </button>
           {newsOpen && (
             <div style={{ marginTop: 8 }}>
-              {newsError && <div style={{ fontSize: 11, color: '#ef4444' }}>Ã¢ÂÂ Ã¯Â¸Â {newsError}</div>}
+              {newsError && <div style={{ fontSize: 11, color: '#ef4444' }}>⚠️ {newsError}</div>}
               {!newsLoading && newsArticles && newsArticles.length === 0 && (<div style={{ fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>No recent news found.</div>)}
               {newsArticles && newsArticles.map(function(a, i) {
                 return (
                   <div key={i} style={{ marginBottom: 10, paddingBottom: 10, borderBottom: i < newsArticles.length - 1 ? '1px solid #1e293b' : 'none' }}>
                     <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 12, lineHeight: 1.4, textDecoration: 'none', display: 'block', marginBottom: 3 }}>{a.title}</a>
-                    {a.description && (<div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4, marginBottom: 3 }}>{a.description.length > 120 ? a.description.slice(0, 120) + 'Ã¢ÂÂ¦' : a.description}</div>)}
+                    {a.description && (<div style={{ fontSize: 11, color: '#94a3b8', lineHeight: 1.4, marginBottom: 3 }}>{a.description.length > 120 ? a.description.slice(0, 120) + '…' : a.description}</div>)}
                     <div style={{ fontSize: 10, color: '#475569' }}>{a.source && <span style={{ marginRight: 6 }}>{a.source}</span>}{a.publishedAt && <span>{fmtNewsDate(a.publishedAt)}</span>}</div>
                   </div>
                 );
@@ -335,14 +335,14 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {/* HubSpot */}
             <button className={`btn-sm btn-hs${hsSent ? ' sent' : ''}`} onClick={handleHubspot} disabled={hsPushing || hsSent}>
-              {hsSent ? 'Ã¢ÂÂ In HubSpot' : hsPushing ? 'PushingÃ¢ÂÂ¦' : 'Ã¢Â¬Â Push to HubSpot'}
+              {hsSent ? '✓ In HubSpot' : hsPushing ? 'Pushing…' : '⬆ Push to HubSpot'}
             </button>
             {/* Apollo Sequence */}
             {seqSent ? (
-              <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>Ã¢ÂÂ Added to sequence</span>
+              <span style={{ fontSize: 12, color: '#22c55e', fontWeight: 600 }}>✓ Added to sequence</span>
             ) : (
               <button onClick={() => setSeqOpen(o => !o)} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 600, background: seqOpen ? '#6d28d9' : '#7c3aed', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                Ã°ÂÂÂ Add to Apollo Sequence {seqOpen ? 'Ã¢ÂÂ²' : 'Ã¢ÂÂ¼'}
+                🚀 Add to Apollo Sequence {seqOpen ? '▲' : '▼'}
               </button>
             )}
             {/* Draft Email button */}
@@ -354,7 +354,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
                   title={!p.email ? 'No email address for this lead' : 'Draft a personalized email with AI and open in Outlook'}
                   style={{ padding: '7px 12px', border: 'none', fontSize: 12, fontWeight: 600, background: emailDrafting ? '#164e63' : '#0e7490', color: emailDrafting ? '#94a3b8' : '#fff', cursor: !p.email ? 'not-allowed' : emailDrafting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
                 >
-                  {emailDrafting ? 'Ã¢ÂÂÃ¯Â¸Â DraftingÃ¢ÂÂ¦' : 'Ã¢ÂÂÃ¯Â¸Â Draft Email'}
+                  {emailDrafting ? '✍️ Drafting…' : '✉️ Draft Email'}
                 </button>
                 {senderEmails.length > 1 && (
                   <button
@@ -362,7 +362,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
                     style={{ padding: '7px 8px', border: 'none', borderLeft: '1px solid #0891b2', fontSize: 10, background: senderPickerOpen ? '#164e63' : '#0e7490', color: '#fff', cursor: 'pointer' }}
                     title="Choose sender email"
                   >
-                    {senderPickerOpen ? 'Ã¢ÂÂ²' : 'Ã¢ÂÂ¼'}
+                    {senderPickerOpen ? '▲' : '▼'}
                   </button>
                 )}
               </div>
@@ -397,18 +397,18 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
               ) : (
                 <>
                   <select style={dropStyle} value={selectedSeq} onChange={e => { setSelectedSeq(e.target.value); setSeqError(null); }} disabled={seqSending}>
-                    <option value="">Select a sequenceÃ¢ÂÂ¦</option>
+                    <option value="">Select a sequence…</option>
                     {sequences.map(s => (<option key={s.id} value={s.id}>{s.name}{s.num_steps ? ` (${s.num_steps} steps)` : ''}</option>))}
                   </select>
                   <button onClick={handleAddToSequence} disabled={!selectedSeq || seqSending} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0, background: !selectedSeq || seqSending ? '#1e293b' : '#7c3aed', color: !selectedSeq || seqSending ? '#475569' : '#fff', cursor: !selectedSeq || seqSending ? 'not-allowed' : 'pointer' }}>
-                    {seqSending ? 'AddingÃ¢ÂÂ¦' : 'Ã¢ÂÂ¶ Enroll'}
+                    {seqSending ? 'Adding…' : '▶ Enroll'}
                   </button>
                 </>
               )}
             </div>
           )}
-          {seqError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Ã¢ÂÂ Ã¯Â¸Â {seqError}</div>}
-          {emailError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Ã¢ÂÂ Ã¯Â¸Â {emailError}</div>}
+          {seqError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {seqError}</div>}
+          {emailError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {emailError}</div>}
         </div>
       </div>
     </div>
