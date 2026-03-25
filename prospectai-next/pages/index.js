@@ -10,6 +10,7 @@ import LookalikSearch from '../components/LookalikSearch';
 import Settings from '../components/Settings';
 import AwsOpportunities from '../components/AwsOpportunities';
 import AwsSnapshots from '../components/AwsSnapshots';
+import EmailQueue from '../components/EmailQueue';
 
 const TABS = [
   { id: 'leads', label: 'Find Leads' },
@@ -21,6 +22,7 @@ const TABS = [
   { id: 'lookalike', label: '🎯 Lookalike' },
   { id: 'awsopps', label: '☁️ AWS Opportunities' },
   { id: 'awssnapshots', label: '💾 Snapshots' },
+  { id: 'emailqueue', label: '✉️ Email Queue' },
   { id: 'settings', label: 'Settings' },
   ];
 
@@ -67,6 +69,7 @@ export default function Home() {
 {activeTab === 'awsopps' && <AwsOpportunities initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
 {activeTab === 'awssnapshots' && <AwsSnapshots onLoadSnapshot={handleLoadSnapshot} />}
 {activeTab === 'settings' && <Settings />}
+{activeTab === 'emailqueue' && <EmailQueue />}
 </main>
   </>
   );
