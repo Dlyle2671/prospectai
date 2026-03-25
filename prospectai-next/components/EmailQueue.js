@@ -4,7 +4,7 @@ import { paiLoad } from '../lib/utils';
 const STATUS_COLORS = {
   pending:  { bg: '#1e293b', border: '#334155', badge: '#475569', label: 'Pending' },
   approved: { bg: '#052e16', border: '#166534', badge: '#16a34a', label: 'Approved' },
-  sent:     { bg: '#0c1a2e', border '#1e40af', badge: '#3b82f6', label: 'Sent' },
+  sent:     { bg: '#0c1a2e', border: '#1e40af', badge: '#3b82f6', label: 'Sent' },
   discarded:{ bg: '#1c0a0a', border: '#7f1d1d', badge: '#ef4444', label: 'Discarded' },
 };
 
