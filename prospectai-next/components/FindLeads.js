@@ -29,6 +29,40 @@ export default function FindLeads() {
             .catch(() => {});
     }, []);
 
+  const [draftQueuing, setDraftQueuing] = useState(false);
+  const [draftQueueToast, setDraftQueueToast] = useState(null);
+
+  async function draftAllToQueue() {
+    const leadsWithEmail = filtered.filter(p => p.email);
+    if (!leadsWithEmail.length) { setDraftQueueToast({ msg: 'No leads with email addresses', type: 'error' }); setTimeout(() => setDraftQueueToast(null), 3000); return; }
+    setDraftQueuing(true);
+    setDraftQueueToast({ msg: 'Drafting ' + leadsWithEmail.length + ' emails…', type: 'info' });
+    try {
+      const drafts = await Promise.all(leadsWithEmail.map(async p => {
+        try {
+          const resp = await fetch('/api/draft-email', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: p.name, first_name: p.first_name, title: p.title, company_name: p.company_name, company_description: p.company_description || p.seo_description || '', keywords: p.keywords || [], tech_stack: p.tech_stack || [], aws_services: p.aws_services || [], funding_stage: p.funding_stage || '', recently_funded: p.recently_funded || false, hiring_surge: p.hiring_surge || false, location: [p.city, p.state, p.country].filter(Boolean).join(', '), time_in_role_months: p.time_in_role_months, prev_jobs: p.prev_jobs, headcount_growth: p.headcount_growth, annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount, top_investors: p.top_investors, intent_signals: p.intent_signals }),
+          });
+          const data = await resp.json();
+          if (data.error) return null;
+          return { id: p.email + '_' + Date.now() + '_' + Math.random().toString(36).slice(2), leadName: p.name, leadEmail: p.email, leadTitle: p.title || '', leadCompany: p.company_name || '', subject: data.subject, body: data.body, status: 'pending', createdAt: new Date().toISOString() };
+        } catch { return null; }
+      }));
+      const valid = drafts.filter(Boolean);
+      if (!valid.length) { setDraftQueueToast({ msg: 'Failed to draft emails', type: 'error' }); setTimeout(() => setDraftQueueToast(null), 3000); return; }
+      const qResp = await fetch('/api/email-queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: valid }) });
+      const qData = await qResp.json();
+      setDraftQueueToast({ msg: qData.added + ' emails added to queue ✓', type: 'success' });
+      setTimeout(() => setDraftQueueToast(null), 4000);
+    } catch (e) {
+      setDraftQueueToast({ msg: 'Error: ' + e.message, type: 'error' });
+      setTimeout(() => setDraftQueueToast(null), 3000);
+    } finally {
+      setDraftQueuing(false);
+    }
+  }
+
   useEffect(() => {
         if (state.results.length > 0) paiSave('leads', { ...state, stage: undefined });
   }, [state.results]);
@@ -113,7 +147,12 @@ export default function FindLeads() {
 
   if (stage === 2) return (
         <div className="fade-up">
-          <button className="btn-back" onClick={() => setState(prev => ({ ...prev, stage: 0, activeResultFilters: [] }))}>← Back to filters</button>
+          {draftQueueToast && (
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, padding: '12px 20px', borderRadius: 10, background: draftQueueToast.type === 'error' ? '#7f1d1d' : draftQueueToast.type === 'info' ? '#1e3a5f' : '#052e16', border: '1px solid ' + (draftQueueToast.type === 'error' ? '#ef4444' : draftQueueToast.type === 'info' ? '#3b82f6' : '#16a34a'), color: draftQueueToast.type === 'error' ? '#fca5a5' : draftQueueToast.type === 'info' ? '#93c5fd' : '#4ade80', fontSize: 13, fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,.5)' }}>
+          {draftQueueToast.msg}
+        </div>
+      )}
+      <button className="btn-back" onClick={() => setState(prev => ({ ...prev, stage: 0, activeResultFilters: [] }))}>← Back to filters</button>
       <div className="results-header">
           <div className="results-count">
 {filtered.length === results.length ? results.length + ' contacts found' : `Showing ${filtered.length} of ${results.length} contacts`}
@@ -123,7 +162,15 @@ export default function FindLeads() {
             <div className="legend-item"><div className="legend-dot" style={{ background: '#ef4444' }} /> Hot ({hot})</div>
             <div className="legend-item"><div className="legend-dot" style={{ background: '#f59e0b' }} /> Warm ({warm})</div>
             <div className="legend-item"><div className="legend-dot" style={{ background: '#4f8ef7' }} /> Cold ({cold})</div>
-  </div>
+  
+        <button
+          onClick={draftAllToQueue}
+          disabled={draftQueuing || filtered.filter(p => p.email).length === 0}
+          title="AI-draft personalized emails for all visible leads and add to review queue"
+          style={{ padding: '5px 12px', borderRadius: 8, border: 'none', background: draftQueuing ? '#164e63' : '#0e7490', color: draftQueuing ? '#94a3b8' : '#fff', fontSize: 12, fontWeight: 600, cursor: draftQueuing ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}
+        >
+          {draftQueuing ? '✍️ Drafting…' : '✉️ Draft All to Queue (' + filtered.filter(p => p.email).length + ')'}
+        </button></div>
   </div>
       <div className="results-filter-bar">
           <span className="results-filter-label">Filter:</span>
