@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { UserButton, useUser } from '@clerk/nextjs';
 import FindLeads from '../components/FindLeads';
 import CompanyIntel from '../components/CompanyIntel';
@@ -30,12 +31,38 @@ const TABS = [
 export default function Home() {
   const [activeTab, setActiveTab] = useState('leads');
   const [loadedSnapshot, setLoadedSnapshot] = useState(null);
-  const { user } = useUser();
+  const [checkingOnboard, setCheckingOnboard] = useState(true);
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
+  // Check if new user needs onboarding
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!user) { setCheckingOnboard(false); return; }
+    fetch('/api/user-settings?ns=onboarded')
+      .then(r => r.json())
+      .then(({ data }) => {
+        if (!data) {
+          router.replace('/onboarding');
+        } else {
+          setCheckingOnboard(false);
+        }
+      })
+      .catch(() => setCheckingOnboard(false));
+  }, [isLoaded, user]);
 
   const handleLoadSnapshot = (snapshotData) => {
     setLoadedSnapshot(snapshotData);
     setActiveTab('awsopps');
   };
+
+  if (checkingOnboard) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#020817', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#475569', fontSize: 14 }}>Loading…</div>
+      </div>
+    );
+  }
 
   return (
     <>
