@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { fmtFunding, fmtAmt, fmtGrowth, fmtTimeInRole, fmtRoundDate, fmtRoundAmount, fmtFollowers } from '../lib/utils';
 
-export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
+export default function LeadCard({ p, index, onHubspotPush, sequences = [], senderEmailsProp = null }) {
   const [hsSent, setHsSent] = useState(p._hsSent || false);
   const [hsPushing, setHsPushing] = useState(false);
   const [seqSent, setSeqSent] = useState(false);
@@ -29,13 +29,15 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [] }) {
   const emailBadge = p.email_status === 'verified' ? '✅' : '✉️';
 
   // Load sender emails from localStorage
-  const [senderEmails, setSenderEmails] = useState([]);
+  const [_senderEmails, setSenderEmails] = useState([]);
+  const senderEmails = senderEmailsProp !== null ? senderEmailsProp : _senderEmails;
   useEffect(() => {
+    if (senderEmailsProp !== null) return;
     fetch('/api/user-settings?ns=sender_emails')
       .then(r => r.json())
       .then(({ data }) => { if (data) setSenderEmails(typeof data === 'string' ? JSON.parse(data) : data); })
       .catch(() => {});
-  }, []);
+  }, [senderEmailsProp]);
   const defaultSender = senderEmails.find(s => s.isDefault) || senderEmails[0] || null;
   const activeSender = selectedSender
     ? senderEmails.find(s => s.email === selectedSender) || defaultSender
