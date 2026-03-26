@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react';
-import { paiSave, paiLoad } from '../lib/utils';
+import { useState, useEffect, useMemo } from 'react';
 
 const INTEGRATIONS = [
   { id: 'apollo', name: 'Apollo.io', icon: '🚀', description: 'Contact & company data enrichment', envKey: 'APOLLO_API_KEY' },
@@ -21,9 +20,16 @@ const EMAIL_PROVIDERS = [
 const SIZE_OPTIONS = ['1-10','11-25','26-50','51-100','101-250','251+'];
 
 export const DEFAULT_ICP = {
-  companySizeWeight: 25, industryWeight: 30, fundingWeight: 15,
-  verifiedEmailBonus: 3, linkedinBonus: 2, phoneBonus: 2,
-  hiringSurgeBonus: 8, awsBonus: 5, hotThreshold: 75, warmThreshold: 50,
+  companySizeWeight: 25,
+  industryWeight: 30,
+  fundingWeight: 15,
+  verifiedEmailBonus: 3,
+  linkedinBonus: 2,
+  phoneBonus: 2,
+  hiringSurgeBonus: 8,
+  awsBonus: 5,
+  hotThreshold: 75,
+  warmThreshold: 50,
   targetSizeRanges: ['51-100','101-250'],
   targetIndustries: ['technology','software','saas','cloud computing','cybersecurity','fintech','financial services','healthcare','biotech'],
 };
@@ -32,19 +38,33 @@ const BUDGET_KEYS = ['companySizeWeight','industryWeight','fundingWeight','verif
 const POINT_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
 const THRESHOLD_OPTIONS = Array.from({ length: 19 }, (_, i) => (i + 1) * 5);
 
-const dropStyle = {
-  background: '#0f172a', border: '1px solid #334155', borderRadius: 8,
-  color: '#e2e8f0', fontSize: 14, fontWeight: 600, padding: '8px 12px',
-  cursor: 'pointer', width: '100%', appearance: 'none', WebkitAppearance: 'none',
-  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2394a3b8\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")',
-  backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 30,
-};
+async function loadSetting(ns) {
+  try {
+    const res = await fetch(`/api/user-settings?ns=${ns}`);
+    if (!res.ok) return null;
+    const { data } = await res.json();
+    return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
+  } catch { return null; }
+}
+
+async function saveSetting(ns, data) {
+  try {
+    await fetch(`/api/user-settings?ns=${ns}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    });
+  } catch (e) { console.error('saveSetting error', e); }
+}
+
+const dropStyle = { background: '#0f172a', border: '1px solid #334155', borderRadius: 8, color: '#e2e8f0', fontSize: 14, fontWeight: 600, padding: '8px 12px', cursor: 'pointer', width: '100%', appearance: 'none', WebkitAppearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2394a3b8\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center', paddingRight: 30 };
 const rowStyle = { marginBottom: 18 };
 const labelRowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 };
 const labelStyle = { fontSize: 13, color: '#94a3b8', fontWeight: 500 };
 const sectionStyle = { fontSize: 11, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 600, marginBottom: 14, marginTop: 8 };
 
 export default function Settings() {
+  const [settingsLoading, setSettingsLoading] = useState(true);
   const [saved, setSaved] = useState({});
   const [emailProvider, setEmailProvider] = useState('office365');
   const [emailUser, setEmailUser] = useState('');
@@ -52,14 +72,26 @@ export default function Settings() {
   const [customHost, setCustomHost] = useState('');
   const [customPort, setCustomPort] = useState(587);
   const [emailSaved, setEmailSaved] = useState(false);
-  const [icp, setIcp] = useState(() => ({ ...DEFAULT_ICP, ...(paiLoad('icp_weights') || {}) }));
+  const [icp, setIcp] = useState({ ...DEFAULT_ICP });
   const [icpSaved, setIcpSaved] = useState(false);
-
-  // Sender emails state - persisted to localStorage
-  const [senderEmails, setSenderEmails] = useState(() => paiLoad('sender_emails') || []);
+  const [senderEmails, setSenderEmails] = useState([]);
   const [newSenderEmail, setNewSenderEmail] = useState('');
   const [newSenderName, setNewSenderName] = useState('');
   const [senderSaved, setSenderSaved] = useState(false);
+
+  useEffect(() => {
+    async function loadAll() {
+      setSettingsLoading(true);
+      const [icpData, senderData] = await Promise.all([
+        loadSetting('icp_weights'),
+        loadSetting('sender_emails'),
+      ]);
+      if (icpData) setIcp({ ...DEFAULT_ICP, ...icpData });
+      if (senderData) setSenderEmails(senderData);
+      setSettingsLoading(false);
+    }
+    loadAll();
+  }, []);
 
   const total = useMemo(() => BUDGET_KEYS.reduce((sum, k) => sum + (Number(icp[k]) || 0), 0), [icp]);
   const remaining = 100 - total;
@@ -68,8 +100,13 @@ export default function Settings() {
   const totalColor = overBudget ? '#ef4444' : nearBudget ? '#f59e0b' : total === 100 ? '#22c55e' : '#3b82f6';
   const remainingLabel = overBudget ? `${Math.abs(remaining)} pts over budget` : remaining === 0 ? 'Budget fully allocated' : `${remaining} pts remaining`;
 
-  function handleSave(id) { setSaved(prev => ({ ...prev, [id]: true })); setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 2000); }
+  function handleSave(id) {
+    setSaved(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => setSaved(prev => ({ ...prev, [id]: false })), 2000);
+  }
+
   function setIcpField(key, val) { setIcp(prev => ({ ...prev, [key]: Number(val) })); }
+
   function toggleSizeRange(range) {
     setIcp(prev => {
       const arr = Array.isArray(prev.targetSizeRanges) ? [...prev.targetSizeRanges] : [];
@@ -78,39 +115,46 @@ export default function Settings() {
       return { ...prev, targetSizeRanges: arr };
     });
   }
-  function saveIcp() {
+
+  async function saveIcp() {
     if (overBudget) return;
-    paiSave('icp_weights', icp);
+    await saveSetting('icp_weights', icp);
     setIcpSaved(true);
     setTimeout(() => setIcpSaved(false), 2000);
   }
-  function resetIcp() { setIcp({ ...DEFAULT_ICP }); paiSave('icp_weights', DEFAULT_ICP); }
 
-  function addSenderEmail() {
+  async function resetIcp() {
+    setIcp({ ...DEFAULT_ICP });
+    await saveSetting('icp_weights', DEFAULT_ICP);
+  }
+
+  async function addSenderEmail() {
     const email = newSenderEmail.trim().toLowerCase();
     const name = newSenderName.trim();
     if (!email || !email.includes('@')) return;
     if (senderEmails.find(s => s.email === email)) return;
     const updated = [...senderEmails, { email, name, isDefault: senderEmails.length === 0 }];
     setSenderEmails(updated);
-    paiSave('sender_emails', updated);
+    await saveSetting('sender_emails', updated);
     setNewSenderEmail('');
     setNewSenderName('');
     setSenderSaved(true);
     setTimeout(() => setSenderSaved(false), 2000);
   }
-  function removeSenderEmail(email) {
+
+  async function removeSenderEmail(email) {
     let updated = senderEmails.filter(s => s.email !== email);
     if (updated.length > 0 && !updated.find(s => s.isDefault)) {
       updated[0] = { ...updated[0], isDefault: true };
     }
     setSenderEmails(updated);
-    paiSave('sender_emails', updated);
+    await saveSetting('sender_emails', updated);
   }
-  function setDefaultSender(email) {
+
+  async function setDefaultSender(email) {
     const updated = senderEmails.map(s => ({ ...s, isDefault: s.email === email }));
     setSenderEmails(updated);
-    paiSave('sender_emails', updated);
+    await saveSetting('sender_emails', updated);
   }
 
   const selectedProvider = EMAIL_PROVIDERS.find(p => p.id === emailProvider);
@@ -124,12 +168,20 @@ export default function Settings() {
     );
   }
 
+  if (settingsLoading) {
+    return (
+      <div className="fade-up">
+        <div className="section-title">Settings</div>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: '#475569', fontSize: 14 }}>Loading your settings…</div>
+      </div>
+    );
+  }
+
   return (
     <div className="fade-up">
       <div className="section-title">Settings</div>
       <div className="section-sub">Customize lead scoring to match your ICP, and manage your integrations.</div>
 
-      {/* ICP Scoring Card */}
       <div className="settings-card">
         <div className="settings-title">🎯 ICP Lead Scoring</div>
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>Assign point values to each category. All points must total 100 or less.</div>
@@ -145,7 +197,8 @@ export default function Settings() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {BUDGET_KEYS.map(k => {
-              const v = Number(icp[k]) || 0; if (!v) return null;
+              const v = Number(icp[k]) || 0;
+              if (!v) return null;
               const labels = { companySizeWeight:'Size', industryWeight:'Industry', fundingWeight:'Funding', verifiedEmailBonus:'Email', linkedinBonus:'LinkedIn', phoneBonus:'Phone', hiringSurgeBonus:'Hiring', awsBonus:'AWS' };
               return (<span key={k} style={{ fontSize: 11, background: '#1e293b', border: '1px solid #334155', borderRadius: 20, padding: '2px 10px', color: '#94a3b8' }}>{labels[k]}: <strong style={{ color: '#e2e8f0' }}>{v}pts</strong></span>);
             })}
@@ -154,6 +207,7 @@ export default function Settings() {
             {overBudget ? `⚠️ ${remainingLabel} — reduce points before saving` : remaining === 0 ? '✓ Budget fully allocated' : `ℹ️ ${remainingLabel}`}
           </div>
         </div>
+
         <div style={sectionStyle}>Score Weights</div>
         <div style={rowStyle}>
           <div style={labelRowStyle}><span style={labelStyle}>Company Size</span><span style={{ fontSize: 13, fontWeight: 700, color: totalColor }}>{icp.companySizeWeight} pts</span></div>
@@ -176,6 +230,7 @@ export default function Settings() {
           {fieldDrop('fundingWeight')}
           <div style={{ fontSize: 11, color: '#475569', marginTop: 4 }}>Bonus for companies funded in the last 18 months</div>
         </div>
+
         <div style={sectionStyle}>Signal Bonuses</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
           {[
@@ -192,6 +247,7 @@ export default function Settings() {
             </div>
           ))}
         </div>
+
         <div style={sectionStyle}>Score Thresholds</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
           <div>
@@ -207,14 +263,19 @@ export default function Settings() {
             </select>
           </div>
         </div>
+
         <div style={sectionStyle}>Target Industries</div>
         <div style={{ fontSize: 12, color: '#64748b', marginBottom: 10 }}>Companies in these industries get full industry points. Others get 5 pts.</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
           {['technology','software','saas','cloud computing','cybersecurity','fintech','financial services','healthcare','biotech','e-commerce','media','education','real estate','logistics','manufacturing'].map(ind => {
             const active = icp.targetIndustries.includes(ind);
-            return (<button key={ind} onClick={() => { const arr = active ? icp.targetIndustries.filter(i => i !== ind) : [...icp.targetIndustries, ind]; setIcp(prev => ({ ...prev, targetIndustries: arr })); }} style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer', border: '1px solid', background: active ? 'rgba(59,130,246,0.15)' : 'transparent', borderColor: active ? '#3b82f6' : '#334155', color: active ? '#93c5fd' : '#64748b', fontWeight: active ? 600 : 400 }}>{ind}</button>);
+            return (<button key={ind} onClick={() => {
+              const arr = active ? icp.targetIndustries.filter(i => i !== ind) : [...icp.targetIndustries, ind];
+              setIcp(prev => ({ ...prev, targetIndustries: arr }));
+            }} style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, cursor: 'pointer', border: '1px solid', background: active ? 'rgba(59,130,246,0.15)' : 'transparent', borderColor: active ? '#3b82f6' : '#334155', color: active ? '#93c5fd' : '#64748b', fontWeight: active ? 600 : 400 }}>{ind}</button>);
           })}
         </div>
+
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button onClick={saveIcp} disabled={overBudget} style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: overBudget ? '#1e293b' : icpSaved ? '#14532d' : '#1d4ed8', color: overBudget ? '#475569' : icpSaved ? '#4ade80' : '#fff', fontSize: 14, fontWeight: 600, cursor: overBudget ? 'not-allowed' : 'pointer', transition: 'all .2s' }}>
             {icpSaved ? '✓ Saved' : 'Save ICP Settings'}
@@ -224,14 +285,11 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Sender Emails Card */}
       <div className="settings-card">
         <div className="settings-title">✉️ Sender Emails</div>
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>
           Add the email addresses you send from in Outlook. The default is used when drafting emails for leads.
         </div>
-
-        {/* Existing senders list */}
         {senderEmails.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             {senderEmails.map(s => (
@@ -250,35 +308,16 @@ export default function Settings() {
             ))}
           </div>
         )}
-
-        {/* Add new sender */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ flex: 2, minWidth: 180 }}>
             <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Email address</label>
-            <input
-              className="form-input"
-              type="email"
-              placeholder="you@company.com"
-              value={newSenderEmail}
-              onChange={e => setNewSenderEmail(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addSenderEmail(); }}
-            />
+            <input className="form-input" type="email" placeholder="you@company.com" value={newSenderEmail} onChange={e => setNewSenderEmail(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addSenderEmail(); }} />
           </div>
           <div style={{ flex: 1, minWidth: 140 }}>
             <label style={{ fontSize: 11, color: '#64748b', display: 'block', marginBottom: 4 }}>Display name (optional)</label>
-            <input
-              className="form-input"
-              type="text"
-              placeholder="Robyn R."
-              value={newSenderName}
-              onChange={e => setNewSenderName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') addSenderEmail(); }}
-            />
+            <input className="form-input" type="text" placeholder="Robyn R." value={newSenderName} onChange={e => setNewSenderName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addSenderEmail(); }} />
           </div>
-          <button
-            onClick={addSenderEmail}
-            style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: senderSaved ? '#14532d' : '#1d4ed8', color: senderSaved ? '#4ade80' : '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0, marginBottom: 1 }}
-          >
+          <button onClick={addSenderEmail} style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: senderSaved ? '#14532d' : '#1d4ed8', color: senderSaved ? '#4ade80' : '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0, marginBottom: 1 }}>
             {senderSaved ? '✓ Added' : '+ Add'}
           </button>
         </div>
@@ -287,7 +326,6 @@ export default function Settings() {
         )}
       </div>
 
-      {/* Integrations Card */}
       <div className="settings-card">
         <div className="settings-title">🔌 Integrations</div>
         {INTEGRATIONS.map(integration => (
@@ -297,9 +335,7 @@ export default function Settings() {
                 <div className="connection-name">{integration.icon} {integration.name}</div>
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{integration.description}</div>
               </div>
-              {integration.comingSoon
-                ? <span style={{ fontSize: 11, color: '#64748b', background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', padding: '3px 10px', borderRadius: 20 }}>Coming Soon</span>
-                : <span className="connection-status connected">● Connected</span>}
+              {integration.comingSoon ? <span style={{ fontSize: 11, color: '#64748b', background: 'rgba(100,116,139,0.1)', border: '1px solid rgba(100,116,139,0.2)', padding: '3px 10px', borderRadius: 20 }}>Coming Soon</span> : <span className="connection-status connected">● Connected</span>}
             </div>
             {!integration.comingSoon && (
               <div className="form-row">
@@ -312,7 +348,6 @@ export default function Settings() {
         ))}
       </div>
 
-      {/* Email Config Card */}
       <div className="settings-card">
         <div className="settings-title">📧 Email Configuration</div>
         <div className="form-row">
@@ -323,15 +358,11 @@ export default function Settings() {
         </div>
         <div className="form-row">
           <label className="form-label">SMTP Host</label>
-          {emailProvider === 'custom'
-            ? <input className="form-input" type="text" value={customHost} onChange={e => setCustomHost(e.target.value)} placeholder="smtp.yourdomain.com" />
-            : <input className="form-input" type="text" value={selectedProvider?.host} disabled />}
+          {emailProvider === 'custom' ? <input className="form-input" type="text" value={customHost} onChange={e => setCustomHost(e.target.value)} placeholder="smtp.yourdomain.com" /> : <input className="form-input" type="text" value={selectedProvider?.host} disabled />}
         </div>
         <div className="form-row">
           <label className="form-label">Port</label>
-          {emailProvider === 'custom'
-            ? <input className="form-input" type="number" value={customPort} onChange={e => setCustomPort(e.target.value)} style={{ width: 100 }} />
-            : <input className="form-input" type="number" value={selectedProvider?.port} disabled style={{ width: 100 }} />}
+          {emailProvider === 'custom' ? <input className="form-input" type="number" value={customPort} onChange={e => setCustomPort(e.target.value)} style={{ width: 100 }} /> : <input className="form-input" type="number" value={selectedProvider?.port} disabled style={{ width: 100 }} />}
         </div>
         <div className="form-row">
           <label className="form-label">Email Address (sender)</label>
@@ -347,7 +378,6 @@ export default function Settings() {
         </button>
       </div>
 
-      {/* Env Vars Card */}
       <div className="settings-card">
         <div className="settings-title">⚙️ Environment Variables</div>
         <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.7 }}>
@@ -362,4 +392,4 @@ export default function Settings() {
       </div>
     </div>
   );
-            }
+}
