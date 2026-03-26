@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import Head from 'next/head';
+import Link from 'next/link';
 
 function timeAgo(ts) {
   if (!ts) return 'Never';
@@ -83,9 +84,14 @@ export default function AdminPortal() {
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#fff' }}>ProspectAI Admin</h1>
-              <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 14 }}>Logged in as {user?.primaryEmailAddress?.emailAddress}</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#6366f1', textDecoration: 'none', fontSize: 14, fontWeight: 500, padding: '7px 14px', background: '#1e1b4b', borderRadius: 8, border: '1px solid #3730a3' }}>
+                &larr; Back to App
+              </Link>
+              <div>
+                <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700, color: '#fff' }}>ProspectAI Admin</h1>
+                <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: 14 }}>Logged in as {user?.primaryEmailAddress?.emailAddress}</p>
+              </div>
             </div>
             <button onClick={fetchUsers} style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>
               Refresh
