@@ -6,6 +6,117 @@ const features = [
   { icon: '📈', title: 'Pipeline Acceleration', desc: 'Convert more prospects into revenue' },
   ];
 
+const clerkAppearance = {
+    variables: {
+          colorBackground: 'rgba(14,19,34,0.90)',
+          colorText: '#e2e8f0',
+          colorTextSecondary: 'rgba(148,163,184,0.75)',
+          colorInputBackground: 'rgba(255,255,255,0.04)',
+          colorInputText: '#e2e8f0',
+          colorPrimary: '#6366f1',
+          borderRadius: '10px',
+          fontFamily: 'inherit',
+    },
+    elements: {
+          card: {
+                  background: 'transparent',
+                  boxShadow: 'none',
+                  border: 'none',
+                  padding: '32px 28px 24px',
+          },
+          cardBox: {
+                  background: 'rgba(14,19,34,0.90)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  border: '1px solid rgba(99,102,241,0.20)',
+                  borderRadius: '20px',
+                  boxShadow: '0 0 0 1px rgba(99,102,241,0.04), 0 24px 64px rgba(0,0,0,0.55), 0 0 100px rgba(99,102,241,0.07), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  width: '400px',
+          },
+          headerTitle: {
+                  background: 'linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 55%, #c084fc 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  fontSize: '26px',
+                  fontWeight: '700',
+                  letterSpacing: '-0.5px',
+          },
+          headerSubtitle: {
+                  color: 'rgba(148,163,184,0.75)',
+          },
+          socialButtonsBlockButton: {
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderRadius: '10px',
+                  color: '#e2e8f0',
+                  '&:hover': {
+                            background: 'rgba(255,255,255,0.09)',
+                            borderColor: 'rgba(99,102,241,0.4)',
+                  },
+          },
+          dividerLine: {
+                  background: 'rgba(255,255,255,0.10)',
+          },
+          dividerText: {
+                  color: 'rgba(148,163,184,0.5)',
+          },
+          formFieldLabel: {
+                  color: 'rgba(203,213,225,0.9)',
+                  fontSize: '13px',
+                  fontWeight: '500',
+          },
+          formFieldInput: {
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.10)',
+                  borderRadius: '10px',
+                  color: '#e2e8f0',
+                  '&:focus': {
+                            borderColor: 'rgba(99,102,241,0.5)',
+                            boxShadow: '0 0 0 3px rgba(99,102,241,0.12)',
+                  },
+          },
+          formButtonPrimary: {
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  borderRadius: '10px',
+                  boxShadow: '0 4px 15px rgba(99,102,241,0.35)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  '&:hover': {
+                            background: 'linear-gradient(135deg, #4f52e8 0%, #7c3aed 100%)',
+                  },
+          },
+          footerActionLink: {
+                  color: '#a5b4fc',
+          },
+          identityPreviewText: {
+                  color: '#a5b4fc',
+          },
+          identityPreviewEditButton: {
+                  color: 'rgba(148,163,184,0.5)',
+          },
+          otpCodeFieldInput: {
+                  border: '1.5px solid rgba(255,255,255,0.12)',
+                  borderRadius: '12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  color: '#e2e8f0',
+                  fontSize: '22px',
+                  fontWeight: '600',
+                  width: '48px',
+                  height: '56px',
+          },
+          formResendCodeLink: {
+                  color: 'rgba(148,163,184,0.6)',
+          },
+          footer: {
+                  background: 'transparent',
+          },
+          internal_root: {
+                  boxShadow: 'none',
+          },
+    },
+};
+
 export default function SignInPage() {
     return (
           <div style={{
@@ -30,12 +141,10 @@ export default function SignInPage() {
                 backgroundImage: 'linear-gradient(rgba(99,102,241,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.035) 1px, transparent 1px)',
                 backgroundSize: '44px 44px',
       }}>
-{/* Right-edge divider */}
         <div style={{
-                    position: 'absolute', right: 0, top: '8%', bottom: '8%',
-                    width: 1, background: 'linear-gradient(to bottom, transparent, rgba(99,102,241,0.22), transparent)',
-        }} />
-
+                  position: 'absolute', right: 0, top: '8%', bottom: '8%',
+                  width: 1, background: 'linear-gradient(to bottom, transparent, rgba(99,102,241,0.22), transparent)',
+      }} />
         <div style={{ maxWidth: 320, width: '100%', position: 'relative', zIndex: 1 }}>
 {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 56 }}>
@@ -57,18 +166,15 @@ export default function SignInPage() {
                           WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>ProspectAI</span>
             </div>
-
 {/* Hero text */}
           <div style={{ marginBottom: 40 }}>
-            <h2 style={{
-                          fontSize: 32, fontWeight: 700, lineHeight: 1.2, color: '#f1f5f9',
-                          margin: '0 0 14px', letterSpacing: '-0.5px',
-          }}>Find your next great customer</h2>
+            <h2 style={{ fontSize: 32, fontWeight: 700, lineHeight: 1.2, color: '#f1f5f9', margin: '0 0 14px', letterSpacing: '-0.5px' }}>
+              Find your next great customer
+                </h2>
             <p style={{ fontSize: 15, color: 'rgba(148,163,184,0.78)', lineHeight: 1.65, margin: 0 }}>
               AI-powered prospecting that identifies and qualifies leads so your team can focus on closing.
                 </p>
                 </div>
-
 {/* Feature list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 {features.map(({ icon, title, desc }) => (
@@ -90,11 +196,8 @@ export default function SignInPage() {
   </div>
 
 {/* ── Right: Clerk sign-in card ── */}
-      <div style={{
-                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: 20, position: 'relative', zIndex: 10,
-      }}>
-        <SignIn afterSignInUrl="/" signUpUrl="/sign-up" />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative', zIndex: 10 }}>
+        <SignIn afterSignInUrl="/" signUpUrl="/sign-up" appearance={clerkAppearance} />
         </div>
         </div>
   );
