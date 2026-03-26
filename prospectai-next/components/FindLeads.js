@@ -23,11 +23,15 @@ export default function FindLeads() {
   // Fetch Apollo sequences once on mount
   const [sequences, setSequences] = useState([]);
   const [icpWeights, setIcpWeights] = useState(null);
+  const [senderEmails, setSenderEmails] = useState([]);
   useEffect(() => {
-    fetch('/api/user-settings?ns=icp_weights')
-      .then(r => r.json())
-      .then(({ data }) => { if (data) setIcpWeights(typeof data === 'string' ? JSON.parse(data) : data); })
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/user-settings?ns=icp_weights').then(r => r.json()),
+      fetch('/api/user-settings?ns=sender_emails').then(r => r.json()),
+    ]).then(([icpData, senderData]) => {
+      if (icpData.data) setIcpWeights(typeof icpData.data === 'string' ? JSON.parse(icpData.data) : icpData.data);
+      if (senderData.data) setSenderEmails(typeof senderData.data === 'string' ? JSON.parse(senderData.data) : senderData.data);
+    }).catch(() => {});
   }, []);
     useEffect(() => {
           fetch('/api/apollo-sequences')
@@ -190,7 +194,7 @@ export default function FindLeads() {
 {hiring > 0 && <button className={`rf-chip ${activeResultFilters.includes('hiring') ? 'active-hiring' : ''}`} onClick={() => toggleFilter('hiring')}>📈 Hiring ({hiring})</button>}
   </div>
 {filtered.length > 0
-         ? filtered.map((p, i) => <LeadCard key={p.id || i} p={p} index={i} sequences={sequences} />)
+         ? filtered.map((p, i) => <LeadCard key={p.id || i} p={p} index={i} sequences={sequences} senderEmailsProp={senderEmails} />)
           : <div className="empty-state"><div className="empty-icon">🔍</div><div>No contacts match the current filters.</div></div>
 }
 </div>
