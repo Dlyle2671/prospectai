@@ -1,6 +1,6 @@
 // ProspectAI — /api/user-settings
 // Per-user settings stored in Upstash Redis, keyed by Clerk userId
-import { getAuth } from '@clerk/nextjs/server';
+import { getAuth } from '@clerk/nextjs';
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
