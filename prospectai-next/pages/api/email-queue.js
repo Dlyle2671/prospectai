@@ -1,5 +1,6 @@
 // ProspectAI — /api/email-queue
-// CRUD for the email review queue stored in Upstash Redis
+// Per-user email review queue stored in Upstash Redis, namespaced by Clerk userId
+import { getAuth } from '@clerk/nextjs/server';
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
@@ -7,7 +8,9 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN,
 });
 
-const QUEUE_KEY = 'email_queue';
+function queueKey(userId) {
+  return `user:${userId}:email_queue`;
+}
 
 function parse(val) {
   if (!val) return [];
@@ -21,8 +24,13 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const { userId } = getAuth(req);
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+  const QUEUE_KEY = queueKey(userId);
+
   try {
-    // GET  — list all queue items
+    // GET — list all queue items
     if (req.method === 'GET') {
       const raw = await redis.get(QUEUE_KEY);
       const items = parse(raw);
@@ -36,7 +44,6 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'items array required' });
       const raw = await redis.get(QUEUE_KEY);
       const existing = parse(raw);
-      // Deduplicate by lead email
       const existingEmails = new Set(existing.map(i => i.leadEmail));
       const toAdd = newItems.filter(i => !existingEmails.has(i.leadEmail));
       const merged = [...existing, ...toAdd];
