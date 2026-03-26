@@ -15,17 +15,17 @@ import AwsSnapshots from '../components/AwsSnapshots';
 import EmailQueue from '../components/EmailQueue';
 
 const TABS = [
-  { id: 'leads',        label: 'Find Leads',        icon: '🔍' },
-  { id: 'company',      label: 'Company Intel',      icon: '🏢' },
-  { id: 'bulk',         label: 'Bulk Prospector',    icon: '⚡' },
-  { id: 'jobchanges',   label: 'Job Changes',        icon: '🔄' },
-  { id: 'people',       label: 'People Lookup',      icon: '👤' },
-  { id: 'lookalike',    label: 'Lookalike',          icon: '🎯' },
-  { id: 'awsopps',      label: 'AWS Opportunities',  icon: '☁️' },
-  { id: 'awssnapshots', label: 'Snapshots',          icon: '💾' },
-  { id: 'emailqueue',   label: 'Email Queue',        icon: '✉️' },
-  { id: 'credits',      label: 'Credits',            icon: '📊' },
-  { id: 'settings',     label: 'Settings',           icon: '⚙️' },
+  { id: 'leads',        label: 'Find Leads' },
+  { id: 'company',      label: 'Company Intel' },
+  { id: 'bulk',         label: 'Bulk Prospector' },
+  { id: 'jobchanges',   label: 'Job Changes' },
+  { id: 'people',       label: 'People Lookup' },
+  { id: 'lookalike',    label: 'Lookalike' },
+  { id: 'awsopps',      label: 'AWS Opportunities' },
+  { id: 'awssnapshots', label: 'Snapshots' },
+  { id: 'emailqueue',   label: 'Email Queue' },
+  { id: 'credits',      label: 'Credits' },
+  { id: 'settings',     label: 'Settings' },
   ];
 
 export default function Home() {
@@ -82,15 +82,14 @@ export default function Home() {
                 className={`sidebar-btn${activeTab === tab.id ? ' active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                <span className="sidebar-btn-icon">{tab.icon}</span>
-                <span className="sidebar-btn-label">{tab.label}</span>
-                </button>
+{tab.label}
+</button>
             ))}
-              </nav>
+</nav>
 
           <div className="sidebar-footer">
-            {user && (
-                            <span className="sidebar-email">{user.primaryEmailAddress?.emailAddress}</span>
+{user && (
+                <span className="sidebar-email">{user.primaryEmailAddress?.emailAddress}</span>
             )}
             <UserButton afterSignOutUrl="/sign-in" />
               </div>
