@@ -261,45 +261,35 @@ main{max-width:960px;width:100%;margin:0 auto;padding:40px 24px}
     padding: 12px 10px;
     flex: 1;
 }
-
 .sidebar-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    padding: 9px 12px;
-    border-radius: 8px;
-    border: none;
-    background: transparent;
-    color: #6b7a99;
-    font-size: 13px;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
-    white-space: nowrap;
+        display: block;
+        width: 100%;
+        padding: 7px 14px;
+        border-radius: 8px;
+        border: 1px solid #1e2d4a;
+        background: #0d1424;
+        color: #94a3b8;
+        font-size: 12px;
+        font-family: inherit;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-align: left;
+        white-space: nowrap;
+        letter-spacing: 0.01em;
 }
 
 .sidebar-btn:hover {
-    background: #111827;
-    color: #c8d4e8;
+        background: #1a2540;
+        border-color: #2d3f63;
+        color: #e2e8f0;
 }
 
 .sidebar-btn.active {
-    background: #1a2540;
-    color: #fff;
-}
-
-.sidebar-btn-icon {
-    font-size: 15px;
-    width: 20px;
-    text-align: center;
-    flex-shrink: 0;
-}
-
-.sidebar-btn-label {
-    font-size: 13px;
-    font-weight: 500;
+        background: #1e3a5f;
+        border-color: #3b82f6;
+        color: #fff;
+        font-weight: 600;
 }
 
 .sidebar-footer {
