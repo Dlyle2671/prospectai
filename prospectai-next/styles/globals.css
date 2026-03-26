@@ -217,3 +217,114 @@ main{max-width:960px;width:100%;margin:0 auto;padding:40px 24px}
 .opp-card.hot{border-left:3px solid #ef4444}
 .opp-card.warm{border-left:3px solid #f59e0b}
 .opp-card.cold{border-left:3px solid #4f8ef7}
+
+
+/* ===== SIDEBAR LAYOUT ===== */
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+    background: #020817;
+}
+
+.sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: rgba(8,12,20,0.98);
+    border-right: 1px solid #1a2540;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    padding: 0;
+    overflow-y: auto;
+}
+
+.sidebar-logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.4px;
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid #1a2540;
+    flex-shrink: 0;
+}
+
+.sidebar-logo span { color: #4f8ef7; }
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 10px;
+    flex: 1;
+}
+
+.sidebar-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #6b7a99;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.sidebar-btn:hover {
+    background: #111827;
+    color: #c8d4e8;
+}
+
+.sidebar-btn.active {
+    background: #1a2540;
+    color: #fff;
+}
+
+.sidebar-btn-icon {
+    font-size: 15px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.sidebar-btn-label {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.sidebar-footer {
+    padding: 14px 16px;
+    border-top: 1px solid #1a2540;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.sidebar-email {
+    font-size: 11px;
+    color: #475569;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.app-main {
+    flex: 1;
+    margin-left: 220px;
+    min-height: 100vh;
+    padding: 40px 32px;
+    max-width: 100%;
+    box-sizing: border-box;
+}
