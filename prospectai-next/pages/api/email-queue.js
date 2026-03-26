@@ -1,6 +1,6 @@
 // ProspectAI — /api/email-queue
 // Per-user email review queue stored in Upstash Redis, namespaced by Clerk userId
-import { getAuth } from '@clerk/nextjs';
+import { getAuth } from '@clerk/nextjs/server';
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
