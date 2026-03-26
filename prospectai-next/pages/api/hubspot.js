@@ -240,8 +240,6 @@ export default async function handler(req, res) {
     if (score_label) contactProps.lifecyclestage =
       score_label === "hot" ? "salesqualifiedlead" :
       score_label === "warm" ? "marketingqualifiedlead" : "lead";
-    if (score != null && score !== '') contactProps.hs_lead_score = String(Math.round(Number(score)));
-    if (score_label) contactProps.pai_score_label = score_label;
 
     if (existingContactId) {
       const updateResp = await fetch(
