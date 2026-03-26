@@ -22,6 +22,13 @@ export default function FindLeads() {
 
   // Fetch Apollo sequences once on mount
   const [sequences, setSequences] = useState([]);
+  const [icpWeights, setIcpWeights] = useState(null);
+  useEffect(() => {
+    fetch('/api/user-settings?ns=icp_weights')
+      .then(r => r.json())
+      .then(({ data }) => { if (data) setIcpWeights(typeof data === 'string' ? JSON.parse(data) : data); })
+      .catch(() => {});
+  }, []);
     useEffect(() => {
           fetch('/api/apollo-sequences')
             .then(r => r.json())
@@ -115,6 +122,7 @@ export default function FindLeads() {
                                       locations: state.selectedLocations,
                                       per_page: state.selectedLimit,
                                       page,
+                          icp_weights: icpWeights,
                           }),
                 });
                 const data = await resp.json();
