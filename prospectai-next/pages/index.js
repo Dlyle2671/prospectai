@@ -15,17 +15,17 @@ import AwsSnapshots from '../components/AwsSnapshots';
 import EmailQueue from '../components/EmailQueue';
 
 const TABS = [
-  { id: 'leads',        label: 'Find Leads' },
-  { id: 'company',      label: 'Company Intel' },
-  { id: 'bulk',         label: 'Bulk Prospector' },
-  { id: 'jobchanges',   label: 'Job Changes' },
-  { id: 'people',       label: 'People Lookup' },
-  { id: 'lookalike',    label: 'Lookalike' },
-  { id: 'awsopps',      label: 'AWS Opportunities' },
+  { id: 'leads', label: 'Find Leads' },
+  { id: 'company', label: 'Company Intel' },
+  { id: 'bulk', label: 'Bulk Prospector' },
+  { id: 'jobchanges', label: 'Job Changes' },
+  { id: 'people', label: 'People Lookup' },
+  { id: 'lookalike', label: 'Lookalike' },
+  { id: 'awsopps', label: 'AWS Opportunities' },
   { id: 'awssnapshots', label: 'Snapshots' },
-  { id: 'emailqueue',   label: 'Email Queue' },
-  { id: 'credits',      label: 'Credits' },
-  { id: 'settings',     label: 'Settings' },
+  { id: 'emailqueue', label: 'Email Queue' },
+  { id: 'credits', label: 'Credits' },
+  { id: 'settings', label: 'Settings' },
   ];
 
 export default function Home() {
@@ -38,11 +38,20 @@ export default function Home() {
   useEffect(() => {
         if (!isLoaded) return;
         if (!user) { setCheckingOnboard(false); return; }
-        fetch('/api/user-settings?ns=onboarded')
-          .then(r => r.json())
-          .then(({ data }) => {
-                    if (!data) { router.replace('/onboarding'); }
-                    else { setCheckingOnboard(false); }
+
+                // Check all three possible completion signals — same logic as middleware
+                Promise.all([
+                        fetch('/api/user-settings?ns=onboarding_complete').then(r => r.json()),
+                        fetch('/api/user-settings?ns=icp_weights').then(r => r.json()),
+                        fetch('/api/user-settings?ns=sender_emails').then(r => r.json()),
+                      ])
+          .then(([done, icp, senders]) => {
+                    const isComplete = done.data || icp.data || senders.data;
+                    if (!isComplete) {
+                                router.replace('/onboarding');
+                    } else {
+                                setCheckingOnboard(false);
+                    }
           })
           .catch(() => setCheckingOnboard(false));
   }, [isLoaded, user]);
@@ -69,12 +78,10 @@ export default function Home() {
             <link rel="icon" href="/favicon.ico" />
             <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     </Head>
-
       <div className="app-layout">
   {/* Left Sidebar */}
         <aside className="sidebar">
               <div className="sidebar-logo">Prospect<span>AI</span></div>
-
               <nav className="sidebar-nav">
   {TABS.map(tab => (
                   <button
@@ -86,7 +93,6 @@ export default function Home() {
 </button>
             ))}
 </nav>
-
           <div className="sidebar-footer">
 {user && (
                 <span className="sidebar-email">{user.primaryEmailAddress?.emailAddress}</span>
@@ -94,20 +100,19 @@ export default function Home() {
             <UserButton afterSignOutUrl="/sign-in" />
               </div>
               </aside>
-
 {/* Main content */}
         <main className="app-main">
-        {activeTab === 'leads'        && <FindLeads />}
-        {activeTab === 'company'      && <CompanyIntel />}
-{activeTab === 'bulk'         && <BulkProspector />}
-{activeTab === 'jobchanges'   && <JobChanges />}
-{activeTab === 'people'       && <PeopleLookup />}
-{activeTab === 'credits'      && <Credits />}
-{activeTab === 'lookalike'    && <LookalikSearch />}
-{activeTab === 'awsopps'      && <AwsOpportunities initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
+        {activeTab === 'leads' && <FindLeads />}
+        {activeTab === 'company' && <CompanyIntel />}
+{activeTab === 'bulk' && <BulkProspector />}
+{activeTab === 'jobchanges' && <JobChanges />}
+{activeTab === 'people' && <PeopleLookup />}
+{activeTab === 'credits' && <Credits />}
+{activeTab === 'lookalike' && <LookalikSearch />}
+{activeTab === 'awsopps' && <AwsOpportunities initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
 {activeTab === 'awssnapshots' && <AwsSnapshots onLoadSnapshot={handleLoadSnapshot} />}
-{activeTab === 'settings'     && <Settings />}
-{activeTab === 'emailqueue'   && <EmailQueue />}
+{activeTab === 'settings' && <Settings />}
+{activeTab === 'emailqueue' && <EmailQueue />}
 </main>
   </div>
   </>
