@@ -897,7 +897,7 @@ function CommTab({data, filterRep, setFilterRep}){
           <h2 style={{fontSize:14,fontWeight:700,color:'#f1f5f9',margin:'0 0 14px',display:'flex',alignItems:'center',gap:8}}>
             Deals
             <span style={{fontSize:11,fontWeight:500,color:'#ffffff'}}>
-                                 <td>{r.dept||r.department||'—'}</td>
+                                               {filterRep!=='All'?repById[filterRep]:''}
             </span>
             <span style={{marginLeft:'auto',fontSize:12,color:'#ffffff'}}>{dealRows.length} deal{dealRows.length!==1?'s':''}</span>
           </h2>
