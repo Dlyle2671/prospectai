@@ -174,7 +174,7 @@ function DashTab({data}){
         <div className="sa-stat">
           <div className="lbl">Pace Check</div>
           <div className="val">{pct(CM/12)}</div>
-          <div className="sub">Month {CM} of 12 ÃÂ¢ÃÂÃÂ where you should be</div>
+          <div className="sub">Month {CM} of 12 ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ where you should be</div>
         </div>
       </div>
       <div className="sa-card">
@@ -196,7 +196,7 @@ function DashTab({data}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'ÃÂ¢ÃÂÃÂ'}</td>
+                  <td>{r.dept||r.department||'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
                   <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
@@ -258,7 +258,7 @@ function DealsTab({data, save}){
   return(
     <div>
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
-        <strong>Deals</strong> ÃÂ¢ÃÂÃÂ enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
+        <strong>Deals</strong> ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:16}}>
         <div className="sa-pills" style={{marginBottom:0,flex:1}}>
@@ -334,7 +334,7 @@ function DealsTab({data, save}){
         </div>
       )}
       <div className="sa-card">
-        <h2>Closed Deals {filterCat!=='All'?'ÃÂ¢ÃÂÃÂ '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
+        <h2>Closed Deals {filterCat!=='All'?'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Category</th><th>Client</th><th>Month</th>
@@ -343,7 +343,7 @@ function DealsTab({data, save}){
           <tbody>
             {filtered.length===0&&(
               <tr><td colSpan={8} style={{textAlign:'center',color:'#fff',padding:24}}>
-                No deals yet ÃÂ¢ÃÂÃÂ click "+ Add Deal" to log a closed deal.
+                No deals yet ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ click "+ Add Deal" to log a closed deal.
               </td></tr>
             )}
             {filtered.map(d=>{
@@ -444,10 +444,10 @@ function RepDetailModal({rep, deals, onClose}){
       <div className="rdm-box">
         <div className="rdm-hd">
           <div>
-            <div className="rdm-hd-title">Ã°ÂÂÂ {rep.name}</div>
-            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} ÃÂ· {totalDeals} deal{totalDeals!==1?'s':''} won ÃÂ· {new Date().getFullYear()} Performance</div>
+            <div className="rdm-hd-title">ÃÂ°ÃÂÃÂÃÂ {rep.name}</div>
+            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} ÃÂÃÂ· {totalDeals} deal{totalDeals!==1?'s':''} won ÃÂÃÂ· {new Date().getFullYear()} Performance</div>
           </div>
-          <button className="rdm-hd-close" onClick={onClose}>Ã¢ÂÂ</button>
+          <button className="rdm-hd-close" onClick={onClose}>ÃÂ¢ÃÂÃÂ</button>
         </div>
         <div className="rdm-body">
           <div className="rdm-kpi">
@@ -463,12 +463,12 @@ function RepDetailModal({rep, deals, onClose}){
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Quota Attainment</div>
-              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'Ã¢ÂÂ'}</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'ÃÂ¢ÃÂÃÂ'}</div>
               <div className="rdm-kpi-sub">vs. {fmt(totalQuota)} annual quota</div>
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Pace vs. Attainment</div>
-              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'Ã¢ÂÂ On Track':'Ã¢ÂÂ  Behind'}</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'ÃÂ¢ÃÂÃÂ On Track':'ÃÂ¢ÃÂÃÂ  Behind'}</div>
               <div className="rdm-kpi-sub">Expected pace: {pct(CM/12)}</div>
             </div>
           </div>
@@ -481,7 +481,7 @@ function RepDetailModal({rep, deals, onClose}){
                 <div className="rdm-qcard-quota">of {fmt(c.quota)} annual quota</div>
                 <div className="rdm-bar"><div className="rdm-bar-fill" style={{width:(c.quota>0?Math.min(100,c.arr/c.quota*100):0)+'%',background:c.color}}/></div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'Ã¢ÂÂ'}</span>
+                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'ÃÂ¢ÃÂÃÂ'}</span>
                   <span style={{fontSize:10,color:'#475569'}}>{fmt(c.comm)} comm</span>
                 </div>
               </div>
@@ -517,7 +517,7 @@ function RepDetailModal({rep, deals, onClose}){
                           ?<span>{fmt(d.amount)} <span style={{color:'#64748b',fontSize:11}}>one-time</span></span>
                           :<span>{fmt(d.mrr)} <span style={{color:'#64748b',fontSize:11}}>/mo MRR</span></span>
                         }</td>
-                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'Ã¢ÂÂ':mrem(d.month)}</td>
+                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'ÃÂ¢ÃÂÃÂ':mrem(d.month)}</td>
                         <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
                         <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
                       </tr>
@@ -609,7 +609,7 @@ function RepsTab({data, save}){
             {data.reps.map(r=>(
               <tr key={r.id} className="rep-row-link" title={`Click to view ${r.name}'s deal breakdown`} onClick={()=>setSelectedRep(r)}>
                 <td style={{fontWeight:600,color:'#818cf8',textDecoration:'underline',textDecorationColor:'rgba(129,140,248,.35)',cursor:'pointer'}}>{r.name}</td>
-                <td>{r.dept||r.department||'Ã¢ÂÂ'}</td>
+                <td>{r.dept||r.department||'ÃÂ¢ÃÂÃÂ'}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
                 <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
                 <td><span className={`sa-badge ${getActualFromDeals(r.id,'PS',deals)>=getQuota(r,'PS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'PS')>0?getActualFromDeals(r.id,'PS',deals)/(getQuota(r,'PS')*(CM/12)):0)}</span></td>
@@ -657,7 +657,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
               <div className="sa-stat">
                 <div className="lbl">Closed ARR</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                <div className="sub">of {fmt(quota)} quota ÃÂ¢ÃÂÃÂ {pct(p)} attained</div>
+                <div className="sub">of {fmt(quota)} quota ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ {pct(p)} attained</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
                 <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
               </div>
@@ -720,7 +720,7 @@ function ArrCalcTab(){
       <div className="sa-card">
         <h2>ARR Calculator</h2>
         <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
-          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value ÃÂ¢ÃÂÃÂ not annualized. Commission = 10% of fee.<br/>
+          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ not annualized. Commission = 10% of fee.<br/>
           <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
           <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
           January close = 12 months = max ARR. November close = 2 months.
@@ -740,7 +740,7 @@ function ArrCalcTab(){
           {calcCat!=='PS'&&(
             <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
-                {MN.map((m,i)=><option key={i} value={i+1}>{m} ÃÂ¢ÃÂÃÂ {13-(i+1)} months remaining</option>)}
+                {MN.map((m,i)=><option key={i} value={i+1}>{m} ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ {13-(i+1)} months remaining</option>)}
               </select>
             </div>
           )}
@@ -776,7 +776,7 @@ function ArrCalcTab(){
                 const isCur=i+1===Number(calcMonth);
                 return(
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
-                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ÃÂ¢ÃÂÃÂ':''}</td>
+                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ':''}</td>
                     <td>{r}</td>
                     <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
@@ -786,7 +786,7 @@ function ArrCalcTab(){
             </tbody>
           </table>
           <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
-            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR ÃÂ¢ÃÂÃÂ same regardless of month closed.':'Note: Commission = 1x MRR flat ÃÂ¢ÃÂÃÂ same regardless of month closed.'}
+            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ same regardless of month closed.':'Note: Commission = 1x MRR flat ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ same regardless of month closed.'}
           </div>
         </div>
       )}
@@ -802,6 +802,8 @@ function CommTab({data, filterRep, setFilterRep}){
   const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
   const totalComm = repsFor.reduce((s,r)=>s+repCommissionFromDeals(r,filteredDeals).tot,0);
   const earning = repsFor.filter(r=>repCommissionFromDeals(r,filteredDeals).tot>0).length;
+
+  // Build summary rows
   let rows = [];
   if(sortBy==='rep'){
     rows = data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
@@ -818,7 +820,17 @@ function CommTab({data, filterRep, setFilterRep}){
       return { key: 'mo-'+m, label: MN[m-1], dept: '', ps, fo, ms, tot: ps+fo+ms };
     });
   }
+
+  // Deal-level breakdown: show when a specific rep and/or month is chosen
+  const showDeals = filterRep!=='All' || filterMonth!=='All';
+  const dealRows = filteredDeals
+    .filter(d => filterRep==='All' || d.repId===filterRep)
+    .sort((a,b)=>(a.month||1)-(b.month||1)||(a.client||'').localeCompare(b.client||''));
+  const repById = Object.fromEntries((data.reps||[]).map(r=>[r.id, r.name]));
+
   const selStyle = {background:'#1e293b',border:'1px solid rgba(99,102,241,.4)',color:'#f1f5f9',padding:'6px 10px',borderRadius:8,fontSize:13,cursor:'pointer',outline:'none'};
+  const CAT_LABEL = {PS:'Professional Services',FO:'FinOps',MS:'Managed Services'};
+
   return(
     <div>
       <div className="sa-g3">
@@ -853,6 +865,7 @@ function CommTab({data, filterRep, setFilterRep}){
           </div>
         )}
       </div>
+
       <div className="sa-card">
         <table className="sa-tbl">
           <thead><tr>
@@ -876,6 +889,44 @@ function CommTab({data, filterRep, setFilterRep}){
           </tbody>
         </table>
       </div>
+
+      {showDeals&&(
+        <div className="sa-card" style={{marginTop:16}}>
+          <h2 style={{fontSize:14,fontWeight:700,color:'#f1f5f9',margin:'0 0 14px',display:'flex',alignItems:'center',gap:8}}>
+            Deals
+            <span style={{fontSize:11,fontWeight:500,color:'#94a3b8'}}>
+              {filterRep!=='All'&&repById[filterRep]}{filterRep!=='All'&&filterMonth!=='All'&&' · '}{filterMonth!=='All'&&MN[Number(filterMonth)-1]}
+            </span>
+            <span style={{marginLeft:'auto',fontSize:12,color:'#94a3b8'}}>{dealRows.length} deal{dealRows.length!==1?'s':''}</span>
+          </h2>
+          {dealRows.length===0?(
+            <div style={{color:'#64748b',fontSize:13,textAlign:'center',padding:'20px 0'}}>No deals match the current filters.</div>
+          ):(
+            <table className="sa-tbl">
+              <thead><tr>
+                {filterRep==='All'&&<th>Rep</th>}
+                <th>Client</th>
+                <th>Category</th>
+                {filterMonth==='All'&&<th>Month</th>}
+                <th>Amount / MRR</th>
+                <th>Commission</th>
+              </tr></thead>
+              <tbody>
+                {dealRows.map(d=>(
+                  <tr key={d.id}>
+                    {filterRep==='All'&&<td style={{color:'#f1f5f9',fontWeight:500}}>{repById[d.repId]||d.repId}</td>}
+                    <td style={{color:'#f1f5f9',fontWeight:500}}>{d.client}</td>
+                    <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.cat==='PS'?'rgba(139,92,246,.2)':d.cat==='FO'?'rgba(59,130,246,.2)':'rgba(16,185,129,.2)',color:d.cat==='PS'?'#a78bfa':d.cat==='FO'?'#60a5fa':'#34d399'}}>{CAT_LABEL[d.cat]||d.cat}</span></td>
+                    {filterMonth==='All'&&<td>{MN[(d.month||1)-1]}</td>}
+                    <td>{d.cat==='PS'?fmt(d.amount):fmt(d.mrr)+'/mo'}</td>
+                    <td style={{fontWeight:700,color:'#34d399'}}>{fmt(dealComm(d))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -906,7 +957,7 @@ function ReportsTab({data}){
             <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'ÃÂ¢ÃÂÃÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
+                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
