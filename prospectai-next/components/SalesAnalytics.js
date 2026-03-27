@@ -21,10 +21,11 @@ function ld(){
         psWins: rep.psWins || [],
         recurringDeals: rep.recurringDeals || { 'FinOps':[], 'Managed Services':[] },
       }));
-      return { reps, deals: Array.isArray(p.deals)?p.deals:[] };
+      const companyQuotas = p.companyQuotas || { PS: 0, FO: 0, MS: 0 };
+      return { reps, deals: Array.isArray(p.deals)?p.deals:[], companyQuotas };
     }
   }catch(e){}
-  return { reps:[], deals:[] };
+  return { reps:[], deals:[], companyQuotas:{ PS:0, FO:0, MS:0 } };
 }
 
 function sd(d){ try{ localStorage.setItem(SK, JSON.stringify(d)); }catch(e){} }
@@ -141,14 +142,15 @@ function DashTab({data}){
     {id:'MS', label:'Managed Services', color:'#10b981', note:'Recurring MRR x months remaining = ARR | Commission: 7% x ARR'},
   ];
   const totalAllClosed = reps.reduce((s,r) => s + getActualFromDeals(r.id,'PS',deals) + getActualFromDeals(r.id,'FO',deals) + getActualFromDeals(r.id,'MS',deals), 0);
-  const totalAllQuota = reps.reduce((s,r) => s + getQuota(r,'PS') + getQuota(r,'FO') + getQuota(r,'MS'), 0);
+  const cq = data.companyQuotas || { PS:0, FO:0, MS:0 };
+  const totalAllQuota = (cq.PS||0)+(cq.FO||0)+(cq.MS||0) || reps.reduce((s,r) => s + getQuota(r,'PS') + getQuota(r,'FO') + getQuota(r,'MS'), 0);
   const totalComm = reps.reduce((s,r) => s + repCommissionFromDeals(r,deals).tot, 0);
   return(
     <div>
       <div className="sa-g3">
         {cats.map(c => {
           const closed = getTotalActualFromDeals(c.id, reps, deals);
-          const quota = reps.reduce((s,r) => s + getQuota(r,c.id), 0);
+          const quota = (data.companyQuotas && data.companyQuotas[c.id]) ? data.companyQuotas[c.id] : reps.reduce((s,r) => s + getQuota(r,c.id), 0);
           const p = quota > 0 ? Math.min(1, closed/quota) : 0;
           const pace = CM/12;
           const behind = closed < quota*pace;
@@ -719,15 +721,53 @@ function ReportsTab({data}){
 
 function SettingsTab({data, save}){
   const deals = data.deals || [];
+  const cq = data.companyQuotas || { PS:0, FO:0, MS:0 };
+  const [qf, setQf] = useState({ PS: cq.PS||'', FO: cq.FO||'', MS: cq.MS||'' });
+  const [saved, setSaved] = useState(false);
   const totalClosed = data.reps.reduce((s,r)=>s+getActualFromDeals(r.id,'PS',deals)+getActualFromDeals(r.id,'FO',deals)+getActualFromDeals(r.id,'MS',deals),0);
   const totalComm = deals.reduce((s,d)=>s+dealComm(d),0);
-  const totalQuota = data.reps.reduce((s,r)=>s+getQuota(r,'PS')+getQuota(r,'FO')+getQuota(r,'MS'),0);
+  const totalQuota = (Number(qf.PS)||0)+(Number(qf.FO)||0)+(Number(qf.MS)||0);
+  const saveQuotas = () => {
+    const d = JSON.parse(JSON.stringify(data));
+    d.companyQuotas = { PS: Number(qf.PS)||0, FO: Number(qf.FO)||0, MS: Number(qf.MS)||0 };
+    save(d);
+    setSaved(true);
+    setTimeout(()=>setSaved(false), 2000);
+  };
   return(
     <div>
       <div className="sa-g3">
         <div className="sa-stat"><div className="lbl">Total Closed ARR</div><div className="val" style={{color:'#34d399'}}>{fmt(totalClosed)}</div><div className="sub">across all reps</div></div>
-        <div className="sa-stat"><div className="lbl">Total Quota</div><div className="val">{fmt(totalQuota)}</div><div className="sub">combined all reps all categories</div></div>
+        <div className="sa-stat"><div className="lbl">Total Company Quota</div><div className="val">{fmt(totalQuota)}</div><div className="sub">PS + FO + MS combined</div></div>
         <div className="sa-stat"><div className="lbl">Total Commissions</div><div className="val" style={{color:'#34d399'}}>{fmt(totalComm)}</div><div className="sub">based on deals</div></div>
+      </div>
+      <div className="sa-card">
+        <h2>Company Quota by Category</h2>
+        <div style={{fontSize:13,color:'#a5b4fc',marginBottom:16,lineHeight:1.6}}>
+          Set the total annual quota for each category. These drive attainment % on the Dashboard and Category Performance tabs.
+        </div>
+        <div className="sa-frow">
+          <div>
+            <label className="sa-label">Professional Services Annual Quota ($)</label>
+            <input className="sa-input" type="number" value={qf.PS} onChange={e=>setQf({...qf,PS:e.target.value})} placeholder="e.g. 6500000"/>
+            <div style={{fontSize:11,color:'#fff',marginTop:4}}>One-time project fees</div>
+          </div>
+          <div>
+            <label className="sa-label">FinOps Annual Quota ($)</label>
+            <input className="sa-input" type="number" value={qf.FO} onChange={e=>setQf({...qf,FO:e.target.value})} placeholder="e.g. 32000000"/>
+            <div style={{fontSize:11,color:'#fff',marginTop:4}}>Recurring MRR x months remaining</div>
+          </div>
+          <div>
+            <label className="sa-label">Managed Services Annual Quota ($)</label>
+            <input className="sa-input" type="number" value={qf.MS} onChange={e=>setQf({...qf,MS:e.target.value})} placeholder="e.g. 1500000"/>
+            <div style={{fontSize:11,color:'#fff',marginTop:4}}>Recurring MRR x months remaining</div>
+          </div>
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:4}}>
+          <button className="sa-btn" onClick={saveQuotas}>Save Quotas</button>
+          {saved&&<span style={{color:'#34d399',fontSize:13,fontWeight:600}}>Saved!</span>}
+          {totalQuota>0&&<span style={{color:'#fff',fontSize:12}}>Total: {fmt(totalQuota)}</span>}
+        </div>
       </div>
       <div className="sa-card">
         <h2>Commission Rates</h2>
@@ -747,6 +787,7 @@ function SettingsTab({data, save}){
       </div>
       <div className="sa-card">
         <h2>Rep Quotas</h2>
+        <div style={{fontSize:12,color:'#a5b4fc',marginBottom:12}}>Individual rep quotas are set in the Reps tab.</div>
         <table className="sa-tbl">
           <thead><tr><th>Rep</th><th>PS Quota</th><th>FO Quota</th><th>MS Quota</th><th>Total Quota</th></tr></thead>
           <tbody>
