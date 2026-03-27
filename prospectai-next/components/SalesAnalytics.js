@@ -174,7 +174,7 @@ function DashTab({data}){
         <div className="sa-stat">
           <div className="lbl">Pace Check</div>
           <div className="val">{pct(CM/12)}</div>
-          <div className="sub">Month {CM} of 12 — where you should be</div>
+          <div className="sub">Month {CM} of 12 â where you should be</div>
         </div>
       </div>
       <div className="sa-card">
@@ -196,7 +196,7 @@ function DashTab({data}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'—'}</td>
+                  <td>{r.dept||r.department||'â'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
                   <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
@@ -258,7 +258,7 @@ function DealsTab({data, save}){
   return(
     <div>
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
-        <strong>Deals</strong> — enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
+        <strong>Deals</strong> â enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:16}}>
         <div className="sa-pills" style={{marginBottom:0,flex:1}}>
@@ -334,7 +334,7 @@ function DealsTab({data, save}){
         </div>
       )}
       <div className="sa-card">
-        <h2>Closed Deals {filterCat!=='All'?'— '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
+        <h2>Closed Deals {filterCat!=='All'?'â '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Category</th><th>Client</th><th>Month</th>
@@ -343,7 +343,7 @@ function DealsTab({data, save}){
           <tbody>
             {filtered.length===0&&(
               <tr><td colSpan={8} style={{textAlign:'center',color:'#fff',padding:24}}>
-                No deals yet — click "+ Add Deal" to log a closed deal.
+                No deals yet â click "+ Add Deal" to log a closed deal.
               </td></tr>
             )}
             {filtered.map(d=>{
@@ -379,10 +379,176 @@ function DealsTab({data, save}){
     </div>
   );
 }
+function RepDetailModal({rep, deals, onClose}){
+  if(!rep) return null;
+  const cats=[
+    {id:'PS',label:'Professional Services',color:'#818cf8',bg:'rgba(99,102,241,0.18)',border:'#6366f1'},
+    {id:'FO',label:'FinOps',color:'#38bdf8',bg:'rgba(14,165,233,0.18)',border:'#0ea5e9'},
+    {id:'MS',label:'Managed Services',color:'#34d399',bg:'rgba(16,185,129,0.18)',border:'#10b981'},
+  ];
+  const myDeals=deals.filter(d=>d.repId===rep.id);
+  const totalARR=myDeals.reduce((s,d)=>s+dealARR(d),0);
+  const totalComm=myDeals.reduce((s,d)=>s+dealComm(d),0);
+  const totalDeals=myDeals.length;
+  const psQ=getQuota(rep,'PS'), foQ=getQuota(rep,'FO'), msQ=getQuota(rep,'MS');
+  const totalQuota=psQ+foQ+msQ;
+  const overallAttain=totalQuota>0?totalARR/totalQuota:0;
+  const catData=cats.map(c=>{
+    const cd=myDeals.filter(d=>d.cat===c.id);
+    return{...c,deals:cd,arr:cd.reduce((s,d)=>s+dealARR(d),0),comm:cd.reduce((s,d)=>s+dealComm(d),0),quota:getQuota(rep,c.id)};
+  });
+  const styles=`
+    .rdm-ov{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.72);z-index:9998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+    .rdm-box{background:#0f172a;border:1px solid rgba(99,102,241,.4);border-radius:16px;width:92vw;max-width:1080px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.6);}
+    .rdm-hd{background:#1e293b;border-bottom:1px solid rgba(99,102,241,.3);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+    .rdm-hd-title{font-size:20px;font-weight:700;color:#f1f5f9;}
+    .rdm-hd-sub{font-size:12px;color:#818cf8;margin-top:3px;}
+    .rdm-hd-close{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .rdm-hd-close:hover{background:rgba(239,68,68,.3);}
+    .rdm-body{overflow-y:auto;padding:22px 24px;flex:1;}
+    .rdm-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+    .rdm-kpi-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;}
+    .rdm-kpi-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#818cf8;margin-bottom:6px;}
+    .rdm-kpi-val{font-size:20px;font-weight:700;color:#f1f5f9;}
+    .rdm-kpi-sub{font-size:11px;color:#94a3b8;margin-top:3px;}
+    .rdm-sec{font-size:11px;font-weight:700;color:#64748b;letter-spacing:1.2px;text-transform:uppercase;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06);}
+    .rdm-qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
+    .rdm-qcard{background:#1e293b;border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,.06);}
+    .rdm-qcard-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+    .rdm-qcard-val{font-size:16px;font-weight:700;color:#34d399;}
+    .rdm-qcard-quota{font-size:11px;color:#94a3b8;margin-top:2px;}
+    .rdm-bar{height:4px;background:#0f172a;border-radius:3px;margin:6px 0 4px;overflow:hidden;}
+    .rdm-bar-fill{height:100%;border-radius:3px;}
+    .rdm-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+    .rdm-badge.ahead{background:rgba(16,185,129,.15);color:#34d399;}
+    .rdm-badge.behind{background:rgba(239,68,68,.15);color:#f87171;}
+    .rdm-cat-block{margin-bottom:14px;}
+    .rdm-cat-hd{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:#1e293b;border-left:3px solid;margin-bottom:6px;}
+    .rdm-cat-name{font-size:13px;font-weight:700;}
+    .rdm-cat-meta{margin-left:auto;display:flex;gap:14px;font-size:12px;color:#94a3b8;}
+    .rdm-tbl{width:100%;border-collapse:collapse;}
+    .rdm-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;padding:7px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.05);}
+    .rdm-tbl td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#f1f5f9;text-align:left;}
+    .rdm-tbl tr:last-child td{border-bottom:none;}
+    .rdm-tbl tr:hover td{background:rgba(255,255,255,.02);}
+    .rdm-tbl tfoot td{color:#94a3b8;font-size:11px;font-weight:700;padding-top:10px;}
+    .rdm-grand{margin-top:14px;padding:12px 16px;background:#1e293b;border-radius:10px;border:1px solid rgba(99,102,241,.3);display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
+    .rdm-no-deals{text-align:center;color:#475569;padding:18px;font-size:13px;font-style:italic;}
+    .rep-row-link{cursor:pointer;}
+    .rep-row-link:hover td{background:rgba(99,102,241,.07)!important;}
+    .rep-row-link td:first-child{color:#818cf8!important;text-decoration:underline;text-decoration-color:rgba(129,140,248,.35);}
+  `;
+  return(
+    <div className="rdm-ov" onClick={e=>e.target.className==='rdm-ov'&&onClose()}>
+      <style>{styles}</style>
+      <div className="rdm-box">
+        <div className="rdm-hd">
+          <div>
+            <div className="rdm-hd-title">🏆 {rep.name}</div>
+            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} · {totalDeals} deal{totalDeals!==1?'s':''} won · {new Date().getFullYear()} Performance</div>
+          </div>
+          <button className="rdm-hd-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="rdm-body">
+          <div className="rdm-kpi">
+            <div className="rdm-kpi-card">
+              <div className="rdm-kpi-lbl">Total ARR Closed</div>
+              <div className="rdm-kpi-val" style={{color:'#34d399'}}>{fmt(totalARR)}</div>
+              <div className="rdm-kpi-sub">{totalDeals} deals across all categories</div>
+            </div>
+            <div className="rdm-kpi-card">
+              <div className="rdm-kpi-lbl">Total Commission</div>
+              <div className="rdm-kpi-val" style={{color:'#34d399'}}>{fmt(totalComm)}</div>
+              <div className="rdm-kpi-sub">PS + FO + MS combined</div>
+            </div>
+            <div className="rdm-kpi-card">
+              <div className="rdm-kpi-lbl">Quota Attainment</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'—'}</div>
+              <div className="rdm-kpi-sub">vs. {fmt(totalQuota)} annual quota</div>
+            </div>
+            <div className="rdm-kpi-card">
+              <div className="rdm-kpi-lbl">Pace vs. Attainment</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'✓ On Track':'⚠ Behind'}</div>
+              <div className="rdm-kpi-sub">Expected pace: {pct(CM/12)}</div>
+            </div>
+          </div>
+          <div className="rdm-sec">Quota Attainment by Category</div>
+          <div className="rdm-qgrid">
+            {catData.map(c=>(
+              <div className="rdm-qcard" key={c.id}>
+                <div className="rdm-qcard-lbl">{c.label}</div>
+                <div className="rdm-qcard-val">{fmt(c.arr)}</div>
+                <div className="rdm-qcard-quota">of {fmt(c.quota)} annual quota</div>
+                <div className="rdm-bar"><div className="rdm-bar-fill" style={{width:(c.quota>0?Math.min(100,c.arr/c.quota*100):0)+'%',background:c.color}}/></div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'—'}</span>
+                  <span style={{fontSize:10,color:'#475569'}}>{fmt(c.comm)} comm</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="rdm-sec">Deals Won by Category</div>
+          {catData.map(c=>(
+            <div className="rdm-cat-block" key={c.id}>
+              <div className="rdm-cat-hd" style={{borderLeftColor:c.border}}>
+                <span style={{background:c.bg,color:c.color,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:700}}>{c.id}</span>
+                <span className="rdm-cat-name" style={{color:c.color}}>{c.label}</span>
+                <div className="rdm-cat-meta">
+                  <span>{c.deals.length} deal{c.deals.length!==1?'s':''}</span>
+                  <span style={{color:'#f1f5f9',fontWeight:700}}>{fmt(c.arr)} ARR</span>
+                  <span style={{color:'#34d399'}}>{fmt(c.comm)} commission</span>
+                </div>
+              </div>
+              {c.deals.length===0
+                ?<div className="rdm-no-deals">No {c.label} deals</div>
+                :<table className="rdm-tbl">
+                  <thead><tr>
+                    <th>Client</th><th>Month Closed</th>
+                    <th>{c.id==='PS'?'Fee':'MRR'}</th>
+                    <th>Mo. Remaining</th>
+                    <th>ARR Value</th><th>Commission</th>
+                  </tr></thead>
+                  <tbody>
+                    {c.deals.map(d=>(
+                      <tr key={d.id}>
+                        <td style={{fontWeight:600}}>{d.client}</td>
+                        <td>{MN[(d.month||1)-1]}</td>
+                        <td>{c.id==='PS'
+                          ?<span>{fmt(d.amount)} <span style={{color:'#64748b',fontSize:11}}>one-time</span></span>
+                          :<span>{fmt(d.mrr)} <span style={{color:'#64748b',fontSize:11}}>/mo MRR</span></span>
+                        }</td>
+                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'—':mrem(d.month)}</td>
+                        <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
+                        <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot><tr>
+                    <td colSpan={4}>TOTALS ({c.deals.length} deal{c.deals.length!==1?'s':''})</td>
+                    <td style={{color:'#f1f5f9'}}>{fmt(c.arr)}</td>
+                    <td style={{color:'#34d399'}}>{fmt(c.comm)}</td>
+                  </tr></tfoot>
+                </table>
+              }
+            </div>
+          ))}
+          <div className="rdm-grand">
+            <span style={{fontSize:13,fontWeight:700,color:'#818cf8'}}>GRAND TOTAL</span>
+            <span style={{fontSize:13,color:'#94a3b8'}}>{totalDeals} deals won</span>
+            <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalARR)} ARR</span>
+            <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalComm)} commission</span>
+            <span style={{fontSize:13,color:overallAttain>=CM/12?'#34d399':'#f87171',marginLeft:'auto'}}>{totalQuota>0?pct(overallAttain)+' attainment':'No quota set'}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function RepsTab({data, save}){
   const [showForm, setShowForm] = useState(false);
   const [editRep, setEditRep] = useState(null);
   const [rf, setRf] = useState({name:'',dept:'',psQ:'',foQ:'',msQ:''});
+  const [selectedRep, setSelectedRep] = useState(null);
   const submit = () => {
     if(!rf.name.trim()) return;
     const d = JSON.parse(JSON.stringify(data));
@@ -412,8 +578,9 @@ function RepsTab({data, save}){
   const deals = data.deals || [];
   return(
     <div>
+      {selectedRep&&<RepDetailModal rep={selectedRep} deals={deals} onClose={()=>setSelectedRep(null)}/>}
       <div className="sa-shd">
-        <div/>
+        <div style={{fontSize:12,color:'#818cf8',fontStyle:'italic'}}>Click any rep name to view their full deal breakdown</div>
         <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditRep(null);setRf({name:'',dept:'',psQ:'',foQ:'',msQ:''});}}>+ Add Rep</button>
       </div>
       {showForm&&(
@@ -440,8 +607,8 @@ function RepsTab({data, save}){
           <thead><tr><th>Name</th><th>Dept</th><th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th><th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th><th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th></tr></thead>
           <tbody>
             {data.reps.map(r=>(
-              <tr key={r.id}>
-                <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
+              <tr key={r.id} className="rep-row-link" title={`Click to view ${r.name}'s deal breakdown`} onClick={()=>setSelectedRep(r)}>
+                <td style={{fontWeight:600,color:'#818cf8',textDecoration:'underline',textDecorationColor:'rgba(129,140,248,.35)',cursor:'pointer'}}>{r.name}</td>
                 <td>{r.dept||r.department||'—'}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
                 <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
@@ -490,7 +657,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
               <div className="sa-stat">
                 <div className="lbl">Closed ARR</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                <div className="sub">of {fmt(quota)} quota — {pct(p)} attained</div>
+                <div className="sub">of {fmt(quota)} quota â {pct(p)} attained</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
                 <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
               </div>
@@ -553,7 +720,7 @@ function ArrCalcTab(){
       <div className="sa-card">
         <h2>ARR Calculator</h2>
         <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
-          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value — not annualized. Commission = 10% of fee.<br/>
+          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value â not annualized. Commission = 10% of fee.<br/>
           <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
           <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
           January close = 12 months = max ARR. November close = 2 months.
@@ -573,7 +740,7 @@ function ArrCalcTab(){
           {calcCat!=='PS'&&(
             <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
-                {MN.map((m,i)=><option key={i} value={i+1}>{m} — {13-(i+1)} months remaining</option>)}
+                {MN.map((m,i)=><option key={i} value={i+1}>{m} â {13-(i+1)} months remaining</option>)}
               </select>
             </div>
           )}
@@ -609,7 +776,7 @@ function ArrCalcTab(){
                 const isCur=i+1===Number(calcMonth);
                 return(
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
-                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ◄':''}</td>
+                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' â':''}</td>
                     <td>{r}</td>
                     <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
@@ -619,7 +786,7 @@ function ArrCalcTab(){
             </tbody>
           </table>
           <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
-            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR — same regardless of month closed.':'Note: Commission = 1x MRR flat — same regardless of month closed.'}
+            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR â same regardless of month closed.':'Note: Commission = 1x MRR flat â same regardless of month closed.'}
           </div>
         </div>
       )}
@@ -657,7 +824,7 @@ function CommTab({data, filterRep, setFilterRep}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'—'}</td>
+                  <td>{r.dept||r.department||'â'}</td>
                   <td>{fmt(c.ps)}</td>
                   <td>{fmt(c.fo)}</td>
                   <td>{fmt(c.ms)}</td>
@@ -698,7 +865,7 @@ function ReportsTab({data}){
             <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'—'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
+                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'â'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
