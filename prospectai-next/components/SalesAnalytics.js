@@ -182,9 +182,9 @@ function DashTab({data}){
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Dept</th>
-            <th>PS Closed</th><th>Professional Services Quota</th><th>PS %</th>
-            <th>FO Closed</th><th>FinOps Quota</th><th>FO %</th>
-            <th>MS Closed</th><th>Managed Services Quota</th><th>MS %</th>
+            <th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th>
+            <th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th>
+            <th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th>
             <th>Total Closed</th><th>Commission</th>
           </tr></thead>
           <tbody>
@@ -439,7 +439,7 @@ function RepsTab({data, save}){
       )}
       <div className="sa-card">
         <table className="sa-tbl">
-          <thead><tr><th>Name</th><th>Dept</th><th>Professional Services Quota</th><th>FinOps Quota</th><th>Managed Services Quota</th><th>PS Closed</th><th>FO Closed</th><th>MS Closed</th><th>Deals</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Dept</th><th>Professional Services Quota</th><th>FinOps Quota</th><th>Managed Services Quota</th><th>Professional Services Closed</th><th>FinOps Closed</th><th>Managed Services Closed</th><th>Deals</th><th>Actions</th></tr></thead>
           <tbody>
             {data.reps.map(r=>(
               <tr key={r.id}>
