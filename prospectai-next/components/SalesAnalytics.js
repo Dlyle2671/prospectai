@@ -686,8 +686,7 @@ function ReportsTab({data}){
     myDeals.forEach(d=>{
       rows.push([d.client, d.cat, MN[(d.month||1)-1], d.cat==='PS'?d.amount:d.mrr, dealARR(d), dealComm(d)]);
     });
-    const csv = rows.map(r=>r.join(',')).join('
-');
+    const csv = rows.map(r=>r.join(',')).join(String.fromCharCode(10));
     const el = document.createElement('a');
     el.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     el.download = rep.name.replace(/s+/g,'_')+'_deals.csv';
