@@ -868,6 +868,12 @@ function CommTab({data, filterRep, setFilterRep}){
         )}
       </div>
 
+            <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
+        <button
+          style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
+          onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
+        >⬇ Export Commission Statement</button>
+      </div>
       <div className="sa-card">
         <table className="sa-tbl">
           <thead><tr>
@@ -931,6 +937,133 @@ function CommTab({data, filterRep, setFilterRep}){
       )}
     </div>
   );
+}
+
+async function exportCommissionXLSX({data,filterRep,filterMonth}){
+  if(!window.XLSX){
+    await new Promise((resolve,reject)=>{
+      const s=document.createElement('script');
+      s.src='https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+      s.onload=resolve; s.onerror=reject;
+      document.head.appendChild(s);
+    });
+  }
+  const XL=window.XLSX;
+  const YEAR=new Date().getFullYear();
+  const deals=data.deals||[];
+  const reps=data.reps||[];
+  const CAT_FULL={PS:'Professional Services',FO:'FinOps',MS:'Managed Services'};
+  const CAT_RATE={PS:'10% of fee',FO:'7% of 1st mo MRR',MS:'1x MRR (flat)'};
+  const filteredDeals=deals.filter(d=>{
+    const repMatch=filterRep==='All'||d.repId===filterRep;
+    const monthMatch=filterMonth==='All'||(d.month||1)===Number(filterMonth);
+    return repMatch&&monthMatch;
+  });
+  const filteredReps=filterRep==='All'?reps:reps.filter(r=>r.id===filterRep);
+  const periodLabel=[
+    filterRep!=='All'?(reps.find(r=>r.id===filterRep)||{}).name:'All Reps',
+    filterMonth!=='All'?MN[Number(filterMonth)-1]:'All Months'
+  ].join(' — ');
+  const wb=XL.utils.book_new();
+
+  // SHEET 1: REP SCORECARDS
+  const scorecardRows=[];
+  scorecardRows.push(['COMMISSION STATEMENT — '+periodLabel+' — '+YEAR,'','','','','','','']);
+  scorecardRows.push(['Generated: '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'  |  Period: '+periodLabel+'  |  Currency: USD','','','','','','','']);
+  scorecardRows.push(['']);
+  filteredReps.forEach((r,idx)=>{
+    if(idx>0){scorecardRows.push(['']);scorecardRows.push(['']);}
+    const myDeals=filteredDeals.filter(d=>d.repId===r.id);
+    const psA=myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealARR(d),0);
+    const foA=myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealARR(d),0);
+    const msA=myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealARR(d),0);
+    const totA=psA+foA+msA;
+    const psQ=getQuota(r,'PS'),foQ=getQuota(r,'FO'),msQ=getQuota(r,'MS');
+    const totQ=psQ+foQ+msQ;
+    const comm=repCommissionFromDeals(r,filteredDeals);
+    const ytdPct=CM/12;
+    const attain=totQ>0?(totA/totQ*100).toFixed(1)+'%':'--';
+    const status=totQ>0?(totA/totQ>=ytdPct?'On Track':'Behind Pace'):'--';
+    scorecardRows.push(['── '+r.name.toUpperCase()+' ──','','','','','','','']);
+    scorecardRows.push(['Department:',r.dept||r.department||'Sales','','Total Deals Won:',myDeals.length,'','Period:',periodLabel]);
+    scorecardRows.push(['']);
+    scorecardRows.push(['KPI SUMMARY','','','','','','','']);
+    scorecardRows.push(['Total ARR Closed','Total Commission','Quota Attainment','Status','YTD Pace','PS Commission','FO Commission','MS Commission']);
+    scorecardRows.push([totA,comm.tot,attain,status,(ytdPct*100).toFixed(1)+'%',comm.ps,comm.fo,comm.ms]);
+    scorecardRows.push(['']);
+    scorecardRows.push(['CATEGORY BREAKDOWN','','','','','','','']);
+    scorecardRows.push(['Category','ARR Closed','Annual Quota','YTD Quota','Attainment %','Commission','Commission Rate','Deals']);
+    ['PS','FO','MS'].forEach(cat=>{
+      const cA=myDeals.filter(d=>d.cat===cat).reduce((s,d)=>s+dealARR(d),0);
+      const cQ=getQuota(r,cat);
+      const cComm=cat==='PS'?comm.ps:cat==='FO'?comm.fo:comm.ms;
+      scorecardRows.push([CAT_FULL[cat],cA,cQ,cQ*(CM/12),cQ>0?(cA/cQ*100).toFixed(1)+'%':'--',cComm,CAT_RATE[cat],myDeals.filter(d=>d.cat===cat).length]);
+    });
+    scorecardRows.push(['TOTAL',totA,totQ,totQ*(CM/12),attain,comm.tot,'',myDeals.length]);
+    scorecardRows.push(['']);
+    scorecardRows.push(['DEAL BREAKDOWN','','','','','','','']);
+    scorecardRows.push(['Client','Category','Month Closed','Fee / MRR','ARR Value','Commission','Commission Rate','Mo. Remaining']);
+    [...myDeals].sort((a,b)=>(a.month||1)-(b.month||1)).forEach(d=>{
+      scorecardRows.push([d.client,CAT_FULL[d.cat]||d.cat,MN[(d.month||1)-1],d.cat==='PS'?d.amount:d.mrr,dealARR(d),dealComm(d),CAT_RATE[d.cat]||'',d.cat==='PS'?'N/A':mrem(d.month||1)]);
+    });
+    if(!myDeals.length) scorecardRows.push(['(No deals for this filter)']);
+    scorecardRows.push(['','','','','Deal Total:',myDeals.reduce((s,d)=>s+dealARR(d),0),'Commission Total:',myDeals.reduce((s,d)=>s+dealComm(d),0)]);
+  });
+  const wsS=XL.utils.aoa_to_sheet(scorecardRows);
+  wsS['!cols']=[{wch:32},{wch:16},{wch:16},{wch:20},{wch:16},{wch:16},{wch:18},{wch:14}];
+  XL.utils.book_append_sheet(wb,wsS,'Rep Scorecards');
+
+  // SHEET 2: DEAL DETAIL
+  const detailRows=[];
+  detailRows.push(['DEAL DETAIL — '+periodLabel+' — '+YEAR,'','','','','','','','','']);
+  detailRows.push(['']);
+  detailRows.push(['Rep Name','Department','Client','Category','Month Closed','Fee / MRR','ARR Value','Mo. Remaining','Commission','Commission Rate']);
+  const sorted=[...filteredDeals].sort((a,b)=>{
+    const rA=(reps.find(r=>r.id===a.repId)||{name:''}).name;
+    const rB=(reps.find(r=>r.id===b.repId)||{name:''}).name;
+    if(rA!==rB) return rA.localeCompare(rB);
+    return (a.month||1)-(b.month||1);
+  });
+  let lastRep=null;
+  sorted.forEach(d=>{
+    const rep=reps.find(r=>r.id===d.repId);
+    const rn=rep?rep.name:'Unknown';
+    if(lastRep&&lastRep!==rn) detailRows.push(['']);
+    lastRep=rn;
+    detailRows.push([rn,rep?(rep.dept||rep.department||'Sales'):'',d.client,CAT_FULL[d.cat]||d.cat,MN[(d.month||1)-1],d.cat==='PS'?d.amount:d.mrr,dealARR(d),d.cat==='PS'?'N/A':mrem(d.month||1),dealComm(d),CAT_RATE[d.cat]||'']);
+  });
+  detailRows.push(['']);
+  detailRows.push(['TOTALS','',filteredDeals.length+' deals','','','',filteredDeals.reduce((s,d)=>s+dealARR(d),0),'',filteredDeals.reduce((s,d)=>s+dealComm(d),0),'']);
+  const wsD=XL.utils.aoa_to_sheet(detailRows);
+  wsD['!cols']=[{wch:22},{wch:12},{wch:28},{wch:22},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:16}];
+  XL.utils.book_append_sheet(wb,wsD,'Deal Detail');
+
+  // SHEET 3: MONTHLY BREAKDOWN
+  const allMonthsSet=[...new Set(filteredDeals.map(d=>d.month||1))].sort((a,b)=>a-b);
+  const mRows=[];
+  mRows.push(['MONTHLY COMMISSION BREAKDOWN — '+periodLabel+' — '+YEAR,'','','','','','','','','']);
+  mRows.push(['']);
+  mRows.push(['Month','PS Commission','FO Commission','MS Commission','Total Commission','PS Deals','FO Deals','MS Deals','Total Deals','Total ARR']);
+  allMonthsSet.forEach(m=>{
+    const mD=filteredDeals.filter(d=>(d.month||1)===m);
+    const ps=mD.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
+    const fo=mD.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
+    const ms=mD.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
+    mRows.push([MN[m-1],ps,fo,ms,ps+fo+ms,mD.filter(d=>d.cat==='PS').length,mD.filter(d=>d.cat==='FO').length,mD.filter(d=>d.cat==='MS').length,mD.length,mD.reduce((s,d)=>s+dealARR(d),0)]);
+  });
+  mRows.push(['']);
+  const tPS=filteredDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
+  const tFO=filteredDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
+  const tMS=filteredDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
+  mRows.push(['TOTAL',tPS,tFO,tMS,tPS+tFO+tMS,'','','',filteredDeals.length,filteredDeals.reduce((s,d)=>s+dealARR(d),0)]);
+  const wsM=XL.utils.aoa_to_sheet(mRows);
+  wsM['!cols']=[{wch:12},{wch:16},{wch:16},{wch:16},{wch:18},{wch:10},{wch:10},{wch:10},{wch:12},{wch:16}];
+  XL.utils.book_append_sheet(wb,wsM,'Monthly Breakdown');
+
+  const dateStr=new Date().toISOString().slice(0,10);
+  const repLabel=filterRep==='All'?'All_Reps':(reps.find(r=>r.id===filterRep)||{name:'Rep'}).name.replace(/\s+/g,'_');
+  const moLabel=filterMonth==='All'?'All_Months':MN[Number(filterMonth)-1];
+  XL.writeFile(wb,'Commission_'+repLabel+'_'+moLabel+'_'+YEAR+'_'+dateStr+'.xlsx');
 }
 function ReportsTab({data}){
   const deals = data.deals || [];
