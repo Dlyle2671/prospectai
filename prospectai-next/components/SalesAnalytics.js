@@ -141,14 +141,16 @@ function DashTab({data}){
         {cats.map(c => {
           const closed = getTotalActualFromDeals(c.id, reps, deals);
           const quota = (data.companyQuotas && data.companyQuotas[c.id]) ? data.companyQuotas[c.id] : reps.reduce((s,r) => s + getQuota(r,c.id), 0);
-          const p = quota > 0 ? Math.min(1, closed/quota) : 0;
+          const ytdTarget = quota*(CM/12);
+          const p = ytdTarget > 0 ? Math.min(1, closed/ytdTarget) : 0;
           const pace = CM/12;
-          const behind = closed < quota*pace;
+          const behind = closed < ytdTarget;
           return(
             <div className="sa-stat" key={c.id}>
               <div className="lbl">{c.label}</div>
               <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-              <div className="sub">of {fmt(quota)} quota ({pct(p)} attained)</div>
+              <div className="sub">of {fmt(ytdTarget)} YTD target ({pct(p)} attained)</div>
+              <div style={{fontSize:10,color:'#64748b',marginTop:1}}>Annual: {fmt(quota)}</div>
               <div className="note">{c.note}</div>
               <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
@@ -163,8 +165,9 @@ function DashTab({data}){
         <div className="sa-stat">
           <div className="lbl">Total Closed ARR</div>
           <div className="val" style={{color:'#34d399'}}>{fmt(totalAllClosed)}</div>
-          <div className="sub">of {fmt(totalAllQuota)} total quota ({pct(totalAllQuota>0?totalAllClosed/totalAllQuota:0)})</div>
-          <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalAllQuota>0?totalAllClosed/totalAllQuota*100:0)+'%',background:'#34d399'}}/></div>
+          <div className="sub">of {fmt(totalAllQuota*(CM/12))} YTD target ({pct(totalAllQuota>0?totalAllClosed/(totalAllQuota*(CM/12)):0)})</div>
+            <div style={{fontSize:10,color:'#64748b',marginTop:1}}>Annual quota: {fmt(totalAllQuota)}</div>
+          <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalAllQuota>0?totalAllClosed/(totalAllQuota*(CM/12))*100:0)+'%',background:'#34d399'}}/></div>
         </div>
         <div className="sa-stat">
           <div className="lbl">Total Commissions</div>
@@ -174,7 +177,7 @@ function DashTab({data}){
         <div className="sa-stat">
           <div className="lbl">Pace Check</div>
           <div className="val">{pct(CM/12)}</div>
-          <div className="sub">Month {CM} of 12 â where you should be</div>
+          <div className="sub">Month {CM} of 12 Ã¢ÂÂ where you should be</div>
         </div>
       </div>
       <div className="sa-card">
@@ -196,16 +199,16 @@ function DashTab({data}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'â'}</td>
+                  <td>{r.dept||r.department||'Ã¢ÂÂ'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
                   <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
-                  <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
+                  <td><span className={`sa-badge ${psA>=psQ?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(foA)}</td>
                   <td style={{color:'#fff',fontSize:11}}>{fmt(foQ)}</td>
-                  <td><span className={`sa-badge ${foA>=foQ*(CM/12)?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
+                  <td><span className={`sa-badge ${foA>=foQ?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(msA)}</td>
                   <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
-                  <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
+                  <td><span className={`sa-badge ${msA>=msQ?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
                 </tr>
               );
@@ -258,7 +261,7 @@ function DealsTab({data, save}){
   return(
     <div>
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
-        <strong>Deals</strong> â enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
+        <strong>Deals</strong> Ã¢ÂÂ enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:16}}>
         <div className="sa-pills" style={{marginBottom:0,flex:1}}>
@@ -334,7 +337,7 @@ function DealsTab({data, save}){
         </div>
       )}
       <div className="sa-card">
-        <h2>Closed Deals {filterCat!=='All'?'â '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
+        <h2>Closed Deals {filterCat!=='All'?'Ã¢ÂÂ '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Category</th><th>Client</th><th>Month</th>
@@ -343,7 +346,7 @@ function DealsTab({data, save}){
           <tbody>
             {filtered.length===0&&(
               <tr><td colSpan={8} style={{textAlign:'center',color:'#fff',padding:24}}>
-                No deals yet â click "+ Add Deal" to log a closed deal.
+                No deals yet Ã¢ÂÂ click "+ Add Deal" to log a closed deal.
               </td></tr>
             )}
             {filtered.map(d=>{
@@ -392,7 +395,8 @@ function RepDetailModal({rep, deals, onClose}){
   const totalDeals=myDeals.length;
   const psQ=getQuota(rep,'PS'), foQ=getQuota(rep,'FO'), msQ=getQuota(rep,'MS');
   const totalQuota=psQ+foQ+msQ;
-  const overallAttain=totalQuota>0?totalARR/totalQuota:0;
+  const ytdTotalQuota=totalQuota*(CM/12);
+  const overallAttain=ytdTotalQuota>0?totalARR/ytdTotalQuota:0;
   const catData=cats.map(c=>{
     const cd=myDeals.filter(d=>d.cat===c.id);
     return{...c,deals:cd,arr:cd.reduce((s,d)=>s+dealARR(d),0),comm:cd.reduce((s,d)=>s+dealComm(d),0),quota:getQuota(rep,c.id)};
@@ -444,10 +448,10 @@ function RepDetailModal({rep, deals, onClose}){
       <div className="rdm-box">
         <div className="rdm-hd">
           <div>
-            <div className="rdm-hd-title">🏆 {rep.name}</div>
-            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} · {totalDeals} deal{totalDeals!==1?'s':''} won · {new Date().getFullYear()} Performance</div>
+            <div className="rdm-hd-title">ð {rep.name}</div>
+            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} Â· {totalDeals} deal{totalDeals!==1?'s':''} won Â· {new Date().getFullYear()} Performance</div>
           </div>
-          <button className="rdm-hd-close" onClick={onClose}>✕</button>
+          <button className="rdm-hd-close" onClick={onClose}>â</button>
         </div>
         <div className="rdm-body">
           <div className="rdm-kpi">
@@ -463,12 +467,12 @@ function RepDetailModal({rep, deals, onClose}){
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Quota Attainment</div>
-              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'—'}</div>
-              <div className="rdm-kpi-sub">vs. {fmt(totalQuota)} annual quota</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=1?'#34d399':'#f87171'}}>{ytdTotalQuota>0?pct(overallAttain):'â'}</div>
+              <div className="rdm-kpi-sub">vs. {fmt(ytdTotalQuota)} YTD target (of {fmt(totalQuota)} annual)</div>
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Pace vs. Attainment</div>
-              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'✓ On Track':'⚠ Behind'}</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'â On Track':'â  Behind'}</div>
               <div className="rdm-kpi-sub">Expected pace: {pct(CM/12)}</div>
             </div>
           </div>
@@ -478,10 +482,11 @@ function RepDetailModal({rep, deals, onClose}){
               <div className="rdm-qcard" key={c.id}>
                 <div className="rdm-qcard-lbl">{c.label}</div>
                 <div className="rdm-qcard-val">{fmt(c.arr)}</div>
-                <div className="rdm-qcard-quota">of {fmt(c.quota)} annual quota</div>
-                <div className="rdm-bar"><div className="rdm-bar-fill" style={{width:(c.quota>0?Math.min(100,c.arr/c.quota*100):0)+'%',background:c.color}}/></div>
+                <div className="rdm-qcard-quota">of {fmt(c.quota*(CM/12))} YTD target</div>
+                <div style={{fontSize:10,color:'#475569',marginTop:1}}>Annual: {fmt(c.quota)}</div>
+                <div className="rdm-bar"><div className="rdm-bar-fill" style={{width:(c.quota>0?Math.min(100,c.arr/(c.quota*(CM/12))*100):0)+'%',background:c.color}}/></div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'—'}</span>
+                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/(c.quota*(CM/12))):'—'}>
                   <span style={{fontSize:10,color:'#475569'}}>{fmt(c.comm)} comm</span>
                 </div>
               </div>
@@ -517,7 +522,7 @@ function RepDetailModal({rep, deals, onClose}){
                           ?<span>{fmt(d.amount)} <span style={{color:'#64748b',fontSize:11}}>one-time</span></span>
                           :<span>{fmt(d.mrr)} <span style={{color:'#64748b',fontSize:11}}>/mo MRR</span></span>
                         }</td>
-                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'—':mrem(d.month)}</td>
+                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'â':mrem(d.month)}</td>
                         <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
                         <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
                       </tr>
@@ -537,7 +542,7 @@ function RepDetailModal({rep, deals, onClose}){
             <span style={{fontSize:13,color:'#94a3b8'}}>{totalDeals} deals won</span>
             <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalARR)} ARR</span>
             <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalComm)} commission</span>
-            <span style={{fontSize:13,color:overallAttain>=CM/12?'#34d399':'#f87171',marginLeft:'auto'}}>{totalQuota>0?pct(overallAttain)+' attainment':'No quota set'}</span>
+            <span style={{fontSize:13,color:overallAttain>=CM/12?'#34d399':'#f87171',marginLeft:'auto'}}>{ytdTotalQuota>0?pct(overallAttain)+' of YTD target':'No quota set'}</span>
           </div>
         </div>
       </div>
@@ -609,7 +614,7 @@ function RepsTab({data, save}){
             {data.reps.map(r=>(
               <tr key={r.id} className="rep-row-link" title={`Click to view ${r.name}'s deal breakdown`} onClick={()=>setSelectedRep(r)}>
                 <td style={{fontWeight:600,color:'#818cf8',textDecoration:'underline',textDecorationColor:'rgba(129,140,248,.35)',cursor:'pointer'}}>{r.name}</td>
-                <td>{r.dept||r.department||'—'}</td>
+                <td>{r.dept||r.department||'â'}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
                 <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
                 <td><span className={`sa-badge ${getActualFromDeals(r.id,'PS',deals)>=getQuota(r,'PS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'PS')>0?getActualFromDeals(r.id,'PS',deals)/(getQuota(r,'PS')*(CM/12)):0)}</span></td>
@@ -645,9 +650,10 @@ function CatPerfTab({data, filterRep, setFilterRep}){
       {cats.map(c=>{
         const closed = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealARR(d),0);
         const quota = repsFor.reduce((s,r)=>s+getQuota(r,c.id),0);
+        const ytdQuota = quota*(CM/12);
         const comm = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealComm(d),0);
-        const p = quota>0 ? Math.min(1,closed/quota) : 0;
-        const remaining = Math.max(0, quota-closed);
+        const p = ytdQuota>0 ? Math.min(1,closed/ytdQuota) : 0;
+        const remaining = Math.max(0, ytdQuota-closed);
         const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
         return(
           <div className="sa-card" key={c.id}>
@@ -657,14 +663,15 @@ function CatPerfTab({data, filterRep, setFilterRep}){
               <div className="sa-stat">
                 <div className="lbl">Closed ARR</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                <div className="sub">of {fmt(quota)} quota â {pct(p)} attained</div>
+                <div className="sub">of {fmt(ytdQuota)} YTD target — {pct(p)} attained</div>
+              <div style={{fontSize:10,color:'#64748b',marginTop:1}}>Annual: {fmt(quota)}</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
                 <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
               </div>
               <div className="sa-stat">
                 <div className="lbl">Remaining to Quota</div>
                 <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
-                <div className="sub">{pct(quota>0?remaining/quota:0)} left</div>
+                <div className="sub">{pct(ytdQuota>0?remaining/ytdQuota:0)} left of YTD target</div>
               </div>
               <div className="sa-stat">
                 <div className="lbl">Commission Earned</div>
@@ -720,7 +727,7 @@ function ArrCalcTab(){
       <div className="sa-card">
         <h2>ARR Calculator</h2>
         <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
-          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value â not annualized. Commission = 10% of fee.<br/>
+          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value Ã¢ÂÂ not annualized. Commission = 10% of fee.<br/>
           <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
           <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
           January close = 12 months = max ARR. November close = 2 months.
@@ -740,7 +747,7 @@ function ArrCalcTab(){
           {calcCat!=='PS'&&(
             <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
-                {MN.map((m,i)=><option key={i} value={i+1}>{m} â {13-(i+1)} months remaining</option>)}
+                {MN.map((m,i)=><option key={i} value={i+1}>{m} Ã¢ÂÂ {13-(i+1)} months remaining</option>)}
               </select>
             </div>
           )}
@@ -776,7 +783,7 @@ function ArrCalcTab(){
                 const isCur=i+1===Number(calcMonth);
                 return(
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
-                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' â':''}</td>
+                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' Ã¢ÂÂ':''}</td>
                     <td>{r}</td>
                     <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
@@ -786,7 +793,7 @@ function ArrCalcTab(){
             </tbody>
           </table>
           <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
-            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR â same regardless of month closed.':'Note: Commission = 1x MRR flat â same regardless of month closed.'}
+            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR Ã¢ÂÂ same regardless of month closed.':'Note: Commission = 1x MRR flat Ã¢ÂÂ same regardless of month closed.'}
           </div>
         </div>
       )}
@@ -824,7 +831,7 @@ function CommTab({data, filterRep, setFilterRep}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'â'}</td>
+                  <td>{r.dept||r.department||'Ã¢ÂÂ'}</td>
                   <td>{fmt(c.ps)}</td>
                   <td>{fmt(c.fo)}</td>
                   <td>{fmt(c.ms)}</td>
@@ -865,7 +872,7 @@ function ReportsTab({data}){
             <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'â'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
+                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'Ã¢ÂÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
