@@ -1,232 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
 const SK = 'pai_quotaTracker';
-// Company annual quotas
-const CQ = { PS: 6500000, FO: 32000000, MS: 1500000 };
-// Commission rates
-const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
-const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const CM = new Date().getMonth() + 1; // current month (1-12)
-
-// Months remaining in year from a given month (inclusive)
-// e.g. deal in Jan = 12 months, deal in Nov = 2 months, deal in Dec = 1 month
-function mrem(m){ return Math.max(1, 13 - m); }
-
-function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
-function pct(n){ return (n*100).toFixed(1)+'%'; }
-function ld(){ try{ var r=localStorage.getItem(SK); if(r) return JSON.parse(r); }catch(e){} return {reps:[],deals:[]}; }
-function sd(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
-function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
-
-// ARR value of a deal
-// PS: one-time project fee -> annualized = amount * 12
-// FO/MS: recurring MRR -> time-weighted ARR = MRR * months_remaining_in_year
-function dealARR(d){
-  if(d.cat==='PS') return d.amount * 12;
-  return d.mrr * mrem(d.month);
-}
-
-// Commission earned on a deal
-// PS: 10% of the one-time amount (not ARR)
-// FO: 7% of MRR * months remaining
-// MS: 7% of MRR * months remaining
-function dealComm(d){
-  if(d.cat==='PS') return d.amount * CR.PS;
-  if(d.cat==='FO') return d.mrr * mrem(d.month) * CR.FO;
-  if(d.cat==='MS') return d.mrr * mrem(d.month) * CR.MS;
-  return 0;
-}
-
-// Per-rep stats
-function crs(rep,deals){
-  var my=deals.filter(function(d){ return d.repId===rep.id; });
-  var ps=0,fo=0,ms=0,psc=0,foc=0,msc=0;
-  my.forEach(function(d){
-    var arr=dealARR(d), com=dealComm(d);
-    if(d.cat==='PS'){ ps+=arr; psc+=com; }
-    else if(d.cat==='FO'){ fo+=arr; foc+=com; }
-    else if(d.cat==='MS'){ ms+=arr; msc+=com; }
-  });
-  return {ps:ps,fo:fo,ms:ms,psc:psc,foc:foc,msc:msc,deals:my};
-}
-
-// Company-wide totals
-function cc(deals){
-  var ps=0,fo=0,ms=0;
-  deals.forEach(function(d){
-    var arr=dealARR(d);
-    if(d.cat==='PS') ps+=arr;
-    else if(d.cat==='FO') fo+=arr;
-    else if(d.cat==='MS') ms+=arr;
-  });
-  return {ps:ps,fo:fo,ms:ms};
-}
-
-var ST = `
-.sa{position:fixed;inset:0;background:#0f172a;z-index:10000;display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;overflow:hidden}
-.sa-hd{background:#1e293b;border-bottom:1px solid rgba(99,102,241,.3);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;flex-shrink:0}
-.sa-hd h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0}
-.sa-x{background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
-.sa-x:hover{background:rgba(99,102,241,.4)}
-.sa-tabs{display:flex;gap:4px;background:#1e293b;padding:8px 24px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;overflow-x:auto}
-.sa-tab{background:transparent;border:none;color:#64748b;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .15s}
-.sa-tab:hover{color:#e2e8f0;background:rgba(255,255,255,.05)}
-.sa-tab.on{background:rgba(99,102,241,.2);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
-.sa-body{flex:1;overflow-y:auto;padding:24px}
-.sa-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px}
-.sa-card h2{font-size:16px;font-weight:600;color:#f1f5f9;margin:0 0 16px}
-.sa-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
-.sa-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
-.sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px}
-.sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-bottom:6px}
-.sa-stat .val{font-size:22px;font-weight:700;color:#f1f5f9}
-.sa-stat .sub{font-size:11px;color:#475569;margin-top:4px}
-.sa-stat .note{font-size:11px;color:#818cf8;margin-top:4px}
-.sa-bar{height:6px;background:#1e293b;border-radius:3px;margin-top:10px;overflow:hidden}
-.sa-bar-fill{height:100%;border-radius:3px;transition:width .4s}
-.sa-tbl{width:100%;border-collapse:collapse}
-.sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}
-.sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#cbd5e1}
-.sa-tbl tr:last-child td{border-bottom:none}
-.sa-tbl tr:hover td{background:rgba(255,255,255,.02)}
-.sa-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
-.sa-badge.ahead{background:rgba(16,185,129,.15);color:#34d399}
-.sa-badge.behind{background:rgba(239,68,68,.15);color:#f87171}
-.sa-btn{background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
-.sa-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
-.sa-btn.sm{padding:6px 14px;font-size:12px}
-.sa-btn.del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
-.sa-btn.del:hover{background:rgba(239,68,68,.3)}
-.sa-input{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box}
-.sa-input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
-.sa-select{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box}
-.sa-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block}
-.sa-form-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
-.sa-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.sa-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer}
-.sa-pill.on{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5)}
-.sa-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.sa-hint{font-size:11px;color:#475569;margin-top:4px;font-style:italic}
-`;
-
-export default function SalesAnalytics({ onBack }) {
-  const [tab, setTab] = useState('dash');
-  const [data, setData] = useState(ld());
-  const [showAddRep, setShowAddRep] = useState(false);
-  const [showAddDeal, setShowAddDeal] = useState(false);
-  const [editRep, setEditRep] = useState(null);
-  const [editDeal, setEditDeal] = useState(null);
-  const [calcCat, setCalcCat] = useState('PS');
-  const [calcAmt, setCalcAmt] = useState('');
-  const [calcMonth, setCalcMonth] = useState(CM);
-  const [filterCat, setFilterCat] = useState('All');
-  const [filterRep, setFilterRep] = useState('All');
-
-  const save = (d) => { sd(d); setData({...d}); };
-
-  // ── Rep form state
-  const [rf, setRf] = useState({name:'',dept:''});
-  // ── Deal form state
-  const [df, setDf] = useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
-
-  const tots = cc(data.deals);
-  const totalComm = data.deals.reduce((a,d) => a + dealComm(d), 0);
-
-  // Dashboard quota cards
-  const dashCards = [
-    {
-      id:'PS', label:'Professional Services', color:'#6366f1',
-      quota: CQ.PS,
-      arr: tots.ps,
-      note: 'One-time fees × 12 = ARR'
-    },
-    {
-      id:'FO', label:'FinOps', color:'#0ea5e9',
-      quota: CQ.FO,
-      arr: tots.fo,
-      note: 'MRR × months remaining in year'
-    },
-    {
-      id:'MS', label:'Managed Services', color:'#10b981',
-      quota: CQ.MS,
-      arr: tots.ms,
-      note: 'MRR × months remaining in year'
-    },
-  ];
-
-  return (
-    <>
-      <style>{ST}</style>
-      <div className="sa">
-        <div className="sa-hd">
-          <h1>Sales Analytics</h1>
-          <button className="sa-x" onClick={() => onBack && onBack()}>Back to Home</button>
-        </div>
-        <div className="sa-tabs">
-          {[
-            {id:'dash',label:'Dashboard'},
-            {id:'reps',label:'Reps'},
-            {id:'deals',label:'Deals'},
-            {id:'catperf',label:'Category Performance'},
-            {id:'arrcalc',label:'ARR Calc'},
-            {id:'comm',label:'Commissions'},
-            {id:'reports',label:'Reports'},
-            {id:'settings',label:'Settings'},
-          ].map(t => (
-            <button key={t.id} className={`sa-tab${tab===t.id?' on':''}`} onClick={()=>setTab(t.id)}>{t.label}</button>
-          ))}
-        </div>
-        <div className="sa-body">
-          {tab==='dash' && <DashTab data={data} dashCards={dashCards} tots={tots} totalComm={totalComm} />}
-          {tab==='reps' && <RepsTab data={data} save={save} showAddRep={showAddRep} setShowAddRep={setShowAddRep} editRep={editRep} setEditRep={setEditRep} rf={rf} setRf={setRf} />}
-          {tab==='deals' && <DealsTab data={data} save={save} showAddDeal={showAddDeal} setShowAddDeal={setShowAddDeal} editDeal={editDeal} setEditDeal={setEditDeal} df={df} setDf={setDf} filterCat={filterCat} setFilterCat={setFilterCat} />}
-          {tab==='catperf' && <CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} />}
-          {tab==='arrcalc' && <ArrCalcTab calcCat={calcCat} setCalcCat={setCalcCat} calcAmt={calcAmt} setCalcAmt={setCalcAmt} calcMonth={calcMonth} setCalcMonth={setCalcMonth} />}
-          {tab==='comm' && <CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} />}
-          {tab==='reports' && <ReportsTab data={data} />}
-          {tab==='settings' && <SettingsTab data={data} save={save} />}
-        </div>
-      </div>
-    </>
-  );
-          }
-
-// ── DASHBOARD TAB
-function DashTab({data, dashCards, tots, totalComm}) {
-  const totalARR = tots.ps + tots.fo + tots.ms;
-  const totalQuota = CQ.PS + CQ.FO + CQ.MS;
-  return (
-    <div>
-      <div className="sa-grid3">
-        {dashCards.map(c => {
-          const pct_val = c.quota > 0 ? Math.min(1, c.arr / c.quota) : 0;
-          const behind = c.arr < c.quota * (CM/12);
-          return (
-            <div className="sa-stat" key={c.id}>
-              <div className="lbl">{c.label} ARR</div>
-              <div className="val">{fmt(c.arr)}</div>
-              <div className="sub">of {fmt(c.quota)} annual quota</div>
-              <div className="note">{c.note}</div>
-              <div className="sa-bar"><div className="sa-bar-fill" style={{width:pct_val*100+'%',background:c.color}} /></div>
-              <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
-                <span style={{fontSize:11,color:'#475569'}}>{(pct_val*100).toFixed(1)}% attained</span>
-                <span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="sa-grid3">
-        <div className="sa-stat">
-          <div className="lbl">Total ARR (All Categories)</div>
-          <div className="val">{fmt(totalARR)}</div>
-
-const SK = 'pai_quotaTracker';
 const CQ = { PS: 6500000, FO: 32000000, MS: 1500000 };
 const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CM = new Date().getMonth() + 1;
 
+// Months remaining in year from month m (inclusive). Jan=12, Nov=2, Dec=1
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
@@ -234,14 +14,18 @@ function ld(){ try{ var r=localStorage.getItem(SK); if(r) return JSON.parse(r); 
 function sd(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 
+// PS: one-time project fee. ARR = amount * 12
+// FO/MS: recurring MRR. ARR = MRR * months remaining in year (time-weighted)
+// A deal closed in Jan is worth 12x, Nov is 2x, Dec is 1x
 function dealARR(d){
-  if(d.cat==='PS') return (d.amount||0) * 12;
-  return (d.mrr||0) * mrem(d.month||CM);
+  if(d.cat==='PS') return (d.amount||0)*12;
+  return (d.mrr||0)*mrem(d.month||CM);
 }
+// Commission: PS = 10% of fee (not ARR). FO/MS = 7% of time-weighted ARR
 function dealComm(d){
-  if(d.cat==='PS') return (d.amount||0) * CR.PS;
-  if(d.cat==='FO') return (d.mrr||0) * mrem(d.month||CM) * CR.FO;
-  if(d.cat==='MS') return (d.mrr||0) * mrem(d.month||CM) * CR.MS;
+  if(d.cat==='PS') return (d.amount||0)*CR.PS;
+  if(d.cat==='FO') return (d.mrr||0)*mrem(d.month||CM)*CR.FO;
+  if(d.cat==='MS') return (d.mrr||0)*mrem(d.month||CM)*CR.MS;
   return 0;
 }
 function crs(rep,deals){
@@ -258,10 +42,9 @@ function crs(rep,deals){
 function cc(deals){
   var ps=0,fo=0,ms=0;
   deals.forEach(d=>{
-    var arr=dealARR(d);
-    if(d.cat==='PS') ps+=arr;
-    else if(d.cat==='FO') fo+=arr;
-    else if(d.cat==='MS') ms+=arr;
+    if(d.cat==='PS') ps+=dealARR(d);
+    else if(d.cat==='FO') fo+=dealARR(d);
+    else if(d.cat==='MS') ms+=dealARR(d);
   });
   return {ps,fo,ms};
 }
@@ -286,9 +69,9 @@ export default function SalesAnalytics({onBack}){
   const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
 
   const dashCards=[
-    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,arr:tots.ps,note:'One-time fee × 12 = ARR | Commission: 10% of deal amount'},
-    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,arr:tots.fo,note:'Recurring MRR × months remaining = ARR | Commission: 7% × MRR × months'},
-    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,arr:tots.ms,note:'Recurring MRR × months remaining = ARR | Commission: 7% × MRR × months'},
+    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,arr:tots.ps,note:'One-time fee × 12 = ARR | Commission: 10% of fee'},
+    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,arr:tots.fo,note:'Recurring MRR × months remaining = ARR | Commission: 7% × ARR'},
+    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,arr:tots.ms,note:'Recurring MRR × months remaining = ARR | Commission: 7% × ARR'},
   ];
 
   return(<>
@@ -304,8 +87,8 @@ export default function SalesAnalytics({onBack}){
       .sa-body{flex:1;overflow-y:auto;padding:24px;}
       .sa-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px;}
       .sa-card h2{font-size:16px;font-weight:600;color:#f1f5f9;margin:0 0 16px;}
-      .sa-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
-      .sa-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;}
+      .sa-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+      .sa-g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;}
       .sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;}
       .sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-bottom:6px;}
       .sa-stat .val{font-size:22px;font-weight:700;color:#f1f5f9;}
@@ -329,17 +112,15 @@ export default function SalesAnalytics({onBack}){
       .sa-input:focus{outline:none;border-color:#6366f1;}
       .sa-select{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;}
       .sa-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block;}
-      .sa-form-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
-      .sa-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+      .sa-frow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
+      .sa-shd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
       .sa-pill{display:inline-flex;align-items:center;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;}
       .sa-pill.on{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe;}
       .sa-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+      .sa-preview{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#a5b4fc;margin-top:8px;line-height:1.7;}
     `}</style>
     <div className="sa">
-      <div className="sa-hd">
-        <h1>Sales Analytics</h1>
-        <button className="sa-x" onClick={()=>onBack&&onBack()}>Back to Home</button>
-      </div>
+      <div className="sa-hd"><h1>Sales Analytics</h1><button className="sa-x" onClick={()=>onBack&&onBack()}>Back to Home</button></div>
       <div className="sa-tabs">
         {[['dash','Dashboard'],['reps','Reps'],['deals','Deals'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['reports','Reports'],['settings','Settings']].map(([id,label])=>(
           <button key={id} className={`sa-tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{label}</button>
@@ -357,14 +138,14 @@ export default function SalesAnalytics({onBack}){
       </div>
     </div>
   </>);
-        }
+}
 
 function DashTab({data,dashCards,tots,totalComm}){
   const totalARR=tots.ps+tots.fo+tots.ms;
   const totalQuota=CQ.PS+CQ.FO+CQ.MS;
   return(
     <div>
-      <div className="sa-grid3">
+      <div className="sa-g3">
         {dashCards.map(c=>{
           const p=c.quota>0?Math.min(1,c.arr/c.quota):0;
           const pace=CM/12;
@@ -384,9 +165,9 @@ function DashTab({data,dashCards,tots,totalComm}){
           );
         })}
       </div>
-      <div className="sa-grid3">
+      <div className="sa-g3">
         <div className="sa-stat">
-          <div className="lbl">Total Combined ARR</div>
+          <div className="lbl">Total ARR (All Categories)</div>
           <div className="val">{fmt(totalARR)}</div>
           <div className="sub">of {fmt(totalQuota)} combined quota</div>
           <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalARR/totalQuota*100)+'%',background:'linear-gradient(90deg,#6366f1,#8b5cf6)'}}/></div>
@@ -411,16 +192,13 @@ function DashTab({data,dashCards,tots,totalComm}){
               const s=crs(r,data.deals);
               const repTot=s.ps+s.fo+s.ms;
               const repComm=s.psc+s.foc+s.msc;
-              const pace=CM/12;
               const avgQ=(CQ.PS+CQ.FO+CQ.MS)/Math.max(1,data.reps.length);
-              const behind=repTot<avgQ*pace;
+              const behind=repTot<avgQ*(CM/12);
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||'—'}</td>
-                  <td>{fmt(s.ps)}</td>
-                  <td>{fmt(s.fo)}</td>
-                  <td>{fmt(s.ms)}</td>
+                  <td>{fmt(s.ps)}</td><td>{fmt(s.fo)}</td><td>{fmt(s.ms)}</td>
                   <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(repTot)}</td>
                   <td style={{color:'#34d399'}}>{fmt(repComm)}</td>
                   <td><span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span></td>
@@ -438,28 +216,24 @@ function RepsTab({data,save,showAddRep,setShowAddRep,editRep,setEditRep,rf,setRf
   const submit=()=>{
     if(!rf.name.trim()) return;
     const d=ld();
-    if(editRep){
-      d.reps=d.reps.map(r=>r.id===editRep.id?{...r,...rf}:r);
-      setEditRep(null);
-    } else {
-      d.reps=[...d.reps,{id:nid(),...rf}];
-    }
-    save(d); setRf({name:'',dept:''}); setShowAddRep(false);
+    if(editRep){d.reps=d.reps.map(r=>r.id===editRep.id?{...r,...rf}:r);setEditRep(null);}
+    else d.reps=[...d.reps,{id:nid(),...rf}];
+    save(d);setRf({name:'',dept:''});setShowAddRep(false);
   };
   const del=id=>{if(!window.confirm('Delete rep?'))return;const d=ld();d.reps=d.reps.filter(r=>r.id!==id);save(d);};
   const startEdit=r=>{setEditRep(r);setRf({name:r.name,dept:r.dept||''});setShowAddRep(true);};
   return(
     <div>
-      <div className="sa-section-hd">
+      <div className="sa-shd">
         <div/>
         <button className="sa-btn" onClick={()=>{setShowAddRep(!showAddRep);setEditRep(null);setRf({name:'',dept:''});}}>+ Add Rep</button>
       </div>
       {showAddRep&&(
         <div className="sa-card" style={{marginBottom:16}}>
           <h2>{editRep?'Edit Rep':'New Rep'}</h2>
-          <div className="sa-form-row">
+          <div className="sa-frow">
             <div><label className="sa-label">Name</label><input className="sa-input" value={rf.name} onChange={e=>setRf({...rf,name:e.target.value})} placeholder="Full name"/></div>
-            <div><label className="sa-label">Department</label><input className="sa-input" value={rf.dept} onChange={e=>setRf({...rf,dept:e.target.value})} placeholder="e.g. PS, FinOps, MS"/></div>
+            <div><label className="sa-label">Department</label><input className="sa-input" value={rf.dept} onChange={e=>setRf({...rf,dept:e.target.value})} placeholder="e.g. Sales, PS, FinOps"/></div>
             <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
               <button className="sa-btn" onClick={submit}>{editRep?'Save':'Add Rep'}</button>
               <button className="sa-btn del sm" onClick={()=>{setShowAddRep(false);setEditRep(null);}}>Cancel</button>
@@ -469,18 +243,19 @@ function RepsTab({data,save,showAddRep,setShowAddRep,editRep,setEditRep,rf,setRf
       )}
       <div className="sa-card">
         <table className="sa-tbl">
-          <thead><tr><th>Name</th><th>Dept</th><th>PS Quota</th><th>FO Quota</th><th>MS Quota</th><th>Deals</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Dept</th><th>Deals</th><th>Total ARR</th><th>Commission</th><th>Actions</th></tr></thead>
           <tbody>
             {data.reps.map(r=>{
               const s=crs(r,data.deals);
+              const tot=s.ps+s.fo+s.ms;
+              const com=s.psc+s.foc+s.msc;
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||'—'}</td>
-                  <td>{fmt(r.psQuota||0)}</td>
-                  <td>{fmt(r.foQuota||0)}</td>
-                  <td>{fmt(r.msQuota||0)}</td>
                   <td>{s.deals.length}</td>
+                  <td style={{fontWeight:600}}>{fmt(tot)}</td>
+                  <td style={{color:'#34d399'}}>{fmt(com)}</td>
                   <td style={{display:'flex',gap:6}}>
                     <button className="sa-btn sm" onClick={()=>startEdit(r)}>Edit</button>
                     <button className="sa-btn del sm" onClick={()=>del(r.id)}>Del</button>
@@ -501,76 +276,65 @@ function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,
     const d=ld();
     const entry={
       id:editDeal?editDeal.id:nid(),
-      repId:df.repId, cat:df.cat, client:df.client,
+      repId:df.repId,cat:df.cat,client:df.client,
       month:Number(df.month),
       amount:df.cat==='PS'?Number(df.amount)||0:0,
       mrr:df.cat!=='PS'?Number(df.mrr)||0:0,
     };
-    if(editDeal){
-      d.deals=d.deals.map(x=>x.id===editDeal.id?entry:x);
-      setEditDeal(null);
-    } else {
-      d.deals=[...d.deals,entry];
-    }
-    save(d); setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''}); setShowAddDeal(false);
+    if(editDeal){d.deals=d.deals.map(x=>x.id===editDeal.id?entry:x);setEditDeal(null);}
+    else d.deals=[...d.deals,entry];
+    save(d);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});setShowAddDeal(false);
   };
   const del=id=>{if(!window.confirm('Delete deal?'))return;const d=ld();d.deals=d.deals.filter(x=>x.id!==id);save(d);};
   const startEdit=deal=>{setEditDeal(deal);setDf({repId:deal.repId,cat:deal.cat,client:deal.client,month:deal.month,amount:deal.amount||'',mrr:deal.mrr||''});setShowAddDeal(true);};
   const filtered=filterCat==='All'?data.deals:data.deals.filter(d=>d.cat===filterCat);
+  const rem=mrem(Number(df.month));
   return(
     <div>
       <div className="sa-pills">
         {['All','PS','FO','MS'].map(c=>(
-          <button key={c} className={`sa-pill${filterCat===c?' on':''}`} onClick={()=>setFilterCat(c)}>{c==='All'?'All':c==='FO'?'FinOps':c==='PS'?'Professional Services':'Managed Services'}</button>
+          <button key={c} className={`sa-pill${filterCat===c?' on':''}`} onClick={()=>setFilterCat(c)}>
+            {c==='All'?'All':c==='PS'?'Professional Services':c==='FO'?'FinOps':'Managed Services'}
+          </button>
         ))}
         <button className="sa-btn" style={{marginLeft:'auto'}} onClick={()=>{setShowAddDeal(!showAddDeal);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});}}>+ Add Deal</button>
       </div>
       {showAddDeal&&(
         <div className="sa-card" style={{marginBottom:16}}>
           <h2>{editDeal?'Edit Deal':'New Deal'}</h2>
-          <div className="sa-form-row">
+          <div className="sa-frow">
             <div><label className="sa-label">Rep</label>
               <select className="sa-select" value={df.repId} onChange={e=>setDf({...df,repId:e.target.value})}>
-                <option value="">Select rep…</option>
+                <option value="">Select rep...</option>
                 {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
             <div><label className="sa-label">Category</label>
               <select className="sa-select" value={df.cat} onChange={e=>setDf({...df,cat:e.target.value})}>
-                <option value="PS">Professional Services (PS)</option>
-                <option value="FO">FinOps (recurring)</option>
-                <option value="MS">Managed Services (recurring)</option>
+                <option value="PS">Professional Services (one-time fee)</option>
+                <option value="FO">FinOps (recurring MRR)</option>
+                <option value="MS">Managed Services (recurring MRR)</option>
               </select>
             </div>
             <div><label className="sa-label">Client</label><input className="sa-input" value={df.client} onChange={e=>setDf({...df,client:e.target.value})} placeholder="Client name"/></div>
           </div>
-          <div className="sa-form-row">
+          <div className="sa-frow">
             <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={df.month} onChange={e=>setDf({...df,month:e.target.value})}>
                 {MN.map((m,i)=><option key={i} value={i+1}>{m} ({13-(i+1)} months remaining)</option>)}
               </select>
             </div>
             {df.cat==='PS'
-              ? <div><label className="sa-label">One-Time Amount ($)</label><input className="sa-input" type="number" value={df.amount} onChange={e=>setDf({...df,amount:e.target.value})} placeholder="e.g. 50000"/></div>
-              : <div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={df.mrr} onChange={e=>setDf({...df,mrr:e.target.value})} placeholder="e.g. 8000"/></div>
+              ?<div><label className="sa-label">One-Time Fee ($)</label><input className="sa-input" type="number" value={df.amount} onChange={e=>setDf({...df,amount:e.target.value})} placeholder="e.g. 50000"/></div>
+              :<div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={df.mrr} onChange={e=>setDf({...df,mrr:e.target.value})} placeholder="e.g. 8000"/></div>
             }
             <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
               <button className="sa-btn" onClick={submit}>{editDeal?'Save':'Add Deal'}</button>
               <button className="sa-btn del sm" onClick={()=>{setShowAddDeal(false);setEditDeal(null);}}>Cancel</button>
             </div>
           </div>
-          {(df.cat==='FO'||df.cat==='MS')&&df.mrr&&(
-            <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:8,padding:'10px 14px',fontSize:12,color:'#818cf8',marginTop:8}}>
-              Preview: ARR = {fmt(Number(df.mrr)*(13-Number(df.month)))} &nbsp;|&nbsp; Commission = {fmt(Number(df.mrr)*(13-Number(df.month))*CR[df.cat])}
-              &nbsp; ({13-Number(df.month)} months remaining × {fmt(Number(df.mrr))} MRR)
-            </div>
-          )}
-          {df.cat==='PS'&&df.amount&&(
-            <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:8,padding:'10px 14px',fontSize:12,color:'#818cf8',marginTop:8}}>
-              Preview: ARR = {fmt(Number(df.amount)*12)} &nbsp;|&nbsp; Commission = {fmt(Number(df.amount)*CR.PS)}
-              &nbsp; (one-time {fmt(Number(df.amount))} × 10%)
-            </div>
-          )}
+          {df.cat==='PS'&&df.amount&&<div className="sa-preview">ARR = {fmt(Number(df.amount)*12)} | Commission = {fmt(Number(df.amount)*CR.PS)} (10% of {fmt(Number(df.amount))} fee)</div>}
+          {df.cat!=='PS'&&df.mrr&&<div className="sa-preview">ARR = {fmt(Number(df.mrr)*rem)} ({rem} months remaining × {fmt(Number(df.mrr))} MRR) | Commission = {fmt(Number(df.mrr)*rem*CR[df.cat])} ({pct(CR[df.cat])})</div>}
         </div>
       )}
       <div className="sa-card">
@@ -580,12 +344,13 @@ function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,
             {filtered.length===0&&<tr><td colSpan={8} style={{textAlign:'center',color:'#475569',padding:24}}>No deals yet</td></tr>}
             {filtered.map(d=>{
               const rep=data.reps.find(r=>r.id===d.repId);
-              const arr=dealARR(d);
-              const com=dealComm(d);
+              const arr=dealARR(d),com=dealComm(d);
+              const catColor=d.cat==='PS'?'#818cf8':d.cat==='FO'?'#38bdf8':'#34d399';
+              const catBg=d.cat==='PS'?'rgba(99,102,241,.2)':d.cat==='FO'?'rgba(14,165,233,.2)':'rgba(16,185,129,.2)';
               return(
                 <tr key={d.id}>
                   <td>{rep?rep.name:'Unknown'}</td>
-                  <td><span style={{background:d.cat==='PS'?'rgba(99,102,241,.2)':d.cat==='FO'?'rgba(14,165,233,.2)':'rgba(16,185,129,.2)',color:d.cat==='PS'?'#818cf8':d.cat==='FO'?'#38bdf8':'#34d399',padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
+                  <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
                   <td>{d.client}</td>
                   <td>{MN[(d.month||1)-1]}</td>
                   <td>{d.cat==='PS'?fmt(d.amount)+' (fee)':fmt(d.mrr)+'/mo'}</td>
@@ -606,20 +371,17 @@ function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,
 }
 
 function CatPerfTab({data,filterRep,setFilterRep}){
-  const repsToShow=filterRep==='All'?data.reps:data.reps.filter(r=>r.id===filterRep);
   const dealsFor=filterRep==='All'?data.deals:data.deals.filter(d=>d.repId===filterRep);
   const cats=[
-    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,rate:CR.PS,rateLabel:'10% of deal amount',calcNote:'ARR = one-time fee × 12'},
-    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,rate:CR.FO,rateLabel:'7% × MRR × months remaining',calcNote:'ARR = MRR × months remaining in year'},
-    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,rate:CR.MS,rateLabel:'7% × MRR × months remaining',calcNote:'ARR = MRR × months remaining in year'},
+    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,calcNote:'ARR = one-time fee × 12',rateNote:'Commission: 10% of fee amount'},
+    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,calcNote:'ARR = MRR × months remaining in year',rateNote:'Commission: 7% of time-weighted ARR'},
+    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,calcNote:'ARR = MRR × months remaining in year',rateNote:'Commission: 7% of time-weighted ARR'},
   ];
   return(
     <div>
       <div className="sa-pills">
         <button className={`sa-pill${filterRep==='All'?' on':''}`} onClick={()=>setFilterRep('All')}>All Reps</button>
-        {data.reps.map(r=>(
-          <button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>
-        ))}
+        {data.reps.map(r=><button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>)}
       </div>
       {cats.map(c=>{
         const ds=dealsFor.filter(d=>d.cat===c.id);
@@ -630,24 +392,24 @@ function CatPerfTab({data,filterRep,setFilterRep}){
         return(
           <div className="sa-card" key={c.id}>
             <h2 style={{color:c.color}}>{c.label}</h2>
-            <div style={{fontSize:11,color:'#475569',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.calcNote} &nbsp;|&nbsp; Commission: {c.rateLabel}</div>
-            <div className="sa-grid3">
+            <div style={{fontSize:11,color:'#475569',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.calcNote} | {c.rateNote}</div>
+            <div className="sa-g3">
               <div className="sa-stat">
                 <div className="lbl">ARR</div>
                 <div className="val">{fmt(arr)}</div>
-                <div className="sub">of {fmt(c.quota)} quota</div>
+                <div className="sub">of {fmt(c.quota)} annual quota</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:c.color}}/></div>
-                <div style={{fontSize:11,color:'#475569',marginTop:4}}>{pct(p)} attained &nbsp;|&nbsp; Pace: {pct(CM/12)}</div>
+                <div style={{fontSize:11,color:'#475569',marginTop:4}}>{pct(p)} attained | Pace: {pct(CM/12)}</div>
               </div>
               <div className="sa-stat">
                 <div className="lbl">Attainment</div>
                 <div className="val">{pct(p)}</div>
-                <div className="sub">Deals: {ds.length} &nbsp;|&nbsp; Avg ARR: {fmt(avgDeal)}</div>
+                <div className="sub">Deals: {ds.length} | Avg ARR: {fmt(avgDeal)}</div>
               </div>
               <div className="sa-stat">
                 <div className="lbl">Commission</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(com)}</div>
-                <div className="sub">{c.rateLabel}</div>
+                <div className="sub">{c.rateNote}</div>
               </div>
             </div>
           </div>
@@ -659,84 +421,78 @@ function CatPerfTab({data,filterRep,setFilterRep}){
 
 function ArrCalcTab({calcCat,setCalcCat,calcAmt,setCalcAmt,calcMonth,setCalcMonth}){
   const amt=Number(calcAmt)||0;
-  let arrVal=0, commVal=0, calcDetail='';
+  const rem=mrem(Number(calcMonth));
+  let arrVal=0,commVal=0,detail='';
   if(calcCat==='PS'){
-    arrVal=amt*12;
-    commVal=amt*CR.PS;
-    calcDetail=`One-time fee of ${fmt(amt)} × 12 = ${fmt(arrVal)} ARR | Commission = ${fmt(amt)} × 10% = ${fmt(commVal)}`;
+    arrVal=amt*12; commVal=amt*CR.PS;
+    detail=fmt(amt)+' fee × 12 = '+fmt(arrVal)+' ARR | Commission: '+fmt(amt)+' × 10% = '+fmt(commVal);
   } else {
-    const rem=mrem(Number(calcMonth));
-    arrVal=amt*rem;
-    commVal=amt*rem*CR[calcCat];
-    calcDetail=`MRR ${fmt(amt)} × ${rem} months remaining (closed in ${MN[calcMonth-1]}) = ${fmt(arrVal)} ARR | Commission = ${pct(CR[calcCat])} × ${fmt(arrVal)} = ${fmt(commVal)}`;
+    arrVal=amt*rem; commVal=arrVal*CR[calcCat];
+    detail=fmt(amt)+' MRR × '+rem+' months remaining = '+fmt(arrVal)+' ARR | Commission: '+pct(CR[calcCat])+' × '+fmt(arrVal)+' = '+fmt(commVal);
   }
   return(
     <div>
       <div className="sa-card">
         <h2>ARR Calculator</h2>
-        <div style={{fontSize:12,color:'#475569',marginBottom:16,fontStyle:'italic'}}>
-          PS deals are one-time fees — ARR is annualized (× 12), commission is 10% of the fee amount.<br/>
-          FinOps &amp; MS deals are recurring — ARR is time-weighted (MRR × months remaining in year), commission is 7% of that ARR value.<br/>
-          A deal closed in January contributes more ARR than the same deal closed in November.
+        <div style={{fontSize:12,color:'#475569',marginBottom:16,fontStyle:'italic',lineHeight:1.6}}>
+          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. ARR = fee × 12 (annualized). Commission = 10% of fee.<br/>
+          <strong style={{color:'#38bdf8'}}>FinOps &amp; Managed Services:</strong> Recurring monthly revenue. ARR = MRR × months remaining in the year.<br/>
+          A deal closed in <strong>January</strong> = 12 months = maximum ARR. A deal closed in <strong>November</strong> = 2 months = much lower ARR.
         </div>
-        <div className="sa-form-row">
-          <div>
-            <label className="sa-label">Category</label>
+        <div className="sa-frow">
+          <div><label className="sa-label">Category</label>
             <select className="sa-select" value={calcCat} onChange={e=>setCalcCat(e.target.value)}>
-              <option value="PS">Professional Services (one-time)</option>
+              <option value="PS">Professional Services (one-time fee)</option>
               <option value="FO">FinOps (recurring MRR)</option>
               <option value="MS">Managed Services (recurring MRR)</option>
             </select>
           </div>
           {calcCat==='PS'
-            ? <div><label className="sa-label">One-Time Amount ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 50000"/></div>
-            : <div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 8000"/></div>
+            ?<div><label className="sa-label">One-Time Fee ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 50000"/></div>
+            :<div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 8000"/></div>
           }
           {calcCat!=='PS'&&(
-            <div>
-              <label className="sa-label">Month Closed</label>
+            <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
                 {MN.map((m,i)=><option key={i} value={i+1}>{m} — {13-(i+1)} months remaining</option>)}
               </select>
             </div>
           )}
         </div>
-        <div className="sa-grid3">
+        <div className="sa-g3">
           <div className="sa-stat">
             <div className="lbl">ARR Value</div>
             <div className="val">{fmt(arrVal)}</div>
-            <div className="sub">{calcCat==='PS'?'Fee × 12':'MRR × '+mrem(Number(calcMonth))+' months'}</div>
+            <div className="sub">{calcCat==='PS'?'Fee × 12':'MRR × '+rem+' months'}</div>
           </div>
           <div className="sa-stat">
             <div className="lbl">Commission Earned</div>
             <div className="val" style={{color:'#34d399'}}>{fmt(commVal)}</div>
-            <div className="sub">{calcCat==='PS'?'10% of fee amount':pct(CR[calcCat])+' of ARR value'}</div>
+            <div className="sub">{calcCat==='PS'?'10% of fee':pct(CR[calcCat])+' of ARR'}</div>
           </div>
           <div className="sa-stat">
-            <div className="lbl">{calcCat==='PS'?'ARR/MRR Ratio':'Months Remaining'}</div>
-            <div className="val">{calcCat==='PS'?'×12':mrem(Number(calcMonth))}</div>
-            <div className="sub">{calcCat==='PS'?'Full year annualized':MN[calcMonth-1]+' close → '+mrem(Number(calcMonth))+' months count'}</div>
+            <div className="lbl">{calcCat==='PS'?'Annualization':'Months Remaining'}</div>
+            <div className="val">{calcCat==='PS'?'×12':rem}</div>
+            <div className="sub">{calcCat==='PS'?'Full year':MN[Number(calcMonth)-1]+' → '+rem+' months count'}</div>
           </div>
         </div>
-        {amt>0&&<div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:8,padding:'12px 16px',fontSize:12,color:'#a5b4fc',marginTop:8,lineHeight:1.7}}>{calcDetail}</div>}
+        {amt>0&&<div className="sa-preview">{detail}</div>}
       </div>
       {calcCat!=='PS'&&(
         <div className="sa-card">
           <h2>Time-Weighted ARR by Month (MRR = {fmt(amt)})</h2>
-          <div style={{fontSize:11,color:'#475569',marginBottom:14}}>Shows how ARR contribution changes based on which month a deal is closed. Earlier = more value.</div>
+          <div style={{fontSize:11,color:'#475569',marginBottom:12}}>Earlier deals = more months = higher ARR contribution. Closing in January vs November makes a significant difference.</div>
           <table className="sa-tbl">
             <thead><tr><th>Month</th><th>Months Remaining</th><th>ARR Value</th><th>Commission ({pct(CR[calcCat])})</th></tr></thead>
             <tbody>
               {MN.map((m,i)=>{
-                const rem=mrem(i+1);
-                const a=amt*rem;
-                const c=a*CR[calcCat];
-                const isCurrent=i+1===Number(calcMonth);
+                const r=mrem(i+1),a=amt*r,c=a*CR[calcCat];
+                const isCur=i+1===Number(calcMonth);
                 return(
-                  <tr key={i} style={isCurrent?{background:'rgba(99,102,241,.08)'}:{}}>
-                    <td style={isCurrent?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCurrent?' ◀':''}</td>
-                    <td>{rem}</td>
-                    <td style={{fontWeight:isCurrent?700:400,color:isCurrent?'#f1f5f9':'#cbd5e1'}}>{fmt(a)}</td>
+                  <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
+                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ◄':''}</td>
+                    <td>{r}</td>
+                    <td style={{fontWeight:isCur?700:400,color:isCur?'#f1f5f9':'#cbd5e1'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
                   </tr>
                 );
@@ -755,9 +511,9 @@ function CommTab({data,filterRep,setFilterRep}){
   const avgComm=data.reps.length>0?totalComm/data.reps.length:0;
   return(
     <div>
-      <div className="sa-grid3">
+      <div className="sa-g3">
         <div className="sa-stat"><div className="lbl">Total Commissions</div><div className="val">{fmt(totalComm)}</div><div className="sub">all reps combined</div></div>
-        <div className="sa-stat"><div className="lbl">Reps Earning</div><div className="val">{earning} / {data.reps.length}</div><div className="sub">reps with commission</div></div>
+        <div className="sa-stat"><div className="lbl">Reps Earning</div><div className="val">{earning} / {data.reps.length}</div><div className="sub">reps with deals</div></div>
         <div className="sa-stat"><div className="lbl">Avg Commission/Rep</div><div className="val">{fmt(avgComm)}</div><div className="sub">across all reps</div></div>
       </div>
       <div className="sa-pills">
@@ -766,7 +522,7 @@ function CommTab({data,filterRep,setFilterRep}){
       </div>
       <div className="sa-card">
         <table className="sa-tbl">
-          <thead><tr><th>Rep</th><th>PS Comm (10%)</th><th>FO Comm (7%)</th><th>MS Comm (7%)</th><th>Total</th></tr></thead>
+          <thead><tr><th>Rep</th><th>Dept</th><th>PS Comm (10% of fee)</th><th>FO Comm (7% of ARR)</th><th>MS Comm (7% of ARR)</th><th>Total</th></tr></thead>
           <tbody>
             {data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
               const s=crs(r,data.deals);
@@ -774,9 +530,8 @@ function CommTab({data,filterRep,setFilterRep}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{fmt(s.psc)}</td>
-                  <td>{fmt(s.foc)}</td>
-                  <td>{fmt(s.msc)}</td>
+                  <td>{r.dept||'—'}</td>
+                  <td>{fmt(s.psc)}</td><td>{fmt(s.foc)}</td><td>{fmt(s.msc)}</td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
                 </tr>
               );
@@ -805,7 +560,7 @@ function ReportsTab({data}){
     <div>
       <div className="sa-card">
         <h2>Export Commission Statements</h2>
-        <p style={{color:'#64748b',fontSize:13,marginTop:-8,marginBottom:16}}>Generate CSV commission statements for each rep.</p>
+        <p style={{color:'#64748b',fontSize:13,marginTop:-8,marginBottom:16}}>Generate CSV commission statements for each rep. Includes all deals, ARR values, and commission amounts.</p>
         {data.reps.map(r=>{
           const s=crs(r,data.deals);
           const tot=s.psc+s.foc+s.msc;
@@ -813,30 +568,31 @@ function ReportsTab({data}){
             <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#475569',marginTop:3}}>{r.dept||'No dept'} &nbsp;|&nbsp; {s.deals.length} deals &nbsp;|&nbsp; Total: {fmt(tot)}</div>
+                <div style={{fontSize:12,color:'#475569',marginTop:3}}>{r.dept||'No dept'} | {s.deals.length} deals | Total commission: {fmt(tot)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
           );
         })}
+        {data.reps.length===0&&<div style={{color:'#475569',textAlign:'center',padding:24}}>No reps added yet. Add reps in the Reps tab.</div>}
       </div>
     </div>
   );
 }
 
 function SettingsTab({data,save}){
-  const [quotas,setQuotas]=useState({PS:CQ.PS,FO:CQ.FO,MS:CQ.MS});
   const tots=cc(data.deals);
+  const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
   return(
     <div>
-      <div className="sa-grid2">
+      <div className="sa-g2">
         <div className="sa-card">
           <h2>Company Annual Quotas</h2>
           {[{id:'PS',label:'Professional Services',color:'#6366f1'},{id:'FO',label:'FinOps',color:'#0ea5e9'},{id:'MS',label:'Managed Services',color:'#10b981'}].map(c=>(
             <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,marginBottom:10,border:'1px solid rgba(255,255,255,.06)'}}>
-              <div style={{fontWeight:700,color:c.color,fontSize:12,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
+              <div style={{fontWeight:700,color:c.color,fontSize:11,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
               <div style={{fontSize:26,fontWeight:700,color:'#f1f5f9'}}>{fmt(CQ[c.id])}</div>
-              <div style={{fontSize:11,color:'#475569',marginTop:2}}>Annual Quota</div>
+              <div style={{fontSize:11,color:'#475569',marginTop:2}}>Annual ARR Quota</div>
             </div>
           ))}
         </div>
@@ -853,14 +609,18 @@ function SettingsTab({data,save}){
           </div>
           <div style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
             <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Total Commissions</div>
-            <div style={{fontSize:26,fontWeight:700,color:'#34d399'}}>{fmt(data.deals.reduce((a,d)=>a+dealComm(d),0))}</div>
+            <div style={{fontSize:26,fontWeight:700,color:'#34d399'}}>{fmt(totalComm)}</div>
           </div>
         </div>
       </div>
       <div className="sa-card">
         <h2>Commission Rates</h2>
-        <div className="sa-grid3">
-          {[{id:'PS',label:'Professional Services',note:'10% of one-time deal amount'},{id:'FO',label:'FinOps',note:'7% of MRR × months remaining'},{id:'MS',label:'Managed Services',note:'7% of MRR × months remaining'}].map(c=>(
+        <div className="sa-g3">
+          {[
+            {id:'PS',label:'Professional Services',note:'10% of one-time fee amount (not ARR)'},
+            {id:'FO',label:'FinOps',note:'7% of time-weighted ARR (MRR × months remaining)'},
+            {id:'MS',label:'Managed Services',note:'7% of time-weighted ARR (MRR × months remaining)'},
+          ].map(c=>(
             <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
               <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
               <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9'}}>{pct(CR[c.id])}</div>
@@ -871,4 +631,4 @@ function SettingsTab({data,save}){
       </div>
     </div>
   );
-        }
+}
