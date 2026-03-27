@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const SK = 'pai_quotaTracker';
 const CQ = { PS: 6500000, FO: 32000000, MS: 1500000 };
