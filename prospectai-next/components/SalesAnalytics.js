@@ -10,7 +10,7 @@ const CM = new Date().getMonth() + 1;
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
-function ld(){ try{ var r=localStorage.getItem(SK); if(r) return JSON.parse(r); }catch(e){} return {reps:[],deals:[]}; }
+function ld(){ try{ var r=localStorage.getItem(SK); if(r){ var p=JSON.parse(r); return {reps:Array.isArray(p.reps)?p.reps:[],deals:Array.isArray(p.deals)?p.deals:[]}; } }catch(e){} return {reps:[],deals:[]}; }
 function sd(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 
