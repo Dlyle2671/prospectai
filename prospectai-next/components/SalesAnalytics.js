@@ -174,7 +174,7 @@ function DashTab({data}){
         <div className="sa-stat">
           <div className="lbl">Pace Check</div>
           <div className="val">{pct(CM/12)}</div>
-          <div className="sub">Month {CM} of 12 ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ where you should be</div>
+          <div className="sub">Month {CM} of 12 ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ where you should be</div>
         </div>
       </div>
       <div className="sa-card">
@@ -196,7 +196,7 @@ function DashTab({data}){
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'}</td>
+                  <td>{r.dept||r.department||'ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
                   <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
@@ -258,7 +258,7 @@ function DealsTab({data, save}){
   return(
     <div>
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
-        <strong>Deals</strong> ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
+        <strong>Deals</strong> ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:16}}>
         <div className="sa-pills" style={{marginBottom:0,flex:1}}>
@@ -334,7 +334,7 @@ function DealsTab({data, save}){
         </div>
       )}
       <div className="sa-card">
-        <h2>Closed Deals {filterCat!=='All'?'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
+        <h2>Closed Deals {filterCat!=='All'?'ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Category</th><th>Client</th><th>Month</th>
@@ -343,7 +343,7 @@ function DealsTab({data, save}){
           <tbody>
             {filtered.length===0&&(
               <tr><td colSpan={8} style={{textAlign:'center',color:'#fff',padding:24}}>
-                No deals yet ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ click "+ Add Deal" to log a closed deal.
+                No deals yet ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ click "+ Add Deal" to log a closed deal.
               </td></tr>
             )}
             {filtered.map(d=>{
@@ -410,13 +410,13 @@ function RepDetailModal({rep, deals, onClose}){
     .rdm-kpi-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px 16px;}
     .rdm-kpi-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#818cf8;margin-bottom:6px;}
     .rdm-kpi-val{font-size:20px;font-weight:700;color:#f1f5f9;}
-    .rdm-kpi-sub{font-size:11px;color:#94a3b8;margin-top:3px;}
+    .rdm-kpi-sub{font-size:11px;color:#ffffff;margin-top:3px;}
     .rdm-sec{font-size:11px;font-weight:700;color:#64748b;letter-spacing:1.2px;text-transform:uppercase;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06);}
     .rdm-qgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px;}
     .rdm-qcard{background:#1e293b;border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,.06);}
     .rdm-qcard-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
     .rdm-qcard-val{font-size:16px;font-weight:700;color:#34d399;}
-    .rdm-qcard-quota{font-size:11px;color:#94a3b8;margin-top:2px;}
+    .rdm-qcard-quota{font-size:11px;color:#ffffff;margin-top:2px;}
     .rdm-bar{height:4px;background:#0f172a;border-radius:3px;margin:6px 0 4px;overflow:hidden;}
     .rdm-bar-fill{height:100%;border-radius:3px;}
     .rdm-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
@@ -425,15 +425,15 @@ function RepDetailModal({rep, deals, onClose}){
     .rdm-cat-block{margin-bottom:14px;}
     .rdm-cat-hd{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:#1e293b;border-left:3px solid;margin-bottom:6px;}
     .rdm-cat-name{font-size:13px;font-weight:700;}
-    .rdm-cat-meta{margin-left:auto;display:flex;gap:14px;font-size:12px;color:#94a3b8;}
+    .rdm-cat-meta{margin-left:auto;display:flex;gap:14px;font-size:12px;color:#ffffff;}
     .rdm-tbl{width:100%;border-collapse:collapse;}
-    .rdm-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;padding:7px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.05);}
+    .rdm-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#ffffff;padding:7px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.05);}
     .rdm-tbl td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#f1f5f9;text-align:left;}
     .rdm-tbl tr:last-child td{border-bottom:none;}
     .rdm-tbl tr:hover td{background:rgba(255,255,255,.02);}
-    .rdm-tbl tfoot td{color:#94a3b8;font-size:11px;font-weight:700;padding-top:10px;}
+    .rdm-tbl tfoot td{color:#ffffff;font-size:11px;font-weight:700;padding-top:10px;}
     .rdm-grand{margin-top:14px;padding:12px 16px;background:#1e293b;border-radius:10px;border:1px solid rgba(99,102,241,.3);display:flex;gap:24px;align-items:center;flex-wrap:wrap;}
-    .rdm-no-deals{text-align:center;color:#475569;padding:18px;font-size:13px;font-style:italic;}
+    .rdm-no-deals{text-align:center;color:#ffffff;padding:18px;font-size:13px;font-style:italic;}
     .rep-row-link{cursor:pointer;}
     .rep-row-link:hover td{background:rgba(99,102,241,.07)!important;}
     .rep-row-link td:first-child{color:#818cf8!important;text-decoration:underline;text-decoration-color:rgba(129,140,248,.35);}
@@ -444,10 +444,10 @@ function RepDetailModal({rep, deals, onClose}){
       <div className="rdm-box">
         <div className="rdm-hd">
           <div>
-            <div className="rdm-hd-title">ÃÂ°ÃÂÃÂÃÂ {rep.name}</div>
-            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} ÃÂÃÂ· {totalDeals} deal{totalDeals!==1?'s':''} won ÃÂÃÂ· {new Date().getFullYear()} Performance</div>
+            <div className="rdm-hd-title">ÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂ {rep.name}</div>
+            <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} ÃÂÃÂÃÂÃÂ· {totalDeals} deal{totalDeals!==1?'s':''} won ÃÂÃÂÃÂÃÂ· {new Date().getFullYear()} Performance</div>
           </div>
-          <button className="rdm-hd-close" onClick={onClose}>ÃÂ¢ÃÂÃÂ</button>
+          <button className="rdm-hd-close" onClick={onClose}>ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ</button>
         </div>
         <div className="rdm-body">
           <div className="rdm-kpi">
@@ -463,12 +463,12 @@ function RepDetailModal({rep, deals, onClose}){
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Quota Attainment</div>
-              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'ÃÂ¢ÃÂÃÂ'}</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'}</div>
               <div className="rdm-kpi-sub">vs. {fmt(totalQuota)} annual quota</div>
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Pace vs. Attainment</div>
-              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'ÃÂ¢ÃÂÃÂ On Track':'ÃÂ¢ÃÂÃÂ  Behind'}</div>
+              <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ On Track':'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ  Behind'}</div>
               <div className="rdm-kpi-sub">Expected pace: {pct(CM/12)}</div>
             </div>
           </div>
@@ -481,8 +481,8 @@ function RepDetailModal({rep, deals, onClose}){
                 <div className="rdm-qcard-quota">of {fmt(c.quota)} annual quota</div>
                 <div className="rdm-bar"><div className="rdm-bar-fill" style={{width:(c.quota>0?Math.min(100,c.arr/c.quota*100):0)+'%',background:c.color}}/></div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'ÃÂ¢ÃÂÃÂ'}</span>
-                  <span style={{fontSize:10,color:'#475569'}}>{fmt(c.comm)} comm</span>
+                  <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'}</span>
+                  <span style={{fontSize:10,color:'#ffffff'}}>{fmt(c.comm)} comm</span>
                 </div>
               </div>
             ))}
@@ -517,7 +517,7 @@ function RepDetailModal({rep, deals, onClose}){
                           ?<span>{fmt(d.amount)} <span style={{color:'#64748b',fontSize:11}}>one-time</span></span>
                           :<span>{fmt(d.mrr)} <span style={{color:'#64748b',fontSize:11}}>/mo MRR</span></span>
                         }</td>
-                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'ÃÂ¢ÃÂÃÂ':mrem(d.month)}</td>
+                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ':mrem(d.month)}</td>
                         <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
                         <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
                       </tr>
@@ -534,7 +534,7 @@ function RepDetailModal({rep, deals, onClose}){
           ))}
           <div className="rdm-grand">
             <span style={{fontSize:13,fontWeight:700,color:'#818cf8'}}>GRAND TOTAL</span>
-            <span style={{fontSize:13,color:'#94a3b8'}}>{totalDeals} deals won</span>
+            <span style={{fontSize:13,color:'#ffffff'}}>{totalDeals} deals won</span>
             <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalARR)} ARR</span>
             <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalComm)} commission</span>
             <span style={{fontSize:13,color:overallAttain>=CM/12?'#34d399':'#f87171',marginLeft:'auto'}}>{totalQuota>0?pct(overallAttain)+' attainment':'No quota set'}</span>
@@ -609,7 +609,7 @@ function RepsTab({data, save}){
             {data.reps.map(r=>(
               <tr key={r.id} className="rep-row-link" title={`Click to view ${r.name}'s deal breakdown`} onClick={()=>setSelectedRep(r)}>
                 <td style={{fontWeight:600,color:'#818cf8',textDecoration:'underline',textDecorationColor:'rgba(129,140,248,.35)',cursor:'pointer'}}>{r.name}</td>
-                <td>{r.dept||r.department||'ÃÂ¢ÃÂÃÂ'}</td>
+                <td>{r.dept||r.department||'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
                 <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
                 <td><span className={`sa-badge ${getActualFromDeals(r.id,'PS',deals)>=getQuota(r,'PS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'PS')>0?getActualFromDeals(r.id,'PS',deals)/(getQuota(r,'PS')*(CM/12)):0)}</span></td>
@@ -657,7 +657,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
               <div className="sa-stat">
                 <div className="lbl">Closed ARR</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                <div className="sub">of {fmt(quota)} quota ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ {pct(p)} attained</div>
+                <div className="sub">of {fmt(quota)} quota ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ {pct(p)} attained</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
                 <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
               </div>
@@ -720,7 +720,7 @@ function ArrCalcTab(){
       <div className="sa-card">
         <h2>ARR Calculator</h2>
         <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
-          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ not annualized. Commission = 10% of fee.<br/>
+          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ not annualized. Commission = 10% of fee.<br/>
           <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
           <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
           January close = 12 months = max ARR. November close = 2 months.
@@ -740,7 +740,7 @@ function ArrCalcTab(){
           {calcCat!=='PS'&&(
             <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
-                {MN.map((m,i)=><option key={i} value={i+1}>{m} ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ {13-(i+1)} months remaining</option>)}
+                {MN.map((m,i)=><option key={i} value={i+1}>{m} ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ {13-(i+1)} months remaining</option>)}
               </select>
             </div>
           )}
@@ -776,7 +776,7 @@ function ArrCalcTab(){
                 const isCur=i+1===Number(calcMonth);
                 return(
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
-                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ':''}</td>
+                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ':''}</td>
                     <td>{r}</td>
                     <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
@@ -786,7 +786,7 @@ function ArrCalcTab(){
             </tbody>
           </table>
           <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
-            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ same regardless of month closed.':'Note: Commission = 1x MRR flat ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ same regardless of month closed.'}
+            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ same regardless of month closed.':'Note: Commission = 1x MRR flat ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ same regardless of month closed.'}
           </div>
         </div>
       )}
@@ -840,7 +840,7 @@ function CommTab({data, filterRep, setFilterRep}){
       </div>
       <div style={{display:'flex',gap:16,alignItems:'center',flexWrap:'wrap',marginBottom:16}}>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <label style={{fontSize:12,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Sort By</label>
+          <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Sort By</label>
           <select style={selStyle} value={sortBy} onChange={e=>setSortBy(e.target.value)}>
             <option value="rep">Rep</option>
             <option value="month">Month</option>
@@ -848,7 +848,7 @@ function CommTab({data, filterRep, setFilterRep}){
         </div>
         {sortBy==='rep'&&(
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <label style={{fontSize:12,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep</label>
+            <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep</label>
             <select style={selStyle} value={filterRep} onChange={e=>setFilterRep(e.target.value)}>
               <option value="All">All Reps</option>
               {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
@@ -857,7 +857,7 @@ function CommTab({data, filterRep, setFilterRep}){
         )}
         {allMonths.length>0&&(
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <label style={{fontSize:12,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Month</label>
+            <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Month</label>
             <select style={selStyle} value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}>
               <option value="All">All Months</option>
               {allMonths.map(m=><option key={m} value={String(m)}>{MN[m-1]}</option>)}
@@ -894,10 +894,10 @@ function CommTab({data, filterRep, setFilterRep}){
         <div className="sa-card" style={{marginTop:16}}>
           <h2 style={{fontSize:14,fontWeight:700,color:'#f1f5f9',margin:'0 0 14px',display:'flex',alignItems:'center',gap:8}}>
             Deals
-            <span style={{fontSize:11,fontWeight:500,color:'#94a3b8'}}>
-              {filterRep!=='All'&&repById[filterRep]}{filterRep!=='All'&&filterMonth!=='All'&&' · '}{filterMonth!=='All'&&MN[Number(filterMonth)-1]}
+            <span style={{fontSize:11,fontWeight:500,color:'#ffffff'}}>
+              {filterRep!=='All'&&repById[filterRep]}{filterRep!=='All'&&filterMonth!=='All'&&' Â· '}{filterMonth!=='All'&&MN[Number(filterMonth)-1]}
             </span>
-            <span style={{marginLeft:'auto',fontSize:12,color:'#94a3b8'}}>{dealRows.length} deal{dealRows.length!==1?'s':''}</span>
+            <span style={{marginLeft:'auto',fontSize:12,color:'#ffffff'}}>{dealRows.length} deal{dealRows.length!==1?'s':''}</span>
           </h2>
           {dealRows.length===0?(
             <div style={{color:'#64748b',fontSize:13,textAlign:'center',padding:'20px 0'}}>No deals match the current filters.</div>
@@ -957,7 +957,7 @@ function ReportsTab({data}){
             <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
+                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
