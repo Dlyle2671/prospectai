@@ -6,7 +6,7 @@ import { UserButton, useUser } from '@clerk/nextjs';
 import FindLeads from '../components/FindLeads';
 import CompanyIntel from '../components/CompanyIntel';
 import BulkProspector from '../components/BulkProspector';
-import JobChanges from '../components/JobChanges';
+import JobChanges from '../components/JobChanges'
 import PeopleLookup from '../components/PeopleLookup';
 import Credits from '../components/Credits';
 import LookalikSearch from '../components/LookalikSearch';
@@ -257,7 +257,7 @@ export default function Home() {
 {activeTab === 'awssnapshots' && <AwsSnapshots onLoadSnapshot={handleLoadSnapshot} />}
 {activeTab === 'settings' && <Settings />}
 {activeTab === 'emailqueue' && <EmailQueue />}
-{activeTab === 'salesanalytics' && <SalesAnalytics />}
+{activeTab === 'salesanalytics' && <SalesAnalytics onBack={() => setShowHome(true)} />}
 </main>
   </div>
   </>
