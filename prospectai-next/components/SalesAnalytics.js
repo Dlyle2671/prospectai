@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 const SK = 'pai_quotaTracker';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CM = new Date().getMonth() + 1;
-const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
+const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
 const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Services' };
-
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
-
 function ld(){
   try{
     const r = localStorage.getItem(SK);
@@ -27,34 +25,27 @@ function ld(){
   }catch(e){}
   return { reps:[], deals:[], companyQuotas:{ PS:0, FO:0, MS:0 } };
 }
-
 function sd(d){ try{ localStorage.setItem(SK, JSON.stringify(d)); }catch(e){} }
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
-
 // ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining
 function dealARR(d){
   if(d.cat==='PS') return (d.amount||0);
   return (d.mrr||0) * mrem(d.month||CM);
 }
+// Commission: PS=10% of fee, FO=7% of 1st month MRR, MS=1x MRR
 function dealComm(d){
-  if(d.cat==='PS') return (d.amount||0) * CR.PS;
-  if(d.cat==='FO') return (d.mrr||0) * mrem(d.month||CM) * CR.FO;
-  if(d.cat==='MS') return (d.mrr||0) * mrem(d.month||CM) * CR.MS;
+  if(d.cat==='PS') return (d.amount||0) * 0.10;
+  if(d.cat==='FO') return (d.mrr||0) * 0.07;
+  if(d.cat==='MS') return (d.mrr||0) * 1.0;
   return 0;
 }
-
-// Helpers: read quotas from rep object
 function getQuota(rep, cat){ return (rep.quotas && rep.quotas[CAT_KEYS[cat]]) || 0; }
-
-// Get actuals from DEALS (summed per rep per category)
 function getActualFromDeals(repId, cat, deals){
   return deals.filter(d => d.repId === repId && d.cat === cat).reduce((s,d) => s + dealARR(d), 0);
 }
 function getTotalActualFromDeals(cat, reps, deals){
   return reps.reduce((s,r) => s + getActualFromDeals(r.id, cat, deals), 0);
 }
-
-// Commission from deals
 function repCommissionFromDeals(rep, deals){
   const myDeals = deals.filter(d => d.repId === rep.id);
   const ps = myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
@@ -62,7 +53,6 @@ function repCommissionFromDeals(rep, deals){
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
   return { ps, fo, ms, tot: ps+fo+ms };
 }
-
 export default function SalesAnalytics({onBack}){
   const [tab, setTab] = useState('dash');
   const [data, setData] = useState(ld());
@@ -138,8 +128,8 @@ function DashTab({data}){
   const deals = data.deals || [];
   const cats = [
     {id:'PS', label:'Professional Services', color:'#6366f1', note:'One-time project fee | Commission: 10% of fee'},
-    {id:'FO', label:'FinOps', color:'#0ea5e9', note:'Recurring MRR x months remaining = ARR | Commission: 7% x ARR'},
-    {id:'MS', label:'Managed Services', color:'#10b981', note:'Recurring MRR x months remaining = ARR | Commission: 7% x ARR'},
+    {id:'FO', label:'FinOps', color:'#0ea5e9', note:'Recurring MRR x months remaining = ARR | Commission: 7% of 1st month MRR'},
+    {id:'MS', label:'Managed Services', color:'#10b981', note:'Recurring MRR x months remaining = ARR | Commission: 1x MRR'},
   ];
   const totalAllClosed = reps.reduce((s,r) => s + getActualFromDeals(r.id,'PS',deals) + getActualFromDeals(r.id,'FO',deals) + getActualFromDeals(r.id,'MS',deals), 0);
   const cq = data.companyQuotas || { PS:0, FO:0, MS:0 };
@@ -233,15 +223,12 @@ function DealsTab({data, save}){
   const [editDeal, setEditDeal] = useState(null);
   const [df, setDf] = useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
   const [filterCat, setFilterCat] = useState('All');
-
   const submit = () => {
     if(!df.client.trim() || !df.repId) return;
     const d = JSON.parse(JSON.stringify(data));
     const entry = {
       id: editDeal ? editDeal.id : nid(),
-      repId: df.repId,
-      cat: df.cat,
-      client: df.client.trim(),
+      repId: df.repId, cat: df.cat, client: df.client.trim(),
       month: Number(df.month),
       amount: df.cat==='PS' ? Number(df.amount)||0 : 0,
       mrr: df.cat!=='PS' ? Number(df.mrr)||0 : 0,
@@ -252,30 +239,28 @@ function DealsTab({data, save}){
     setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
     setShowForm(false);
   };
-
   const del = id => {
     if(!window.confirm('Delete this deal?')) return;
     const d = JSON.parse(JSON.stringify(data));
     d.deals = (d.deals||[]).filter(x => x.id !== id);
     save(d);
   };
-
   const startEdit = deal => {
     setEditDeal(deal);
     setDf({repId:deal.repId, cat:deal.cat, client:deal.client, month:deal.month, amount:deal.amount||'', mrr:deal.mrr||''});
     setShowForm(true);
   };
-
   const deals = data.deals || [];
   const filtered = filterCat==='All' ? deals : deals.filter(d => d.cat===filterCat);
   const rem = mrem(Number(df.month));
   const previewARR = df.cat==='PS' ? Number(df.amount)||0 : (Number(df.mrr)||0)*rem;
-  const previewComm = df.cat==='PS' ? (Number(df.amount)||0)*CR.PS : previewARR*CR[df.cat];
-
+  const previewMRR = Number(df.mrr)||0;
+  // Preview commission: PS=10% fee, FO=7% MRR, MS=1x MRR
+  const previewComm = df.cat==='PS' ? (Number(df.amount)||0)*0.10 : df.cat==='FO' ? previewMRR*0.07 : previewMRR*1.0;
   return(
     <div>
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
-        <strong>Deals</strong> — enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. All deals feed directly into the Dashboard and Commissions.
+        <strong>Deals</strong> — enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:16}}>
         <div className="sa-pills" style={{marginBottom:0,flex:1}}>
@@ -287,7 +272,6 @@ function DealsTab({data, save}){
         </div>
         <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''})}}>+ Add Deal</button>
       </div>
-
       {showForm&&(
         <div className="sa-card" style={{marginBottom:16}}>
           <h2>{editDeal?'Edit Deal':'New Deal'}</h2>
@@ -328,7 +312,10 @@ function DealsTab({data, save}){
               :<div>
                 <label className="sa-label">Monthly MRR ($)</label>
                 <input className="sa-input" type="number" value={df.mrr} onChange={e=>setDf({...df,mrr:e.target.value})} placeholder="e.g. 8000"/>
-                <div style={{fontSize:11,color:'#fff',marginTop:4}}>ARR = MRR x {rem} months remaining. Commission = 7% of ARR.</div>
+                <div style={{fontSize:11,color:'#fff',marginTop:4}}>
+                  {df.cat==='FO' ? 'Commission = 7% of 1st month MRR.' : 'Commission = 1x MRR (flat).'}
+                  {' ARR = MRR x '+rem+' months remaining.'}
+                </div>
               </div>
             }
             <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
@@ -339,14 +326,15 @@ function DealsTab({data, save}){
           {((df.cat==='PS'&&df.amount)||(df.cat!=='PS'&&df.mrr))&&(
             <div className="sa-preview">
               {df.cat==='PS'
-                ? `Fee: ${fmt(Number(df.amount))} | ARR = ${fmt(previewARR)} (one-time) | Commission = ${fmt(previewComm)} (10%)`
-                : `MRR: ${fmt(Number(df.mrr))} x ${rem} months = ARR ${fmt(previewARR)} | Commission = ${fmt(previewComm)} (7%)`
+                ? `Fee: ${fmt(Number(df.amount))} | ARR = ${fmt(previewARR)} (one-time) | Commission = ${fmt(previewComm)} (10% of fee)`
+                : df.cat==='FO'
+                  ? `MRR: ${fmt(previewMRR)} x ${rem} months = ARR ${fmt(previewARR)} | Commission = ${fmt(previewComm)} (7% of 1st month MRR)`
+                  : `MRR: ${fmt(previewMRR)} x ${rem} months = ARR ${fmt(previewARR)} | Commission = ${fmt(previewComm)} (1x MRR)`
               }
             </div>
           )}
         </div>
       )}
-
       <div className="sa-card">
         <h2>Closed Deals {filterCat!=='All'?'— '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
@@ -401,16 +389,10 @@ function RepsTab({data, save}){
     if(!rf.name.trim()) return;
     const d = JSON.parse(JSON.stringify(data));
     const repData = {
-      name: rf.name.trim(),
-      dept: rf.dept.trim(),
-      quotas: {
-        'Professional Services': Number(rf.psQ)||0,
-        'FinOps': Number(rf.foQ)||0,
-        'Managed Services': Number(rf.msQ)||0,
-      },
+      name: rf.name.trim(), dept: rf.dept.trim(),
+      quotas: { 'Professional Services': Number(rf.psQ)||0, 'FinOps': Number(rf.foQ)||0, 'Managed Services': Number(rf.msQ)||0 },
       actuals: {'Professional Services':0,'FinOps':0,'Managed Services':0},
-      psWins: [],
-      recurringDeals: {'FinOps':[],'Managed Services':[]},
+      psWins: [], recurringDeals: {'FinOps':[],'Managed Services':[]},
     };
     if(editRep){ d.reps = d.reps.map(r => r.id===editRep.id ? {...r,...repData} : r); setEditRep(null); }
     else { d.reps = [...d.reps, {id:nid(), ...repData}]; }
@@ -488,8 +470,8 @@ function CatPerfTab({data, filterRep, setFilterRep}){
   const dealsFor = filterRep==='All' ? deals : deals.filter(d=>d.repId===filterRep);
   const cats = [
     {id:'PS', label:'Professional Services', color:'#6366f1', note:'One-time project fee | Commission: 10% of fee'},
-    {id:'FO', label:'FinOps', color:'#0ea5e9', note:'Recurring MRR x months remaining = ARR | Commission: 7% x ARR'},
-    {id:'MS', label:'Managed Services', color:'#10b981', note:'Recurring MRR x months remaining = ARR | Commission: 7% x ARR'},
+    {id:'FO', label:'FinOps', color:'#0ea5e9', note:'Recurring MRR x months remaining = ARR | Commission: 7% of 1st month MRR'},
+    {id:'MS', label:'Managed Services', color:'#10b981', note:'Recurring MRR x months remaining = ARR | Commission: 1x MRR'},
   ];
   return(
     <div>
@@ -503,6 +485,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
         const comm = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealComm(d),0);
         const p = quota>0 ? Math.min(1,closed/quota) : 0;
         const remaining = Math.max(0, quota-closed);
+        const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
         return(
           <div className="sa-card" key={c.id}>
             <h2 style={{color:c.color}}>{c.label}</h2>
@@ -523,7 +506,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
               <div className="sa-stat">
                 <div className="lbl">Commission Earned</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(comm)}</div>
-                <div className="sub">{c.id==='PS'?'10% of fees':'7% of ARR'}</div>
+                <div className="sub">{commLabel}</div>
               </div>
             </div>
             {dealsFor.filter(d=>d.cat===c.id).length>0&&(
@@ -552,7 +535,6 @@ function CatPerfTab({data, filterRep, setFilterRep}){
     </div>
   );
 }
-
 function ArrCalcTab(){
   const [calcCat, setCalcCat] = useState('PS');
   const [calcAmt, setCalcAmt] = useState('');
@@ -561,11 +543,14 @@ function ArrCalcTab(){
   const rem = mrem(Number(calcMonth));
   let arrVal=0, commVal=0, detail='';
   if(calcCat==='PS'){
-    arrVal=amt; commVal=amt*CR.PS;
+    arrVal=amt; commVal=amt*0.10;
     detail=fmt(amt)+' fee | Commission: '+fmt(amt)+' x 10% = '+fmt(commVal);
+  } else if(calcCat==='FO'){
+    arrVal=amt*rem; commVal=amt*0.07;
+    detail=fmt(amt)+' MRR x '+rem+' months = '+fmt(arrVal)+' ARR | Commission: '+fmt(amt)+' x 7% = '+fmt(commVal)+' (1st month MRR only)';
   } else {
-    arrVal=amt*rem; commVal=arrVal*CR[calcCat];
-    detail=fmt(amt)+' MRR x '+rem+' months = '+fmt(arrVal)+' ARR | Commission: '+fmt(arrVal)+' x 7% = '+fmt(commVal);
+    arrVal=amt*rem; commVal=amt*1.0;
+    detail=fmt(amt)+' MRR x '+rem+' months = '+fmt(arrVal)+' ARR | Commission: '+fmt(amt)+' x 1 = '+fmt(commVal)+' (1x MRR flat)';
   }
   return(
     <div>
@@ -573,7 +558,8 @@ function ArrCalcTab(){
         <h2>ARR Calculator</h2>
         <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
           <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value — not annualized. Commission = 10% of fee.<br/>
-          <strong style={{color:'#38bdf8'}}>FinOps &amp; Managed Services:</strong> Recurring. ARR = MRR x months remaining in the year.<br/>
+          <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
+          <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
           January close = 12 months = max ARR. November close = 2 months.
         </div>
         <div className="sa-frow">
@@ -605,7 +591,7 @@ function ArrCalcTab(){
           <div className="sa-stat">
             <div className="lbl">Commission</div>
             <div className="val" style={{color:'#34d399'}}>{fmt(commVal)}</div>
-            <div className="sub">{calcCat==='PS'?'10% of fee':'7% of ARR'}</div>
+            <div className="sub">{calcCat==='PS'?'10% of fee':calcCat==='FO'?'7% of 1st month MRR':'1x MRR (flat)'}</div>
           </div>
           <div className="sa-stat">
             <div className="lbl">{calcCat==='PS'?'Type':'Months Remaining'}</div>
@@ -619,10 +605,11 @@ function ArrCalcTab(){
         <div className="sa-card">
           <h2>Time-Weighted ARR by Month (MRR = {fmt(amt)})</h2>
           <table className="sa-tbl">
-            <thead><tr><th>Month</th><th>Months Remaining</th><th>ARR Value</th><th>Commission (7%)</th></tr></thead>
+            <thead><tr><th>Month</th><th>Months Remaining</th><th>ARR Value</th><th>Commission</th></tr></thead>
             <tbody>
               {MN.map((m,i)=>{
-                const r=mrem(i+1), a=amt*r, c=a*CR[calcCat];
+                const r=mrem(i+1), a=amt*r;
+                const c = calcCat==='FO' ? amt*0.07 : amt*1.0;
                 const isCur=i+1===Number(calcMonth);
                 return(
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
@@ -635,6 +622,9 @@ function ArrCalcTab(){
               })}
             </tbody>
           </table>
+          <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
+            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR — same regardless of month closed.':'Note: Commission = 1x MRR flat — same regardless of month closed.'}
+          </div>
         </div>
       )}
     </div>
@@ -658,7 +648,13 @@ function CommTab({data, filterRep, setFilterRep}){
       </div>
       <div className="sa-card">
         <table className="sa-tbl">
-          <thead><tr><th>Rep</th><th>Dept</th><th>PS Comm (10% of fee)</th><th>FO Comm (7% of ARR)</th><th>MS Comm (7% of ARR)</th><th>Total Commission</th></tr></thead>
+          <thead><tr>
+            <th>Rep</th><th>Dept</th>
+            <th>PS Comm (10% of fee)</th>
+            <th>FO Comm (7% of 1st mo MRR)</th>
+            <th>MS Comm (1x MRR)</th>
+            <th>Total Commission</th>
+          </tr></thead>
           <tbody>
             {data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
               const c = repCommissionFromDeals(r,deals);
@@ -679,7 +675,6 @@ function CommTab({data, filterRep, setFilterRep}){
     </div>
   );
 }
-
 function ReportsTab({data}){
   const deals = data.deals || [];
   const exportCSV = rep => {
@@ -718,7 +713,6 @@ function ReportsTab({data}){
     </div>
   );
 }
-
 function SettingsTab({data, save}){
   const deals = data.deals || [];
   const cq = data.companyQuotas || { PS:0, FO:0, MS:0 };
@@ -773,13 +767,13 @@ function SettingsTab({data, save}){
         <h2>Commission Rates</h2>
         <div className="sa-g3">
           {[
-            {id:'PS',label:'Professional Services',note:'10% of one-time project fee'},
-            {id:'FO',label:'FinOps',note:'7% of time-weighted ARR (MRR x months remaining)'},
-            {id:'MS',label:'Managed Services',note:'7% of time-weighted ARR (MRR x months remaining)'},
+            {id:'PS',label:'Professional Services',rate:'10%',note:'10% of one-time project fee'},
+            {id:'FO',label:'FinOps',rate:'7% of 1st mo MRR',note:'7% of 1st month MRR (not of full ARR)'},
+            {id:'MS',label:'Managed Services',rate:'1x MRR',note:'1x MRR flat (not a % of ARR)'},
           ].map(c=>(
             <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
               <div style={{fontSize:11,color:'#fff',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
-              <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9'}}>{pct(CR[c.id])}</div>
+              <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9'}}>{c.rate}</div>
               <div style={{fontSize:11,color:'#818cf8',marginTop:4,fontStyle:'italic'}}>{c.note}</div>
             </div>
           ))}
