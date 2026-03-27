@@ -189,9 +189,9 @@ function DashTab({data}){
           </tr></thead>
           <tbody>
             {reps.map(r => {
-              const psA=getActualFromDeals(r.id,'PS',deals), psQ=getQuota(r,'PS');
-              const foA=getActualFromDeals(r.id,'FO',deals), foQ=getQuota(r,'FO');
-              const msA=getActualFromDeals(r.id,'MS',deals), msQ=getQuota(r,'MS');
+              const psA=getActualFromDeals(r.id,'PS',deals), psQ=getQuota(r,'PS')*(CM/12);
+              const foA=getActualFromDeals(r.id,'FO',deals), foQ=getQuota(r,'FO')*(CM/12);
+              const msA=getActualFromDeals(r.id,'MS',deals), msQ=getQuota(r,'MS')*(CM/12);
               const tot=psA+foA+msA;
               return(
                 <tr key={r.id}>
@@ -443,9 +443,9 @@ function RepsTab({data, save}){
               <tr key={r.id}>
                 <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                 <td>{r.dept||r.department||'—'}</td>
-                <td>{fmt(getQuota(r,'PS'))}</td>
-                <td>{fmt(getQuota(r,'FO'))}</td>
-                <td>{fmt(getQuota(r,'MS'))}</td>
+                <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
+                <td>{fmt(getQuota(r,'FO')*(CM/12))}</td>
+                <td>{fmt(getQuota(r,'MS')*(CM/12))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'FO',deals))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'MS',deals))}</td>
@@ -786,10 +786,10 @@ function SettingsTab({data, save}){
             {data.reps.map(r=>(
               <tr key={r.id}>
                 <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                <td>{fmt(getQuota(r,'PS'))}</td>
-                <td>{fmt(getQuota(r,'FO'))}</td>
-                <td>{fmt(getQuota(r,'MS'))}</td>
-                <td style={{fontWeight:600}}>{fmt(getQuota(r,'PS')+getQuota(r,'FO')+getQuota(r,'MS'))}</td>
+                <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
+                <td>{fmt(getQuota(r,'FO')*(CM/12))}</td>
+                <td>{fmt(getQuota(r,'MS')*(CM/12))}</td>
+                <td style={{fontWeight:600}}>{fmt((getQuota(r,'PS')+getQuota(r,'FO')+getQuota(r,'MS'))*(CM/12))}</td>
               </tr>
             ))}
           </tbody>
