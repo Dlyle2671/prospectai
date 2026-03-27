@@ -796,7 +796,6 @@ function ArrCalcTab(){
   );
 }
 function CommTab({data, filterRep, setFilterRep}){
-  const [sortBy, setSortBy] = useState('rep');
   const [filterMonth, setFilterMonth] = useState('All');
   const deals = data.deals || [];
   const allMonths = [...new Set(deals.map(d=>d.month||1))].sort((a,b)=>a-b);
@@ -805,25 +804,13 @@ function CommTab({data, filterRep, setFilterRep}){
   const totalComm = repsFor.reduce((s,r)=>s+repCommissionFromDeals(r,filteredDeals).tot,0);
   const earning = repsFor.filter(r=>repCommissionFromDeals(r,filteredDeals).tot>0).length;
 
-  // Build summary rows
+  // Build summary rows (always by rep)
   let rows = [];
-  if(sortBy==='rep'){
-    rows = data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
-      const c = repCommissionFromDeals(r, filteredDeals);
-      return { key: r.id, label: r.name, dept: r.dept||r.department||'Sales', ps: c.ps, fo: c.fo, ms: c.ms, tot: c.tot };
-    });
-  } else {
-    const months = filterMonth==='All' ? allMonths : [Number(filterMonth)];
-    rows = months.map(m=>{
-      const mDeals = filteredDeals.filter(d=>(d.month||1)===m);
-      const ps = mDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
-      const fo = mDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
-      const ms = mDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
-      return { key: 'mo-'+m, label: MN[m-1], dept: '', ps, fo, ms, tot: ps+fo+ms };
-    });
-  }
-
-  // Deal-level breakdown: show when a specific rep and/or month is chosen
+  rows = data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
+    const c = repCommissionFromDeals(r, filteredDeals);
+    return { key: r.id, label: r.name, dept: r.dept||r.department||'Sales', ps: c.ps, fo: c.fo, ms: c.ms, tot: c.tot };
+  });
+    // Deal-level breakdown: show when a specific rep and/or month is chosen
   const showDeals = filterRep!=='All' || filterMonth!=='All';
   const dealRows = filteredDeals
     .filter(d => filterRep==='All' || d.repId===filterRep)
@@ -842,21 +829,12 @@ function CommTab({data, filterRep, setFilterRep}){
       </div>
       <div style={{display:'flex',gap:16,alignItems:'center',flexWrap:'wrap',marginBottom:16}}>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Sort By</label>
-          <select style={selStyle} value={sortBy} onChange={e=>setSortBy(e.target.value)}>
-            <option value="rep">Rep</option>
-            <option value="month">Month</option>
+          <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep</label>
+          <select style={selStyle} value={filterRep} onChange={e=>setFilterRep(e.target.value)}>
+            <option value="All">All Reps</option>
+            {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
-        {sortBy==='rep'&&(
-          <div style={{display:'flex',gap:8,alignItems:'center'}}>
-            <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep</label>
-            <select style={selStyle} value={filterRep} onChange={e=>setFilterRep(e.target.value)}>
-              <option value="All">All Reps</option>
-              {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-          </div>
-        )}
         {allMonths.length>0&&(
           <div style={{display:'flex',gap:8,alignItems:'center'}}>
             <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Month</label>
@@ -867,32 +845,25 @@ function CommTab({data, filterRep, setFilterRep}){
           </div>
         )}
       </div>
-
-            <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
-        <button
-          style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
-          onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
-        >⬇ Export Commission Statement</button>
-      </div>
       <div className="sa-card">
         <table className="sa-tbl">
           <thead><tr>
-            <th>{sortBy==='rep'?'Rep':'Month'}</th>{sortBy==='rep'&&<th>Dept</th>}
-            <th>PS Comm (10% of fee)</th>
-            <th>FO Comm (7% of 1st mo MRR)</th>
-            <th>MS Comm (1x MRR)</th>
-            <th>Total Commission</th>
-          </tr></thead>
+            <th>Rep</th><th>Dept</th>
+          <th>PS Comm (10% of fee)</th>
+          <th>FO Comm (7% of 1st mo MRR)</th>
+          <th>MS Comm (1x MRR)</th>
+          <th>Total Commission</th>
+        </tr></thead>
           <tbody>
             {rows.map(r=>(
               <tr key={r.key}>
                 <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.label}</td>
-                {sortBy==='rep'&&<td>{r.dept}</td>}
-                <td>{fmt(r.ps)}</td>
-                <td>{fmt(r.fo)}</td>
-                <td>{fmt(r.ms)}</td>
-                <td style={{fontWeight:700,color:'#34d399'}}>{fmt(r.tot)}</td>
-              </tr>
+              <td>{r.dept}</td>
+              <td>{fmt(r.ps)}</td>
+              <td>{fmt(r.fo)}</td>
+              <td>{fmt(r.ms)}</td>
+              <td style={{fontWeight:700,color:'#34d399'}}>{fmt(r.tot)}</td>
+            </tr>
             ))}
           </tbody>
         </table>
