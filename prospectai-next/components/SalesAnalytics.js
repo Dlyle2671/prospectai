@@ -69,16 +69,14 @@ export default function SalesAnalytics({onBack}){
   const [showAddDeal,setShowAddDeal]=useState(false);
   const [editRep,setEditRep]=useState(null);
   const [editDeal,setEditDeal]=useState(null);
-  const [editActual,setEditActual]=useState(null);
-  const [calcCat,setCalcCat]=useState('PS');
+    const [calcCat,setCalcCat]=useState('PS');
   const [calcAmt,setCalcAmt]=useState('');
   const [calcMonth,setCalcMonth]=useState(CM);
   const [filterCat,setFilterCat]=useState('All');
   const [filterRep,setFilterRep]=useState('All');
   const [rf,setRf]=useState({name:'',dept:''});
   const [df,setDf]=useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
-  const [af,setAf]=useState({repId:'',cat:'PS',month:CM,arr:'',note:''});
-  const save=d=>{sd(d);setData({...d});};
+    const save=d=>{sd(d);setData({...d});};
   const tots=cc(data.deals);
   const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
   const dashCards=[
@@ -143,7 +141,7 @@ export default function SalesAnalytics({onBack}){
         {tab==='dash'&&<DashTab data={data} dashCards={dashCards} tots={tots} totalComm={totalComm}/>}
         {tab==='reps'&&<RepsTab data={data} save={save} showAddRep={showAddRep} setShowAddRep={setShowAddRep} editRep={editRep} setEditRep={setEditRep} rf={rf} setRf={setRf}/>}
         {tab==='deals'&&<DealsTab data={data} save={save} showAddDeal={showAddDeal} setShowAddDeal={setShowAddDeal} editDeal={editDeal} setEditDeal={setEditDeal} df={df} setDf={setDf} filterCat={filterCat} setFilterCat={setFilterCat}/>}
-        {tab==='actuals'&&<ActualsTab data={data} save={save} editActual={editActual} setEditActual={setEditActual} af={af} setAf={setAf}/>}
+        {tab==='actuals'&&<ActualsTab data={data} save={save}/>}
         {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
         {tab==='arrcalc'&&<ArrCalcTab calcCat={calcCat} setCalcCat={setCalcCat} calcAmt={calcAmt} setCalcAmt={setCalcAmt} calcMonth={calcMonth} setCalcMonth={setCalcMonth}/>}
         {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
@@ -239,8 +237,11 @@ function DashTab({data,dashCards,tots,totalComm}){
   );
 }
 
-function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
+function ActualsTab({data,save}){
+  const CM2=new Date().getMonth()+1;
   const [showForm,setShowForm]=useState(false);
+  const [editActual,setEditActual]=useState(null);
+  const [af,setAf]=useState({repId:'',cat:'PS',month:CM2,arr:'',note:''});
   const actuals=data.actuals||[];
 
   const submit=()=>{
@@ -262,7 +263,7 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
       d.actuals=[...d.actuals,entry];
     }
     save(d);
-    setAf({repId:'',cat:'PS',month:CM,arr:'',note:''});
+    setAf({repId:'',cat:'PS',month:CM2,arr:'',note:''});
     setShowForm(false);
   };
 
@@ -280,7 +281,6 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
     setShowForm(true);
   };
 
-  // Quota attainment by rep x cat
   const catList=[
     {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS},
     {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO},
@@ -293,26 +293,24 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
         <strong>Actuals</strong> are the real closed ARR amounts — enter these as deals close. Quota attainment = Actuals ÷ Annual Quota.
         Pipeline deals (from the Deals tab) are separate and used for forecasting.
       </div>
-
       <div className="sa-shd">
         <div/>
-        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditActual(null);setAf({repId:'',cat:'PS',month:CM,arr:'',note:''});}}>+ Add Actual</button>
+        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditActual(null);setAf({repId:'',cat:'PS',month:CM2,arr:'',note:''});}}>+ Add Actual</button>
       </div>
-
       {showForm&&(
         <div className="sa-card" style={{marginBottom:16}}>
           <h2>{editActual?'Edit Actual':'Enter Actual'}</h2>
           <div className="sa-frow">
             <div>
               <label className="sa-label">Rep</label>
-              <select className="sa-select" value={af.repId} onChange={e=>setAf({...af,repId:e.target.value})}>
+              <select className="sa-select" value={af.repId} onChange={e=>setAf(prev=>({...prev,repId:e.target.value}))}>
                 <option value="">Select rep...</option>
                 {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
             <div>
               <label className="sa-label">Category</label>
-              <select className="sa-select" value={af.cat} onChange={e=>setAf({...af,cat:e.target.value})}>
+              <select className="sa-select" value={af.cat} onChange={e=>setAf(prev=>({...prev,cat:e.target.value}))}>
                 <option value="PS">Professional Services</option>
                 <option value="FO">FinOps</option>
                 <option value="MS">Managed Services</option>
@@ -320,7 +318,7 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
             </div>
             <div>
               <label className="sa-label">Month Closed</label>
-              <select className="sa-select" value={af.month} onChange={e=>setAf({...af,month:e.target.value})}>
+              <select className="sa-select" value={af.month} onChange={e=>setAf(prev=>({...prev,month:e.target.value}))}>
                 {MN.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
               </select>
             </div>
@@ -328,14 +326,14 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
           <div className="sa-frow">
             <div>
               <label className="sa-label">Actual ARR ($)</label>
-              <input className="sa-input" type="number" value={af.arr} onChange={e=>setAf({...af,arr:e.target.value})} placeholder="e.g. 500000"/>
+              <input className="sa-input" type="number" value={af.arr} onChange={e=>setAf(prev=>({...prev,arr:e.target.value}))} placeholder="e.g. 500000"/>
               <div style={{fontSize:11,color:'#475569',marginTop:4}}>
                 {af.cat==='PS'?'For PS: enter fee × 12 (annualized). E.g. $50k fee → $600,000 ARR':'For FO/MS: enter MRR × months remaining. E.g. $8k MRR closed Jan → $96,000 ARR'}
               </div>
             </div>
             <div>
               <label className="sa-label">Notes (optional)</label>
-              <input className="sa-input" value={af.note} onChange={e=>setAf({...af,note:e.target.value})} placeholder="e.g. Acme Corp expansion"/>
+              <input className="sa-input" value={af.note} onChange={e=>setAf(prev=>({...prev,note:e.target.value}))} placeholder="e.g. Acme Corp expansion"/>
             </div>
             <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
               <button className="sa-btn" onClick={submit}>{editActual?'Save':'Add'}</button>
@@ -344,7 +342,6 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
           </div>
         </div>
       )}
-
       <div className="sa-g3" style={{marginBottom:16}}>
         {catList.map(c=>{
           const act=totalActuals(c.id,actuals);
@@ -364,7 +361,6 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
           );
         })}
       </div>
-
       <div className="sa-card">
         <h2>Quota Attainment by Rep</h2>
         <table className="sa-tbl">
@@ -379,7 +375,6 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
           </thead>
           <tbody>
             {data.reps.map(r=>{
-              const repQ=3; // reps share quota equally for simplicity
               const psQ=CQ.PS/Math.max(1,data.reps.length);
               const foQ=CQ.FO/Math.max(1,data.reps.length);
               const msQ=CQ.MS/Math.max(1,data.reps.length);
@@ -407,7 +402,6 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
           </tbody>
         </table>
       </div>
-
       <div className="sa-card">
         <h2>Actuals Log</h2>
         {actuals.length===0&&<div style={{color:'#475569',textAlign:'center',padding:24}}>No actuals entered yet. Click "+ Add Actual" to log closed deals.</div>}
@@ -438,7 +432,6 @@ function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
     </div>
   );
 }
-
 function RepsTab({data,save,showAddRep,setShowAddRep,editRep,setEditRep,rf,setRf}){
   const submit=()=>{
     if(!rf.name.trim()) return;
