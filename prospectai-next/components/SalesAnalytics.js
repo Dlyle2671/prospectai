@@ -781,11 +781,10 @@ function ReportsTab({data}){
     s.deals.forEach(d=>{
       rows.push([d.client,d.cat,MN[(d.month||1)-1],d.cat==='PS'?d.amount:d.mrr,dealARR(d),dealComm(d)]);
     });
-    const csv=rows.map(r=>r.join(',')).join('
-');
+    const csv=rows.map(r=>r.join(',')).join('\n');
     const a=document.createElement('a');
     a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download=rep.name.replace(/s+/g,'_')+'_commission.csv';
+    a.download=rep.name.replace(/\s+/g,'_')+'_commission.csv';
     a.click();
   };
   return(
