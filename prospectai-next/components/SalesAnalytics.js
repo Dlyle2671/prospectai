@@ -948,8 +948,8 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     const totQ=psQ+foQ+msQ;
     const comm=repCommissionFromDeals(r,repFilteredDeals);
     const ytdPct=CM/12;
-    const attain=totQ>0?(totA/totQ*100).toFixed(1)+'%':'--';
-    const status=totQ>0?(totA/totQ>=ytdPct?'On Track':'Behind Pace'):'--';
+    const attain=totQ>0?(totA/(totQ*ytdPct)*100).toFixed(1)+'%':'--';
+    const status=totQ>0?(totA/(totQ*ytdPct)>=1?'On Track':'Behind Pace'):'--';
     sc.push(['── '+r.name.toUpperCase()+' ──','','','','','','','']);
     sc.push(['Department:',r.dept||r.department||'Sales','','Total Deals Won (YTD):',myDeals.length,'','YTD Period:','Jan – '+MN[CM-1]+' '+YEAR]);
     sc.push(['']);
@@ -963,7 +963,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
       const cA=myDeals.filter(d=>d.cat===cat).reduce((s,d)=>s+dealARR(d),0);
       const cQ=getQuota(r,cat);
       const cComm=cat==='PS'?comm.ps:cat==='FO'?comm.fo:comm.ms;
-      sc.push([CAT_FULL[cat],cA,cQ,cQ*(CM/12),cQ>0?(cA/cQ*100).toFixed(1)+'%':'--',cComm,CAT_RATE[cat],myDeals.filter(d=>d.cat===cat).length]);
+      sc.push([CAT_FULL[cat],cA,cQ,cQ*(CM/12),cQ>0?(cA/(cQ*(CM/12))*100).toFixed(1)+'%':'--',cComm,CAT_RATE[cat],myDeals.filter(d=>d.cat===cat).length]);
     });
     sc.push(['TOTAL',totA,totQ,totQ*(CM/12),attain,comm.tot,'',myDeals.length]);
     sc.push(['']);
