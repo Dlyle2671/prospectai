@@ -76,7 +76,7 @@ export default function SalesAnalytics({onBack}){
   const [filterRep,setFilterRep]=useState('All');
   const [rf,setRf]=useState({name:'',dept:''});
   const [df,setDf]=useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
-    const save=d=>{sd(d);setData({...d});};
+    const save=d=>{sd(d);setData(JSON.parse(JSON.stringify(d)));};
   const tots=cc(data.deals);
   const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
   const dashCards=[
@@ -246,7 +246,7 @@ function ActualsTab({data,save}){
 
   const submit=()=>{
     if(!af.repId||!af.arr) return;
-    const d=ld();
+    const d=JSON.parse(JSON.stringify(data));
     if(!Array.isArray(d.actuals)) d.actuals=[];
     const entry={
       id:editActual?editActual.id:nid(),
@@ -269,7 +269,7 @@ function ActualsTab({data,save}){
 
   const del=id=>{
     if(!window.confirm('Delete actual entry?'))return;
-    const d=ld();
+    const d=JSON.parse(JSON.stringify(data));
     if(!Array.isArray(d.actuals)) d.actuals=[];
     d.actuals=d.actuals.filter(a=>a.id!==id);
     save(d);
@@ -435,12 +435,12 @@ function ActualsTab({data,save}){
 function RepsTab({data,save,showAddRep,setShowAddRep,editRep,setEditRep,rf,setRf}){
   const submit=()=>{
     if(!rf.name.trim()) return;
-    const d=ld();
+    const d=JSON.parse(JSON.stringify(data));
     if(editRep){d.reps=d.reps.map(r=>r.id===editRep.id?{...r,...rf}:r);setEditRep(null);}
     else d.reps=[...d.reps,{id:nid(),...rf}];
     save(d);setRf({name:'',dept:''});setShowAddRep(false);
   };
-  const del=id=>{if(!window.confirm('Delete rep?'))return;const d=ld();d.reps=d.reps.filter(r=>r.id!==id);save(d);};
+  const del=id=>{if(!window.confirm('Delete rep?'))return;const d=JSON.parse(JSON.stringify(data));d.reps=d.reps.filter(r=>r.id!==id);save(d);};
   const startEdit=r=>{setEditRep(r);setRf({name:r.name,dept:r.dept||''});setShowAddRep(true);};
   return(
     <div>
@@ -493,7 +493,7 @@ function RepsTab({data,save,showAddRep,setShowAddRep,editRep,setEditRep,rf,setRf
 function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,setDf,filterCat,setFilterCat}){
   const submit=()=>{
     if(!df.client.trim()||!df.repId) return;
-    const d=ld();
+    const d=JSON.parse(JSON.stringify(data));
     const entry={
       id:editDeal?editDeal.id:nid(),
       repId:df.repId,cat:df.cat,client:df.client,
@@ -505,7 +505,7 @@ function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,
     else d.deals=[...d.deals,entry];
     save(d);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});setShowAddDeal(false);
   };
-  const del=id=>{if(!window.confirm('Delete deal?'))return;const d=ld();d.deals=d.deals.filter(x=>x.id!==id);save(d);};
+  const del=id=>{if(!window.confirm('Delete deal?'))return;const d=JSON.parse(JSON.stringify(data));d.deals=d.deals.filter(x=>x.id!==id);save(d);};
   const startEdit=deal=>{setEditDeal(deal);setDf({repId:deal.repId,cat:deal.cat,client:deal.client,month:deal.month,amount:deal.amount||'',mrr:deal.mrr||''});setShowAddDeal(true);};
   const filtered=filterCat==='All'?data.deals:data.deals.filter(d=>d.cat===filterCat);
   const rem=mrem(Number(df.month));
