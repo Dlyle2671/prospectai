@@ -12,7 +12,6 @@ import Credits from '../components/Credits';
 import LookalikSearch from '../components/LookalikSearch';
 import Settings from '../components/Settings';
 import AwsOpportunities from '../components/AwsOpportunities';
-import AwsSnapshots from '../components/AwsSnapshots';
 import EmailQueue from '../components/EmailQueue';
 import SalesAnalytics from '../components/SalesAnalytics';
 
@@ -26,7 +25,6 @@ const TABS = [
   { id: 'people', label: 'People Lookup' },
   { id: 'lookalike', label: 'Lookalike' },
   { id: 'awsopps', label: 'AWS Opportunities' },
-  { id: 'awssnapshots', label: 'Snapshots' },
   { id: 'emailqueue', label: 'Email Queue' },
   { id: 'credits', label: 'Credits' },
   { id: 'settings', label: 'Settings' },
@@ -41,7 +39,6 @@ const FEATURES = [
   { id: 'people', icon: '👤', title: 'People Lookup', desc: 'Search for specific individuals by name, title, or company and pull a full enriched contact profile.', accent: 'linear-gradient(90deg,#8b5cf6,#a78bfa)', iconBg: 'rgba(139,92,246,0.12)' },
   { id: 'lookalike', icon: '🔗', title: 'Lookalike', desc: 'Find companies that look just like your best customers. Surface new accounts that fit your ICP.', accent: 'linear-gradient(90deg,#ec4899,#f472b6)', iconBg: 'rgba(236,72,153,0.12)' },
   { id: 'awsopps', icon: '☁️', title: 'AWS Opportunities', desc: 'Identify companies with strong AWS spend and usage signals — purpose-built for cloud sellers.', accent: 'linear-gradient(90deg,#f97316,#fb923c)', iconBg: 'rgba(249,115,22,0.12)' },
-  { id: 'awssnapshots', icon: '📸', title: 'Snapshots', desc: 'Save and revisit your best searches. Reload filter sets instantly and pick up right where you left off.', accent: 'linear-gradient(90deg,#06b6d4,#22d3ee)', iconBg: 'rgba(6,182,212,0.12)' },
   { id: 'emailqueue', icon: '📧', title: 'Email Queue', desc: 'Review, edit, and send drafted emails to your prospects. Manage your full outreach pipeline here.', accent: 'linear-gradient(90deg,#a855f7,#c084fc)', iconBg: 'rgba(168,85,247,0.12)' },
   { id: 'salesanalytics', icon: '📊', title: 'Sales Analytics', desc: 'Track quota attainment, commissions, and rep performance across PS, FinOps, and Managed Services.', accent: 'linear-gradient(90deg,#6366f1,#34d399)', iconBg: 'rgba(99,102,241,0.12)' },
   ];
@@ -196,7 +193,7 @@ export default function Home() {
             ))}
               </div>
           <div className="pai-home-stats">
-                          <div className="pai-home-stat"><div className="pai-home-stat-val">11</div><div className="pai-home-stat-label">Tools Available</div></div>
+                          <div className="pai-home-stat"><div className="pai-home-stat-val">10</div><div className="pai-home-stat-label">Tools Available</div></div>
             <div className="pai-home-stat-divider" />
                           <div className="pai-home-stat"><div className="pai-home-stat-val">AWS</div><div className="pai-home-stat-label">Always Included</div></div>
             <div className="pai-home-stat-divider" />
@@ -254,7 +251,6 @@ export default function Home() {
 {activeTab === 'credits' && <Credits />}
 {activeTab === 'lookalike' && <LookalikSearch />}
 {activeTab === 'awsopps' && <AwsOpportunities initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
-{activeTab === 'awssnapshots' && <AwsSnapshots onLoadSnapshot={handleLoadSnapshot} />}
 {activeTab === 'settings' && <Settings />}
 {activeTab === 'emailqueue' && <EmailQueue />}
 {activeTab === 'salesanalytics' && <SalesAnalytics onBack={() => setShowHome(true)} />}
