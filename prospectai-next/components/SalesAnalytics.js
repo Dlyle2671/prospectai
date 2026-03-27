@@ -1060,7 +1060,7 @@ function SettingsTab({data, save}){
   const saveQuotas = () => {
     const d = JSON.parse(JSON.stringify(data));
     d.companyQuotas = { PS: Number(qf.PS)||0, FO: Number(qf.FO)||0, MS: Number(qf.MS)||0 };
-    save(d);
+    save(d); setData(ld());
     setSaved(true);
     setTimeout(()=>setSaved(false), 2000);
   };
