@@ -646,7 +646,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
       </div>
       {cats.map(c=>{
         const closed = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealARR(d),0);
-        const quota = repsFor.reduce((s,r)=>s+getQuota(r,c.id),0);
+        const quota = (filterRep==='All' && data.companyQuotas && data.companyQuotas[c.id]) ? data.companyQuotas[c.id] : repsFor.reduce((s,r)=>s+getQuota(r,c.id),0);
         const comm = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealComm(d),0);
         const p = quota>0 ? Math.min(1,closed/quota) : 0;
         const remaining = Math.max(0, quota-closed);
