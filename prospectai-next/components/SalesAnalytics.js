@@ -81,8 +81,8 @@ export default function SalesAnalytics({onBack}){
       .sa-bar{height:6px;background:#1e293b;border-radius:3px;margin-top:10px;overflow:hidden;}
       .sa-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
       .sa-tbl{width:100%;border-collapse:collapse;}
-      .sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);}
-      .sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#fff;}
+      .sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;padding:8px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06);}
+      .sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#fff;text-align:center;}
       .sa-tbl tr:last-child td{border-bottom:none;}
       .sa-tbl tr:hover td{background:rgba(255,255,255,.02);}
       .sa-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
