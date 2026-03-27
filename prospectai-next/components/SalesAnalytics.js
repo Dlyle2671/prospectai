@@ -845,6 +845,12 @@ function CommTab({data, filterRep, setFilterRep}){
           </div>
         )}
       </div>
+            <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
+        <button
+          style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
+          onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
+        >⬇ Export Commission Statement</button>
+      </div>
       <div className="sa-card">
         <table className="sa-tbl">
           <thead><tr>
