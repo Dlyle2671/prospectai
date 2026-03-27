@@ -1,580 +1,874 @@
 import React, { useState, useEffect } from 'react';
 
 const SK = 'pai_quotaTracker';
+// Company annual quotas
 const CQ = { PS: 6500000, FO: 32000000, MS: 1500000 };
+// Commission rates
+const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const CM = new Date().getMonth() + 1;
-function gm(m){ return 13-m; }
-function pFO(){ var t=0; for(var m=1;m<=CM;m++) t+=gm(m); return t/78; }
+const CM = new Date().getMonth() + 1; // current month (1-12)
+
+// Months remaining in year from a given month (inclusive)
+// e.g. deal in Jan = 12 months, deal in Nov = 2 months, deal in Dec = 1 month
+function mrem(m){ return Math.max(1, 13 - m); }
+
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
 function ld(){ try{ var r=localStorage.getItem(SK); if(r) return JSON.parse(r); }catch(e){} return {reps:[],deals:[]}; }
 function sd(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 
+// ARR value of a deal
+// PS: one-time project fee -> annualized = amount * 12
+// FO/MS: recurring MRR -> time-weighted ARR = MRR * months_remaining_in_year
+function dealARR(d){
+  if(d.cat==='PS') return d.amount * 12;
+  return d.mrr * mrem(d.month);
+}
+
+// Commission earned on a deal
+// PS: 10% of the one-time amount (not ARR)
+// FO: 7% of MRR * months remaining
+// MS: 7% of MRR * months remaining
+function dealComm(d){
+  if(d.cat==='PS') return d.amount * CR.PS;
+  if(d.cat==='FO') return d.mrr * mrem(d.month) * CR.FO;
+  if(d.cat==='MS') return d.mrr * mrem(d.month) * CR.MS;
+  return 0;
+}
+
+// Per-rep stats
 function crs(rep,deals){
   var my=deals.filter(function(d){ return d.repId===rep.id; });
   var ps=0,fo=0,ms=0,psc=0,foc=0,msc=0;
   my.forEach(function(d){
-    if(d.cat==='PS'){ ps+=d.amount*12; psc+=d.amount*0.1; }
-    else if(d.cat==='FO'){ fo+=d.mrr*gm(d.month); foc+=d.mrr*0.07; }
-    else if(d.cat==='MS'){ ms+=d.mrr*gm(d.month); msc+=d.mrr; }
+    var arr=dealARR(d), com=dealComm(d);
+    if(d.cat==='PS'){ ps+=arr; psc+=com; }
+    else if(d.cat==='FO'){ fo+=arr; foc+=com; }
+    else if(d.cat==='MS'){ ms+=arr; msc+=com; }
   });
   return {ps:ps,fo:fo,ms:ms,psc:psc,foc:foc,msc:msc,deals:my};
 }
 
+// Company-wide totals
 function cc(deals){
   var ps=0,fo=0,ms=0;
   deals.forEach(function(d){
-    if(d.cat==='PS') ps+=d.amount*12;
-    else if(d.cat==='FO') fo+=d.mrr*gm(d.month);
-    else if(d.cat==='MS') ms+=d.mrr*gm(d.month);
+    var arr=dealARR(d);
+    if(d.cat==='PS') ps+=arr;
+    else if(d.cat==='FO') fo+=arr;
+    else if(d.cat==='MS') ms+=arr;
   });
   return {ps:ps,fo:fo,ms:ms};
 }
+
 var ST = `
 .sa{position:fixed;inset:0;background:#0f172a;z-index:10000;display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;overflow:hidden}
 .sa-hd{background:#1e293b;border-bottom:1px solid rgba(99,102,241,.3);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;flex-shrink:0}
-.sa-hd h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:0}
+.sa-hd h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0}
 .sa-x{background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600}
 .sa-x:hover{background:rgba(99,102,241,.4)}
 .sa-tabs{display:flex;gap:4px;background:#1e293b;padding:8px 24px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;overflow-x:auto}
-.sa-tab{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;background:transparent;color:rgba(255,255,255,.5)}
-.sa-tab:hover{color:#fff;background:rgba(99,102,241,.15)}
-.sa-tab.on{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+.sa-tab{background:transparent;border:none;color:#64748b;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .15s}
+.sa-tab:hover{color:#e2e8f0;background:rgba(255,255,255,.05)}
+.sa-tab.on{background:rgba(99,102,241,.2);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
 .sa-body{flex:1;overflow-y:auto;padding:24px}
-.sa-card{background:#1e293b;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:20px;margin-bottom:16px}
-.sa-card h3{margin:0 0 16px;font-size:15px;color:rgba(255,255,255,.7);font-weight:600}
-.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
-.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
-.met{background:#0f172a;border-radius:10px;padding:16px}
-.met .lbl{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.met .val{font-size:22px;font-weight:700;color:#fff}
-.met .sub{font-size:12px;color:rgba(255,255,255,.4);margin-top:4px}
-.pb{background:rgba(255,255,255,.1);border-radius:999px;height:8px;overflow:hidden;margin-top:8px}
-.pb-f{height:100%;border-radius:999px;background:linear-gradient(90deg,#6366f1,#8b5cf6);transition:width .5s}
-.pb-f.warn{background:linear-gradient(90deg,#f59e0b,#ef4444)}
-.pb-f.good{background:linear-gradient(90deg,#10b981,#6366f1)}
-.sa-tbl{width:100%;border-collapse:collapse;font-size:13px}
-.sa-tbl th{text-align:left;padding:10px 12px;color:rgba(255,255,255,.5);font-weight:600;font-size:11px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.07)}
-.sa-tbl td{padding:10px 12px;color:#fff;border-bottom:1px solid rgba(255,255,255,.04)}
-.sa-tbl tr:hover td{background:rgba(99,102,241,.05)}
-.bdg{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700}
-.bdg.g{background:rgba(16,185,129,.15);color:#10b981}
-.bdg.y{background:rgba(245,158,11,.15);color:#f59e0b}
-.bdg.r{background:rgba(239,68,68,.15);color:#ef4444}
-.btn{padding:9px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600}
-.btn-p{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
-.btn-p:hover{opacity:.9}
-.btn-s{background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.3)}
-.btn-d{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
-.inp{background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;padding:9px 12px;font-size:13px;width:100%;box-sizing:border-box}
-.inp:focus{outline:none;border-color:#6366f1}
-.sel{background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;padding:9px 12px;font-size:13px;width:100%;box-sizing:border-box}
-.lbl{display:block;font-size:12px;color:rgba(255,255,255,.6);margin-bottom:6px;font-weight:600}
-.fr3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
-.fr2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px}
-.mo{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:20000;display:flex;align-items:center;justify-content:center}
-.mo-box{background:#1e293b;border:1px solid rgba(99,102,241,.3);border-radius:16px;padding:28px;width:560px;max-width:90vw;max-height:85vh;overflow-y:auto}
-.mo-box h2{margin:0 0 20px;font-size:18px;color:#fff}
-.fb{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
-.chip{padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:transparent;color:rgba(255,255,255,.6);font-size:12px;cursor:pointer}
-.chip.on{background:rgba(99,102,241,.3);border-color:#6366f1;color:#fff}
-.empty{text-align:center;padding:40px;color:rgba(255,255,255,.3);font-size:14px}
+.sa-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px}
+.sa-card h2{font-size:16px;font-weight:600;color:#f1f5f9;margin:0 0 16px}
+.sa-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.sa-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px}
+.sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px}
+.sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-bottom:6px}
+.sa-stat .val{font-size:22px;font-weight:700;color:#f1f5f9}
+.sa-stat .sub{font-size:11px;color:#475569;margin-top:4px}
+.sa-stat .note{font-size:11px;color:#818cf8;margin-top:4px}
+.sa-bar{height:6px;background:#1e293b;border-radius:3px;margin-top:10px;overflow:hidden}
+.sa-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.sa-tbl{width:100%;border-collapse:collapse}
+.sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}
+.sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#cbd5e1}
+.sa-tbl tr:last-child td{border-bottom:none}
+.sa-tbl tr:hover td{background:rgba(255,255,255,.02)}
+.sa-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.sa-badge.ahead{background:rgba(16,185,129,.15);color:#34d399}
+.sa-badge.behind{background:rgba(239,68,68,.15);color:#f87171}
+.sa-btn{background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s}
+.sa-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.sa-btn.sm{padding:6px 14px;font-size:12px}
+.sa-btn.del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171}
+.sa-btn.del:hover{background:rgba(239,68,68,.3)}
+.sa-input{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box}
+.sa-input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.sa-select{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box}
+.sa-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block}
+.sa-form-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px}
+.sa-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sa-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer}
+.sa-pill.on{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5)}
+.sa-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.sa-hint{font-size:11px;color:#475569;margin-top:4px;font-style:italic}
 `;
-function TabDash({reps,deals}){
-  var tot=cc(deals);
-  var ppS=CM/12, ppFO=pFO();
-  function bar(val,quota,pace){
-    var p=quota>0?Math.min(val/quota,1.5):0;
-    var cls=p>=pace?'good':p>=pace*0.8?'':'warn';
-    return React.createElement('div',{className:'pb'},React.createElement('div',{className:'pb-f '+cls,style:{width:(Math.min(p,1)*100)+'%'}}));
-  }
-  return React.createElement('div',null,
-    React.createElement('div',{className:'g3'},
-      React.createElement('div',{className:'met'},
-        React.createElement('div',{className:'lbl'},'PS ARR'),
-        React.createElement('div',{className:'val'},fmt(tot.ps)),
-        React.createElement('div',{className:'sub'},pct(CQ.PS>0?tot.ps/CQ.PS:0)+' of '+fmt(CQ.PS)),
-        bar(tot.ps,CQ.PS,ppS)
-      ),
-      React.createElement('div',{className:'met'},
-        React.createElement('div',{className:'lbl'},'FinOps ARR'),
-        React.createElement('div',{className:'val'},fmt(tot.fo)),
-        React.createElement('div',{className:'sub'},pct(CQ.FO>0?tot.fo/CQ.FO:0)+' of '+fmt(CQ.FO)),
-        bar(tot.fo,CQ.FO,ppFO)
-      ),
-      React.createElement('div',{className:'met'},
-        React.createElement('div',{className:'lbl'},'MS ARR'),
-        React.createElement('div',{className:'val'},fmt(tot.ms)),
-        React.createElement('div',{className:'sub'},pct(CQ.MS>0?tot.ms/CQ.MS:0)+' of '+fmt(CQ.MS)),
-        bar(tot.ms,CQ.MS,ppFO)
-      )
-    ),
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('h3',null,'Rep Summary'),
-      React.createElement('table',{className:'sa-tbl'},
-        React.createElement('thead',null,React.createElement('tr',null,
-          React.createElement('th',null,'Rep'),React.createElement('th',null,'Dept'),
-          React.createElement('th',null,'PS ARR'),React.createElement('th',null,'FO ARR'),React.createElement('th',null,'MS ARR'),
-          React.createElement('th',null,'Total ARR'),React.createElement('th',null,'Status')
-        )),
-        React.createElement('tbody',null, reps.length===0?
-          React.createElement('tr',null,React.createElement('td',{colSpan:7,style:{textAlign:'center',color:'rgba(255,255,255,.3)',padding:'30px'}},'No reps added yet')):
-          reps.map(function(r){
-            var s=crs(r,deals);
-            var tot2=s.ps+s.fo+s.ms;
-            var quota=(r.psQ||0)*12+(r.foQ||0)*12+(r.msQ||0)*12;
-            var ratio=quota>0?tot2/quota:0;
-            var pace=r.dept==='PS'?ppS:ppFO;
-            var bdg=ratio>=pace?'g':ratio>=pace*0.8?'y':'r';
-            var lbl=ratio>=pace?'On Track':ratio>=pace*0.8?'At Risk':'Behind';
-            return React.createElement('tr',{key:r.id},
-              React.createElement('td',null,React.createElement('strong',null,r.name)),
-              React.createElement('td',null,r.dept||'-'),
-              React.createElement('td',null,fmt(s.ps)),
-              React.createElement('td',null,fmt(s.fo)),
-              React.createElement('td',null,fmt(s.ms)),
-              React.createElement('td',null,React.createElement('strong',null,fmt(tot2))),
-              React.createElement('td',null,React.createElement('span',{className:'bdg '+bdg},lbl))
-            );
-          })
-        )
-      )
-    )
-  );
-}
-function TabReps({reps,deals,setData}){
-  var [showAdd,setShowAdd]=useState(false);
-  var [editRep,setEditRep]=useState(null);
-  var [form,setForm]=useState({name:'',dept:'Sales',psQ:'',foQ:'',msQ:''});
-  var depts=['Sales','Marketing','Alliances','Customer Success'];
-  function openAdd(){ setForm({name:'',dept:'Sales',psQ:'',foQ:'',msQ:''}); setEditRep(null); setShowAdd(true); }
-  function openEdit(r){ setForm({name:r.name,dept:r.dept||'Sales',psQ:r.psQ||'',foQ:r.foQ||'',msQ:r.msQ||''}); setEditRep(r); setShowAdd(true); }
-  function save(){
-    if(!form.name.trim()) return;
-    var d=ld();
-    if(editRep){
-      d.reps=d.reps.map(function(r){ return r.id===editRep.id?Object.assign({},r,{name:form.name,dept:form.dept,psQ:parseFloat(form.psQ)||0,foQ:parseFloat(form.foQ)||0,msQ:parseFloat(form.msQ)||0}):r; });
-    } else {
-      d.reps.push({id:nid(),name:form.name,dept:form.dept,psQ:parseFloat(form.psQ)||0,foQ:parseFloat(form.foQ)||0,msQ:parseFloat(form.msQ)||0});
-    }
-    sd(d); setData(d); setShowAdd(false);
-  }
-  function del(id){
-    if(!confirm('Delete this rep and all their deals?')) return;
-    var d=ld();
-    d.reps=d.reps.filter(function(r){ return r.id!==id; });
-    d.deals=d.deals.filter(function(x){ return x.repId!==id; });
-    sd(d); setData(d);
-  }
-  return React.createElement('div',null,
-    React.createElement('div',{style:{display:'flex',justifyContent:'flex-end',marginBottom:'16px'}},
-      React.createElement('button',{className:'btn btn-p',onClick:openAdd},'+ Add Rep')
-    ),
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('table',{className:'sa-tbl'},
-        React.createElement('thead',null,React.createElement('tr',null,
-          React.createElement('th',null,'Name'),React.createElement('th',null,'Dept'),
-          React.createElement('th',null,'PS Quota'),React.createElement('th',null,'FO Quota'),React.createElement('th',null,'MS Quota'),
-          React.createElement('th',null,'Deals'),React.createElement('th',null,'Actions')
-        )),
-        React.createElement('tbody',null, reps.length===0?
-          React.createElement('tr',null,React.createElement('td',{colSpan:7,style:{textAlign:'center',color:'rgba(255,255,255,.3)',padding:'30px'}},'No reps yet. Add one!')):
-          reps.map(function(r){
-            var s=crs(r,deals);
-            return React.createElement('tr',{key:r.id},
-              React.createElement('td',null,React.createElement('strong',null,r.name)),
-              React.createElement('td',null,r.dept||'-'),
-              React.createElement('td',null,r.psQ?fmt(r.psQ)+'/mo':'-'),
-              React.createElement('td',null,r.foQ?fmt(r.foQ)+'/mo':'-'),
-              React.createElement('td',null,r.msQ?fmt(r.msQ)+'/mo':'-'),
-              React.createElement('td',null,s.deals.length),
-              React.createElement('td',null,
-                React.createElement('button',{className:'btn btn-s',style:{marginRight:'8px'},onClick:function(){ openEdit(r); }},'Edit'),
-                React.createElement('button',{className:'btn btn-d',onClick:function(){ del(r.id); }},'Del')
-              )
-            );
-          })
-        )
-      )
-    ),
-    showAdd && React.createElement('div',{className:'mo'},
-      React.createElement('div',{className:'mo-box'},
-        React.createElement('h2',null,editRep?'Edit Rep':'Add Rep'),
-        React.createElement('div',{className:'fr2'},
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'Name'),React.createElement('input',{className:'inp',value:form.name,onChange:function(e){ setForm(Object.assign({},form,{name:e.target.value})); }})),
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'Dept'),React.createElement('select',{className:'sel',value:form.dept,onChange:function(e){ setForm(Object.assign({},form,{dept:e.target.value})); }},depts.map(function(d){ return React.createElement('option',{key:d,value:d},d); })))
-        ),
-        React.createElement('p',{style:{color:'rgba(255,255,255,.5)',fontSize:'12px',margin:'0 0 12px'}},'Monthly quotas (used for pace calculations):'),
-        React.createElement('div',{className:'fr3'},
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'PS Monthly Quota'),React.createElement('input',{className:'inp',type:'number',value:form.psQ,onChange:function(e){ setForm(Object.assign({},form,{psQ:e.target.value})); }})),
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'FinOps MRR Quota'),React.createElement('input',{className:'inp',type:'number',value:form.foQ,onChange:function(e){ setForm(Object.assign({},form,{foQ:e.target.value})); }})),
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'MS MRR Quota'),React.createElement('input',{className:'inp',type:'number',value:form.msQ,onChange:function(e){ setForm(Object.assign({},form,{msQ:e.target.value})); }}))
-        ),
-        React.createElement('div',{style:{display:'flex',gap:'10px',justifyContent:'flex-end',marginTop:'20px'}},
-          React.createElement('button',{className:'btn btn-s',onClick:function(){ setShowAdd(false); }},'Cancel'),
-          React.createElement('button',{className:'btn btn-p',onClick:save},'Save')
-        )
-      )
-    )
-  );
-}
-function TabDeals({reps,deals,setData}){
-  var [showAdd,setShowAdd]=useState(false);
-  var [editDeal,setEditDeal]=useState(null);
-  var [filter,setFilter]=useState('all');
-  var [form,setForm]=useState({repId:'',cat:'PS',client:'',amount:'',mrr:'',month:String(CM)});
-  function openAdd(){ if(reps.length===0){ alert('Add a rep first.'); return; } setForm({repId:reps[0].id,cat:'PS',client:'',amount:'',mrr:'',month:String(CM)}); setEditDeal(null); setShowAdd(true); }
-  function openEdit(d){ setForm({repId:d.repId,cat:d.cat,client:d.client,amount:d.amount||'',mrr:d.mrr||'',month:String(d.month||CM)}); setEditDeal(d); setShowAdd(true); }
-  function save(){
-    if(!form.client.trim()) return;
-    var d=ld();
-    var nd={id:editDeal?editDeal.id:nid(),repId:form.repId,cat:form.cat,client:form.client,month:parseInt(form.month),amount:parseFloat(form.amount)||0,mrr:parseFloat(form.mrr)||0,date:editDeal?editDeal.date:new Date().toISOString().slice(0,10)};
-    if(editDeal){ d.deals=d.deals.map(function(x){ return x.id===editDeal.id?nd:x; }); }
-    else { d.deals.push(nd); }
-    sd(d); setData(d); setShowAdd(false);
-  }
-  function del(id){
-    if(!confirm('Delete this deal?')) return;
-    var d=ld(); d.deals=d.deals.filter(function(x){ return x.id!==id; }); sd(d); setData(d);
-  }
-  var shown=filter==='all'?deals:deals.filter(function(d){ return d.cat===filter; });
-  var repMap={}; reps.forEach(function(r){ repMap[r.id]=r.name; });
-  return React.createElement('div',null,
-    React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'16px'}},
-      React.createElement('div',{className:'fb',style:{margin:0}},
-        React.createElement('button',{className:'chip '+(filter==='all'?'on':''),onClick:function(){ setFilter('all'); }},'All'),
-        React.createElement('button',{className:'chip '+(filter==='PS'?'on':''),onClick:function(){ setFilter('PS'); }},'PS'),
-        React.createElement('button',{className:'chip '+(filter==='FO'?'on':''),onClick:function(){ setFilter('FO'); }},'FinOps'),
-        React.createElement('button',{className:'chip '+(filter==='MS'?'on':''),onClick:function(){ setFilter('MS'); }},'MS')
-      ),
-      React.createElement('button',{className:'btn btn-p',onClick:openAdd},'+ Add Deal')
-    ),
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('table',{className:'sa-tbl'},
-        React.createElement('thead',null,React.createElement('tr',null,
-          React.createElement('th',null,'Rep'),React.createElement('th',null,'Cat'),React.createElement('th',null,'Client'),
-          React.createElement('th',null,'Month'),React.createElement('th',null,'Amount/MRR'),React.createElement('th',null,'ARR Value'),
-          React.createElement('th',null,'Commission'),React.createElement('th',null,'Actions')
-        )),
-        React.createElement('tbody',null, shown.length===0?
-          React.createElement('tr',null,React.createElement('td',{colSpan:8,style:{textAlign:'center',color:'rgba(255,255,255,.3)',padding:'30px'}},'No deals yet')):
-          shown.map(function(d){
-            var arr=d.cat==='PS'?d.amount*12:d.mrr*gm(d.month);
-            var com=d.cat==='PS'?d.amount*0.1:d.cat==='FO'?d.mrr*0.07:d.mrr;
-            return React.createElement('tr',{key:d.id},
-              React.createElement('td',null,repMap[d.repId]||'?'),
-              React.createElement('td',null,React.createElement('span',{className:'bdg '+(d.cat==='PS'?'g':d.cat==='FO'?'y':'r')},d.cat)),
-              React.createElement('td',null,d.client),
-              React.createElement('td',null,MN[d.month-1]||d.month),
-              React.createElement('td',null,d.cat==='PS'?fmt(d.amount)+'/mo':fmt(d.mrr)+' MRR'),
-              React.createElement('td',null,React.createElement('strong',null,fmt(arr))),
-              React.createElement('td',null,fmt(com)),
-              React.createElement('td',null,
-                React.createElement('button',{className:'btn btn-s',style:{marginRight:'8px'},onClick:function(){ openEdit(d); }},'Edit'),
-                React.createElement('button',{className:'btn btn-d',onClick:function(){ del(d.id); }},'Del')
-              )
-            );
-          })
-        )
-      )
-    ),
-    showAdd && React.createElement('div',{className:'mo'},
-      React.createElement('div',{className:'mo-box'},
-        React.createElement('h2',null,editDeal?'Edit Deal':'Add Deal'),
-        React.createElement('div',{className:'fr3'},
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'Rep'),React.createElement('select',{className:'sel',value:form.repId,onChange:function(e){ setForm(Object.assign({},form,{repId:e.target.value})); }},reps.map(function(r){ return React.createElement('option',{key:r.id,value:r.id},r.name); }))),
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'Category'),React.createElement('select',{className:'sel',value:form.cat,onChange:function(e){ setForm(Object.assign({},form,{cat:e.target.value})); }},['PS','FO','MS'].map(function(c){ return React.createElement('option',{key:c,value:c},c==='PS'?'Professional Services':c==='FO'?'FinOps':'Managed Services'); }))),
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'Close Month'),React.createElement('select',{className:'sel',value:form.month,onChange:function(e){ setForm(Object.assign({},form,{month:e.target.value})); }},MN.map(function(m,i){ return React.createElement('option',{key:i,value:String(i+1)},m); })))
-        ),
-        React.createElement('div',{className:'fr2'},
-          React.createElement('div',null,React.createElement('label',{className:'lbl'},'Client Name'),React.createElement('input',{className:'inp',value:form.client,onChange:function(e){ setForm(Object.assign({},form,{client:e.target.value})); }})),
-          form.cat==='PS'?
-            React.createElement('div',null,React.createElement('label',{className:'lbl'},'Monthly Amount ($)'),React.createElement('input',{className:'inp',type:'number',value:form.amount,onChange:function(e){ setForm(Object.assign({},form,{amount:e.target.value})); }})):
-            React.createElement('div',null,React.createElement('label',{className:'lbl'},'MRR ($)'),React.createElement('input',{className:'inp',type:'number',value:form.mrr,onChange:function(e){ setForm(Object.assign({},form,{mrr:e.target.value})); }}))
-        ),
-        form.cat!=='PS' && React.createElement('p',{style:{color:'rgba(255,255,255,.5)',fontSize:'12px',margin:'0 0 12px'}},
-          'ARR = MRR x '+(13-parseInt(form.month||CM))+' ('+MN[(parseInt(form.month||CM))-1]+' multiplier) = '+fmt((parseFloat(form.mrr)||0)*(13-parseInt(form.month||CM)))
-        ),
-        form.cat==='PS' && React.createElement('p',{style:{color:'rgba(255,255,255,.5)',fontSize:'12px',margin:'0 0 12px'}},
-          'ARR = Monthly x 12 = '+fmt((parseFloat(form.amount)||0)*12)
-        ),
-        React.createElement('div',{style:{display:'flex',gap:'10px',justifyContent:'flex-end',marginTop:'20px'}},
-          React.createElement('button',{className:'btn btn-s',onClick:function(){ setShowAdd(false); }},'Cancel'),
-          React.createElement('button',{className:'btn btn-p',onClick:save},'Save')
-        )
-      )
-    )
-  );
-}
-function TabCatPerf({reps,deals}){
-  var [selRep,setSelRep]=useState('all');
-  var filtered=selRep==='all'?deals:deals.filter(function(d){ return d.repId===selRep; });
-  var tot=cc(filtered);
-  var ppS=CM/12, ppFO=pFO();
-  function catDeals(cat){ return filtered.filter(function(d){ return d.cat===cat; }); }
-  function catARR(cat){ return catDeals(cat).reduce(function(s,d){ return s+(cat==='PS'?d.amount*12:d.mrr*gm(d.month)); },0); }
-  function catCom(cat){ return catDeals(cat).reduce(function(s,d){ return s+(cat==='PS'?d.amount*0.1:cat==='FO'?d.mrr*0.07:d.mrr); },0); }
-  var cats=[{id:'PS',lbl:'Professional Services',quota:CQ.PS,pace:ppS,color:'#6366f1'},{id:'FO',lbl:'FinOps',quota:CQ.FO,pace:ppFO,color:'#8b5cf6'},{id:'MS',lbl:'Managed Services',quota:CQ.MS,pace:ppFO,color:'#10b981'}];
-  return React.createElement('div',null,
-    React.createElement('div',{className:'fb'},
-      React.createElement('button',{className:'chip '+(selRep==='all'?'on':''),onClick:function(){ setSelRep('all'); }},'All Reps'),
-      reps.map(function(r){ return React.createElement('button',{key:r.id,className:'chip '+(selRep===r.id?'on':''),onClick:function(){ setSelRep(r.id); }},r.name); })
-    ),
-    cats.map(function(cat){
-      var arr=catARR(cat.id);
-      var ratio=cat.quota>0?arr/cat.quota:0;
-      var cls=ratio>=cat.pace?'good':ratio>=cat.pace*0.8?'':'warn';
-      return React.createElement('div',{key:cat.id,className:'sa-card'},
-        React.createElement('h3',null,cat.lbl),
-        React.createElement('div',{className:'g4'},
-          React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'ARR'),React.createElement('div',{className:'val'},fmt(arr)),React.createElement('div',{className:'sub'},'Quota: '+fmt(cat.quota))),
-          React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Attainment'),React.createElement('div',{className:'val'},pct(ratio)),React.createElement('div',{className:'sub'},'Pace: '+pct(cat.pace))),
-          React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Deals'),React.createElement('div',{className:'val'},catDeals(cat.id).length),React.createElement('div',{className:'sub'},'avg: '+fmt(catDeals(cat.id).length>0?arr/catDeals(cat.id).length:0))),
-          React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Commission'),React.createElement('div',{className:'val'},fmt(catCom(cat.id))),React.createElement('div',{className:'sub'},cat.id==='PS'?'10% rate':cat.id==='FO'?'7% MRR':'1x MRR'))
-        ),
-        React.createElement('div',{className:'pb'},React.createElement('div',{className:'pb-f '+cls,style:{width:(Math.min(ratio,1)*100)+'%'}}))
-      );
-    })
-  );
-}
-function TabARR(){
-  var [cat,setCat]=useState('PS');
-  var [amt,setAmt]=useState('');
-  var [month,setMonth]=useState(String(CM));
-  var arr=cat==='PS'?(parseFloat(amt)||0)*12:(parseFloat(amt)||0)*gm(parseInt(month));
-  var com=cat==='PS'?(parseFloat(amt)||0)*0.1:cat==='FO'?(parseFloat(amt)||0)*0.07:(parseFloat(amt)||0);
-  return React.createElement('div',null,
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('h3',null,'ARR Calculator'),
-      React.createElement('div',{className:'fr3'},
-        React.createElement('div',null,React.createElement('label',{className:'lbl'},'Category'),React.createElement('select',{className:'sel',value:cat,onChange:function(e){ setCat(e.target.value); }},
-          React.createElement('option',{value:'PS'},'Professional Services'),
-          React.createElement('option',{value:'FO'},'FinOps'),
-          React.createElement('option',{value:'MS'},'Managed Services')
-        )),
-        React.createElement('div',null,React.createElement('label',{className:'lbl'},cat==='PS'?'Monthly Amount ($)':'MRR ($)'),React.createElement('input',{className:'inp',type:'number',value:amt,onChange:function(e){ setAmt(e.target.value); },placeholder:'Enter amount'})),
-        cat!=='PS'?React.createElement('div',null,React.createElement('label',{className:'lbl'},'Close Month'),React.createElement('select',{className:'sel',value:month,onChange:function(e){ setMonth(e.target.value); }},MN.map(function(m,i){ return React.createElement('option',{key:i,value:String(i+1)},m); }))):React.createElement('div',null)
-      ),
-      React.createElement('div',{className:'g3'},
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'ARR Value'),React.createElement('div',{className:'val'},fmt(arr)),React.createElement('div',{className:'sub'},cat==='PS'?'Monthly x 12':'MRR x '+(13-parseInt(month))+' (multiplier)')),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Commission'),React.createElement('div',{className:'val'},fmt(com)),React.createElement('div',{className:'sub'},cat==='PS'?'10% of monthly':cat==='FO'?'7% of MRR':'1x MRR')),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},cat!=='PS'?'Multiplier':'ARR/MRR Ratio'),React.createElement('div',{className:'val'},cat!=='PS'?('x'+(13-parseInt(month))):'x12'),React.createElement('div',{className:'sub'},cat!=='PS'?MN[(parseInt(month)-1)]+' close':'Full year'))
-      ),
-      cat!=='PS' && React.createElement('div',{className:'sa-card',style:{marginTop:'16px',background:'#0f172a'}},
-        React.createElement('h3',{style:{fontSize:'13px'}},'Multiplier Reference'),
-        React.createElement('div',{style:{display:'flex',flexWrap:'wrap',gap:'8px'}},
-          MN.map(function(m,i){ var mul=13-(i+1); return React.createElement('div',{key:i,style:{background:'rgba(99,102,241,.15)',borderRadius:'8px',padding:'8px 12px',textAlign:'center',minWidth:'60px'}},React.createElement('div',{style:{fontSize:'11px',color:'rgba(255,255,255,.5)'}},m),React.createElement('div',{style:{fontWeight:'700',color:'#fff'}},('x'+mul))); })
-        )
-      )
-    )
-  );
-}
 
-function TabCommissions({reps,deals}){
-  var [selRep,setSelRep]=useState('all');
-  var filtered=selRep==='all'?deals:deals.filter(function(d){ return d.repId===selRep; });
-  var repMap={}; reps.forEach(function(r){ repMap[r.id]=r.name; });
-  function repCom(rep){ var s=crs(rep,deals); return s.psc+s.foc+s.msc; }
-  var totalCom=reps.reduce(function(s,r){ return s+repCom(r); },0);
-  return React.createElement('div',null,
-    React.createElement('div',{className:'fb'},
-      React.createElement('button',{className:'chip '+(selRep==='all'?'on':''),onClick:function(){ setSelRep('all'); }},'All Reps'),
-      reps.map(function(r){ return React.createElement('button',{key:r.id,className:'chip '+(selRep===r.id?'on':''),onClick:function(){ setSelRep(r.id); }},r.name); })
-    ),
-    selRep==='all'?React.createElement('div',null,
-      React.createElement('div',{className:'g3',style:{marginBottom:'16px'}},
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Total Commissions'),React.createElement('div',{className:'val'},fmt(totalCom))),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Reps Earning'),React.createElement('div',{className:'val'},reps.filter(function(r){ return repCom(r)>0; }).length+' / '+reps.length)),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Avg Commission'),React.createElement('div',{className:'val'},fmt(reps.length>0?totalCom/reps.length:0)))
-      ),
-      React.createElement('div',{className:'sa-card'},
-        React.createElement('table',{className:'sa-tbl'},
-          React.createElement('thead',null,React.createElement('tr',null,
-            React.createElement('th',null,'Rep'),React.createElement('th',null,'PS Com'),React.createElement('th',null,'FO Com'),React.createElement('th',null,'MS Com'),React.createElement('th',null,'Total')
-          )),
-          React.createElement('tbody',null,reps.map(function(r){
-            var s=crs(r,deals);
-            return React.createElement('tr',{key:r.id},
-              React.createElement('td',null,React.createElement('strong',null,r.name)),
-              React.createElement('td',null,fmt(s.psc)),
-              React.createElement('td',null,fmt(s.foc)),
-              React.createElement('td',null,fmt(s.msc)),
-              React.createElement('td',null,React.createElement('strong',null,fmt(s.psc+s.foc+s.msc)))
-            );
-          }))
-        )
-      )
-    ):React.createElement('div',null,
-      function(){
-        var rep=reps.find(function(r){ return r.id===selRep; });
-        if(!rep) return null;
-        var s=crs(rep,deals);
-        return React.createElement('div',null,
-          React.createElement('div',{className:'g3',style:{marginBottom:'16px'}},
-            React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'PS Commission'),React.createElement('div',{className:'val'},fmt(s.psc)),React.createElement('div',{className:'sub'},'10% rate')),
-            React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'FO Commission'),React.createElement('div',{className:'val'},fmt(s.foc)),React.createElement('div',{className:'sub'},'7% of MRR')),
-            React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'MS Commission'),React.createElement('div',{className:'val'},fmt(s.msc)),React.createElement('div',{className:'sub'},'1x MRR'))
-          ),
-          React.createElement('div',{className:'sa-card'},
-            React.createElement('h3',null,rep.name+' - Deal Details'),
-            React.createElement('table',{className:'sa-tbl'},
-              React.createElement('thead',null,React.createElement('tr',null,
-                React.createElement('th',null,'Client'),React.createElement('th',null,'Cat'),React.createElement('th',null,'Month'),React.createElement('th',null,'Amount/MRR'),React.createElement('th',null,'ARR'),React.createElement('th',null,'Commission')
-              )),
-              React.createElement('tbody',null,s.deals.map(function(d){
-                var arr=d.cat==='PS'?d.amount*12:d.mrr*gm(d.month);
-                var com=d.cat==='PS'?d.amount*0.1:d.cat==='FO'?d.mrr*0.07:d.mrr;
-                return React.createElement('tr',{key:d.id},
-                  React.createElement('td',null,d.client),
-                  React.createElement('td',null,React.createElement('span',{className:'bdg '+(d.cat==='PS'?'g':d.cat==='FO'?'y':'r')},d.cat)),
-                  React.createElement('td',null,MN[d.month-1]),
-                  React.createElement('td',null,d.cat==='PS'?fmt(d.amount)+'/mo':fmt(d.mrr)+' MRR'),
-                  React.createElement('td',null,fmt(arr)),
-                  React.createElement('td',null,React.createElement('strong',null,fmt(com)))
-                );
-              }))
-            )
-          )
-        );
-      }()
-    )
+export default function SalesAnalytics({ onBack }) {
+  const [tab, setTab] = useState('dash');
+  const [data, setData] = useState(ld());
+  const [showAddRep, setShowAddRep] = useState(false);
+  const [showAddDeal, setShowAddDeal] = useState(false);
+  const [editRep, setEditRep] = useState(null);
+  const [editDeal, setEditDeal] = useState(null);
+  const [calcCat, setCalcCat] = useState('PS');
+  const [calcAmt, setCalcAmt] = useState('');
+  const [calcMonth, setCalcMonth] = useState(CM);
+  const [filterCat, setFilterCat] = useState('All');
+  const [filterRep, setFilterRep] = useState('All');
+
+  const save = (d) => { sd(d); setData({...d}); };
+
+  // ── Rep form state
+  const [rf, setRf] = useState({name:'',dept:''});
+  // ── Deal form state
+  const [df, setDf] = useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
+
+  const tots = cc(data.deals);
+  const totalComm = data.deals.reduce((a,d) => a + dealComm(d), 0);
+
+  // Dashboard quota cards
+  const dashCards = [
+    {
+      id:'PS', label:'Professional Services', color:'#6366f1',
+      quota: CQ.PS,
+      arr: tots.ps,
+      note: 'One-time fees × 12 = ARR'
+    },
+    {
+      id:'FO', label:'FinOps', color:'#0ea5e9',
+      quota: CQ.FO,
+      arr: tots.fo,
+      note: 'MRR × months remaining in year'
+    },
+    {
+      id:'MS', label:'Managed Services', color:'#10b981',
+      quota: CQ.MS,
+      arr: tots.ms,
+      note: 'MRR × months remaining in year'
+    },
+  ];
+
+  return (
+    <>
+      <style>{ST}</style>
+      <div className="sa">
+        <div className="sa-hd">
+          <h1>Sales Analytics</h1>
+          <button className="sa-x" onClick={() => onBack && onBack()}>Back to Home</button>
+        </div>
+        <div className="sa-tabs">
+          {[
+            {id:'dash',label:'Dashboard'},
+            {id:'reps',label:'Reps'},
+            {id:'deals',label:'Deals'},
+            {id:'catperf',label:'Category Performance'},
+            {id:'arrcalc',label:'ARR Calc'},
+            {id:'comm',label:'Commissions'},
+            {id:'reports',label:'Reports'},
+            {id:'settings',label:'Settings'},
+          ].map(t => (
+            <button key={t.id} className={`sa-tab${tab===t.id?' on':''}`} onClick={()=>setTab(t.id)}>{t.label}</button>
+          ))}
+        </div>
+        <div className="sa-body">
+          {tab==='dash' && <DashTab data={data} dashCards={dashCards} tots={tots} totalComm={totalComm} />}
+          {tab==='reps' && <RepsTab data={data} save={save} showAddRep={showAddRep} setShowAddRep={setShowAddRep} editRep={editRep} setEditRep={setEditRep} rf={rf} setRf={setRf} />}
+          {tab==='deals' && <DealsTab data={data} save={save} showAddDeal={showAddDeal} setShowAddDeal={setShowAddDeal} editDeal={editDeal} setEditDeal={setEditDeal} df={df} setDf={setDf} filterCat={filterCat} setFilterCat={setFilterCat} />}
+          {tab==='catperf' && <CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} />}
+          {tab==='arrcalc' && <ArrCalcTab calcCat={calcCat} setCalcCat={setCalcCat} calcAmt={calcAmt} setCalcAmt={setCalcAmt} calcMonth={calcMonth} setCalcMonth={setCalcMonth} />}
+          {tab==='comm' && <CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} />}
+          {tab==='reports' && <ReportsTab data={data} />}
+          {tab==='settings' && <SettingsTab data={data} save={save} />}
+        </div>
+      </div>
+    </>
   );
-}
-function TabReports({reps,deals}){
-  var [selRep,setSelRep]=useState('all');
-  function exportCSV(repId){
-    var rep=reps.find(function(r){ return r.id===repId; });
-    if(!rep) return;
-    var s=crs(rep,deals);
-    var rows=['CLOUDELLIGENT','','Department: '+rep.dept,'Period: Full Year 2026','Date Generated: '+new Date().toLocaleDateString(),'','','CATEGORY,DEAL/CLIENT,MONTH,AMOUNT/MRR,ARR VALUE,RATE,COMMISSION'];
-    var psDl=s.deals.filter(function(d){ return d.cat==='PS'; });
-    if(psDl.length>0){
-      rows.push('PROFESSIONAL SERVICES');
-      psDl.forEach(function(d){ rows.push(','+d.client+','+MN[d.month-1]+','+d.amount+',$'+(d.amount*12)+',10%,$'+(d.amount*0.1).toFixed(2)); });
-      rows.push(',,,,PS Subtotal:,,$'+s.psc.toFixed(2));
-    }
-    var foDl=s.deals.filter(function(d){ return d.cat==='FO'; });
-    if(foDl.length>0){
-      rows.push('FINOPS');
-      foDl.forEach(function(d){ rows.push(','+d.client+','+MN[d.month-1]+','+d.mrr+' MRR,$'+(d.mrr*gm(d.month))+',7%,$'+(d.mrr*0.07).toFixed(2)); });
-      rows.push(',,,,FO Subtotal:,,$'+s.foc.toFixed(2));
-    }
-    var msDl=s.deals.filter(function(d){ return d.cat==='MS'; });
-    if(msDl.length>0){
-      rows.push('MANAGED SERVICES');
-      msDl.forEach(function(d){ rows.push(','+d.client+','+MN[d.month-1]+','+d.mrr+' MRR,$'+(d.mrr*gm(d.month))+',1x MRR,$'+d.mrr.toFixed(2)); });
-      rows.push(',,,,MS Subtotal:,,$'+s.msc.toFixed(2));
-    }
-    rows.push('');
-    rows.push('COMMISSION SUMMARY');
-    rows.push('Professional Services (10%),,,,,,$'+s.psc.toFixed(2));
-    rows.push('FinOps (7% of MRR),,,,,,$'+s.foc.toFixed(2));
-    rows.push('Managed Services (1x MRR),,,,,,$'+s.msc.toFixed(2));
-    rows.push('');
-    rows.push('TOTAL COMMISSION EARNED,,,,,,$'+(s.psc+s.foc+s.msc).toFixed(2));
-    rows.push('');
-    rows.push('ACKNOWLEDGMENT');
-    rows.push('');
-    rows.push('I acknowledge receipt of this commission statement.');
-    var csv=rows.join('\n');
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');
-    a.href=url; a.download='Commission_Statement_'+rep.name.replace(/ /g,'_')+'.csv';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  }
-  return React.createElement('div',null,
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('h3',null,'Export Commission Statements'),
-      React.createElement('p',{style:{color:'rgba(255,255,255,.5)',fontSize:'13px',margin:'0 0 16px'}},'Generate CSV commission statements for each rep.'),
-      reps.length===0?React.createElement('div',{className:'empty'},'No reps to export.'):React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:'10px'}},
-        reps.map(function(r){
-          var s=crs(r,deals);
-          return React.createElement('div',{key:r.id,style:{display:'flex',justifyContent:'space-between',alignItems:'center',background:'#0f172a',borderRadius:'10px',padding:'14px 18px'}},
-            React.createElement('div',null,
-              React.createElement('div',{style:{fontWeight:'700',color:'#fff'}},r.name),
-              React.createElement('div',{style:{fontSize:'12px',color:'rgba(255,255,255,.4)',marginTop:'2px'}},r.dept+' | '+s.deals.length+' deals | Total: '+fmt(s.psc+s.foc+s.msc))
-            ),
-            React.createElement('button',{className:'btn btn-p',onClick:function(){ exportCSV(r.id); }},'Export CSV')
+          }
+
+// ── DASHBOARD TAB
+function DashTab({data, dashCards, tots, totalComm}) {
+  const totalARR = tots.ps + tots.fo + tots.ms;
+  const totalQuota = CQ.PS + CQ.FO + CQ.MS;
+  return (
+    <div>
+      <div className="sa-grid3">
+        {dashCards.map(c => {
+          const pct_val = c.quota > 0 ? Math.min(1, c.arr / c.quota) : 0;
+          const behind = c.arr < c.quota * (CM/12);
+          return (
+            <div className="sa-stat" key={c.id}>
+              <div className="lbl">{c.label} ARR</div>
+              <div className="val">{fmt(c.arr)}</div>
+              <div className="sub">of {fmt(c.quota)} annual quota</div>
+              <div className="note">{c.note}</div>
+              <div className="sa-bar"><div className="sa-bar-fill" style={{width:pct_val*100+'%',background:c.color}} /></div>
+              <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
+                <span style={{fontSize:11,color:'#475569'}}>{(pct_val*100).toFixed(1)}% attained</span>
+                <span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span>
+              </div>
+            </div>
           );
-        })
-      )
-    )
+        })}
+      </div>
+      <div className="sa-grid3">
+        <div className="sa-stat">
+          <div className="lbl">Total ARR (All Categories)</div>
+          <div className="val">{fmt(totalARR)}</div>
+
+const SK = 'pai_quotaTracker';
+const CQ = { PS: 6500000, FO: 32000000, MS: 1500000 };
+const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
+const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CM = new Date().getMonth() + 1;
+
+function mrem(m){ return Math.max(1, 13 - m); }
+function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function pct(n){ return (n*100).toFixed(1)+'%'; }
+function ld(){ try{ var r=localStorage.getItem(SK); if(r) return JSON.parse(r); }catch(e){} return {reps:[],deals:[]}; }
+function sd(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
+function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
+
+function dealARR(d){
+  if(d.cat==='PS') return (d.amount||0) * 12;
+  return (d.mrr||0) * mrem(d.month||CM);
+}
+function dealComm(d){
+  if(d.cat==='PS') return (d.amount||0) * CR.PS;
+  if(d.cat==='FO') return (d.mrr||0) * mrem(d.month||CM) * CR.FO;
+  if(d.cat==='MS') return (d.mrr||0) * mrem(d.month||CM) * CR.MS;
+  return 0;
+}
+function crs(rep,deals){
+  var my=deals.filter(d=>d.repId===rep.id);
+  var ps=0,fo=0,ms=0,psc=0,foc=0,msc=0;
+  my.forEach(d=>{
+    var arr=dealARR(d),com=dealComm(d);
+    if(d.cat==='PS'){ps+=arr;psc+=com;}
+    else if(d.cat==='FO'){fo+=arr;foc+=com;}
+    else if(d.cat==='MS'){ms+=arr;msc+=com;}
+  });
+  return {ps,fo,ms,psc,foc,msc,deals:my};
+}
+function cc(deals){
+  var ps=0,fo=0,ms=0;
+  deals.forEach(d=>{
+    var arr=dealARR(d);
+    if(d.cat==='PS') ps+=arr;
+    else if(d.cat==='FO') fo+=arr;
+    else if(d.cat==='MS') ms+=arr;
+  });
+  return {ps,fo,ms};
+}
+
+export default function SalesAnalytics({onBack}){
+  const [tab,setTab]=useState('dash');
+  const [data,setData]=useState(ld());
+  const [showAddRep,setShowAddRep]=useState(false);
+  const [showAddDeal,setShowAddDeal]=useState(false);
+  const [editRep,setEditRep]=useState(null);
+  const [editDeal,setEditDeal]=useState(null);
+  const [calcCat,setCalcCat]=useState('PS');
+  const [calcAmt,setCalcAmt]=useState('');
+  const [calcMonth,setCalcMonth]=useState(CM);
+  const [filterCat,setFilterCat]=useState('All');
+  const [filterRep,setFilterRep]=useState('All');
+  const [rf,setRf]=useState({name:'',dept:''});
+  const [df,setDf]=useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
+
+  const save=d=>{sd(d);setData({...d});};
+  const tots=cc(data.deals);
+  const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
+
+  const dashCards=[
+    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,arr:tots.ps,note:'One-time fee × 12 = ARR | Commission: 10% of deal amount'},
+    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,arr:tots.fo,note:'Recurring MRR × months remaining = ARR | Commission: 7% × MRR × months'},
+    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,arr:tots.ms,note:'Recurring MRR × months remaining = ARR | Commission: 7% × MRR × months'},
+  ];
+
+  return(<>
+    <style>{`
+      .sa{display:flex;flex-direction:column;min-height:100vh;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;}
+      .sa-hd{background:#1e293b;border-bottom:1px solid rgba(99,102,241,.3);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;flex-shrink:0;}
+      .sa-hd h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0;}
+      .sa-x{background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;}
+      .sa-tabs{display:flex;gap:4px;background:#1e293b;padding:8px 24px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;overflow-x:auto;}
+      .sa-tab{background:transparent;border:none;color:#64748b;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .15s;}
+      .sa-tab:hover{color:#e2e8f0;background:rgba(255,255,255,.05);}
+      .sa-tab.on{background:rgba(99,102,241,.2);color:#818cf8;border:1px solid rgba(99,102,241,.3);}
+      .sa-body{flex:1;overflow-y:auto;padding:24px;}
+      .sa-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px;}
+      .sa-card h2{font-size:16px;font-weight:600;color:#f1f5f9;margin:0 0 16px;}
+      .sa-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
+      .sa-grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;}
+      .sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;}
+      .sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-bottom:6px;}
+      .sa-stat .val{font-size:22px;font-weight:700;color:#f1f5f9;}
+      .sa-stat .sub{font-size:11px;color:#475569;margin-top:4px;}
+      .sa-stat .note{font-size:11px;color:#818cf8;margin-top:6px;font-style:italic;}
+      .sa-bar{height:6px;background:#1e293b;border-radius:3px;margin-top:10px;overflow:hidden;}
+      .sa-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
+      .sa-tbl{width:100%;border-collapse:collapse;}
+      .sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);}
+      .sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#cbd5e1;}
+      .sa-tbl tr:last-child td{border-bottom:none;}
+      .sa-tbl tr:hover td{background:rgba(255,255,255,.02);}
+      .sa-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+      .sa-badge.ahead{background:rgba(16,185,129,.15);color:#34d399;}
+      .sa-badge.behind{background:rgba(239,68,68,.15);color:#f87171;}
+      .sa-btn{background:linear-gradient(135deg,#4f46e5,#6366f1);border:none;color:#fff;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;}
+      .sa-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.4);}
+      .sa-btn.sm{padding:6px 14px;font-size:12px;}
+      .sa-btn.del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#f87171;}
+      .sa-input{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;}
+      .sa-input:focus{outline:none;border-color:#6366f1;}
+      .sa-select{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;}
+      .sa-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block;}
+      .sa-form-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
+      .sa-section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+      .sa-pill{display:inline-flex;align-items:center;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;}
+      .sa-pill.on{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe;}
+      .sa-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+    `}</style>
+    <div className="sa">
+      <div className="sa-hd">
+        <h1>Sales Analytics</h1>
+        <button className="sa-x" onClick={()=>onBack&&onBack()}>Back to Home</button>
+      </div>
+      <div className="sa-tabs">
+        {[['dash','Dashboard'],['reps','Reps'],['deals','Deals'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['reports','Reports'],['settings','Settings']].map(([id,label])=>(
+          <button key={id} className={`sa-tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{label}</button>
+        ))}
+      </div>
+      <div className="sa-body">
+        {tab==='dash'&&<DashTab data={data} dashCards={dashCards} tots={tots} totalComm={totalComm}/>}
+        {tab==='reps'&&<RepsTab data={data} save={save} showAddRep={showAddRep} setShowAddRep={setShowAddRep} editRep={editRep} setEditRep={setEditRep} rf={rf} setRf={setRf}/>}
+        {tab==='deals'&&<DealsTab data={data} save={save} showAddDeal={showAddDeal} setShowAddDeal={setShowAddDeal} editDeal={editDeal} setEditDeal={setEditDeal} df={df} setDf={setDf} filterCat={filterCat} setFilterCat={setFilterCat}/>}
+        {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
+        {tab==='arrcalc'&&<ArrCalcTab calcCat={calcCat} setCalcCat={setCalcCat} calcAmt={calcAmt} setCalcAmt={setCalcAmt} calcMonth={calcMonth} setCalcMonth={setCalcMonth}/>}
+        {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
+        {tab==='reports'&&<ReportsTab data={data}/>}
+        {tab==='settings'&&<SettingsTab data={data} save={save}/>}
+      </div>
+    </div>
+  </>);
+        }
+
+function DashTab({data,dashCards,tots,totalComm}){
+  const totalARR=tots.ps+tots.fo+tots.ms;
+  const totalQuota=CQ.PS+CQ.FO+CQ.MS;
+  return(
+    <div>
+      <div className="sa-grid3">
+        {dashCards.map(c=>{
+          const p=c.quota>0?Math.min(1,c.arr/c.quota):0;
+          const pace=CM/12;
+          const behind=c.arr<c.quota*pace;
+          return(
+            <div className="sa-stat" key={c.id}>
+              <div className="lbl">{c.label}</div>
+              <div className="val">{fmt(c.arr)}</div>
+              <div className="sub">of {fmt(c.quota)} annual quota &nbsp;({pct(p)} attained)</div>
+              <div className="note">{c.note}</div>
+              <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:c.color}}/></div>
+              <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
+                <span style={{fontSize:11,color:'#475569'}}>Pace: {pct(pace)}</span>
+                <span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="sa-grid3">
+        <div className="sa-stat">
+          <div className="lbl">Total Combined ARR</div>
+          <div className="val">{fmt(totalARR)}</div>
+          <div className="sub">of {fmt(totalQuota)} combined quota</div>
+          <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalARR/totalQuota*100)+'%',background:'linear-gradient(90deg,#6366f1,#8b5cf6)'}}/></div>
+        </div>
+        <div className="sa-stat">
+          <div className="lbl">Total Commissions</div>
+          <div className="val">{fmt(totalComm)}</div>
+          <div className="sub">across {data.deals.length} deals</div>
+        </div>
+        <div className="sa-stat">
+          <div className="lbl">Active Reps</div>
+          <div className="val">{data.reps.length}</div>
+          <div className="sub">{data.deals.length} total deals logged</div>
+        </div>
+      </div>
+      <div className="sa-card">
+        <h2>Rep Summary</h2>
+        <table className="sa-tbl">
+          <thead><tr><th>Rep</th><th>Dept</th><th>PS ARR</th><th>FO ARR</th><th>MS ARR</th><th>Total ARR</th><th>Commission</th><th>Status</th></tr></thead>
+          <tbody>
+            {data.reps.map(r=>{
+              const s=crs(r,data.deals);
+              const repTot=s.ps+s.fo+s.ms;
+              const repComm=s.psc+s.foc+s.msc;
+              const pace=CM/12;
+              const avgQ=(CQ.PS+CQ.FO+CQ.MS)/Math.max(1,data.reps.length);
+              const behind=repTot<avgQ*pace;
+              return(
+                <tr key={r.id}>
+                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
+                  <td>{r.dept||'—'}</td>
+                  <td>{fmt(s.ps)}</td>
+                  <td>{fmt(s.fo)}</td>
+                  <td>{fmt(s.ms)}</td>
+                  <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(repTot)}</td>
+                  <td style={{color:'#34d399'}}>{fmt(repComm)}</td>
+                  <td><span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
-function TabSettings({reps,deals,setData}){
-  function clearAll(){
-    if(!confirm('Delete ALL data? This cannot be undone.')) return;
-    var d={reps:[],deals:[]}; sd(d); setData(d);
-  }
-  var totalARR=deals.reduce(function(s,d){ return s+(d.cat==='PS'?d.amount*12:d.mrr*gm(d.month)); },0);
-  var totalCom=reps.reduce(function(s,r){ var x=crs(r,deals); return s+x.psc+x.foc+x.msc; },0);
-  return React.createElement('div',null,
-    React.createElement('div',{className:'g2'},
-      React.createElement('div',{className:'sa-card'},
-        React.createElement('h3',null,'Company Quotas'),
-        React.createElement('div',{className:'met',style:{marginBottom:'10px'}},React.createElement('div',{className:'lbl'},'Professional Services'),React.createElement('div',{className:'val'},fmt(CQ.PS)),React.createElement('div',{className:'sub'},'Annual Quota')),
-        React.createElement('div',{className:'met',style:{marginBottom:'10px'}},React.createElement('div',{className:'lbl'},'FinOps'),React.createElement('div',{className:'val'},fmt(CQ.FO)),React.createElement('div',{className:'sub'},'Annual Quota')),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Managed Services'),React.createElement('div',{className:'val'},fmt(CQ.MS)),React.createElement('div',{className:'sub'},'Annual Quota'))
-      ),
-      React.createElement('div',{className:'sa-card'},
-        React.createElement('h3',null,'Data Summary'),
-        React.createElement('div',{className:'met',style:{marginBottom:'10px'}},React.createElement('div',{className:'lbl'},'Reps'),React.createElement('div',{className:'val'},reps.length)),
-        React.createElement('div',{className:'met',style:{marginBottom:'10px'}},React.createElement('div',{className:'lbl'},'Deals'),React.createElement('div',{className:'val'},deals.length),React.createElement('div',{className:'sub'},'Total ARR: '+fmt(totalARR))),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Total Commissions'),React.createElement('div',{className:'val'},fmt(totalCom)))
-      )
-    ),
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('h3',null,'Commission Rates'),
-      React.createElement('div',{className:'g3'},
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Professional Services'),React.createElement('div',{className:'val'},'10%'),React.createElement('div',{className:'sub'},'of monthly amount')),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'FinOps'),React.createElement('div',{className:'val'},'7%'),React.createElement('div',{className:'sub'},'of MRR')),
-        React.createElement('div',{className:'met'},React.createElement('div',{className:'lbl'},'Managed Services'),React.createElement('div',{className:'val'},'1x MRR'),React.createElement('div',{className:'sub'},'full MRR amount'))
-      )
-    ),
-    React.createElement('div',{className:'sa-card'},
-      React.createElement('h3',null,'Danger Zone'),
-      React.createElement('p',{style:{color:'rgba(255,255,255,.5)',fontSize:'13px',margin:'0 0 16px'}},'Clear all data. This action cannot be undone.'),
-      React.createElement('button',{className:'btn btn-d',onClick:clearAll},'Clear All Data')
-    )
+function RepsTab({data,save,showAddRep,setShowAddRep,editRep,setEditRep,rf,setRf}){
+  const submit=()=>{
+    if(!rf.name.trim()) return;
+    const d=ld();
+    if(editRep){
+      d.reps=d.reps.map(r=>r.id===editRep.id?{...r,...rf}:r);
+      setEditRep(null);
+    } else {
+      d.reps=[...d.reps,{id:nid(),...rf}];
+    }
+    save(d); setRf({name:'',dept:''}); setShowAddRep(false);
+  };
+  const del=id=>{if(!window.confirm('Delete rep?'))return;const d=ld();d.reps=d.reps.filter(r=>r.id!==id);save(d);};
+  const startEdit=r=>{setEditRep(r);setRf({name:r.name,dept:r.dept||''});setShowAddRep(true);};
+  return(
+    <div>
+      <div className="sa-section-hd">
+        <div/>
+        <button className="sa-btn" onClick={()=>{setShowAddRep(!showAddRep);setEditRep(null);setRf({name:'',dept:''});}}>+ Add Rep</button>
+      </div>
+      {showAddRep&&(
+        <div className="sa-card" style={{marginBottom:16}}>
+          <h2>{editRep?'Edit Rep':'New Rep'}</h2>
+          <div className="sa-form-row">
+            <div><label className="sa-label">Name</label><input className="sa-input" value={rf.name} onChange={e=>setRf({...rf,name:e.target.value})} placeholder="Full name"/></div>
+            <div><label className="sa-label">Department</label><input className="sa-input" value={rf.dept} onChange={e=>setRf({...rf,dept:e.target.value})} placeholder="e.g. PS, FinOps, MS"/></div>
+            <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
+              <button className="sa-btn" onClick={submit}>{editRep?'Save':'Add Rep'}</button>
+              <button className="sa-btn del sm" onClick={()=>{setShowAddRep(false);setEditRep(null);}}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="sa-card">
+        <table className="sa-tbl">
+          <thead><tr><th>Name</th><th>Dept</th><th>PS Quota</th><th>FO Quota</th><th>MS Quota</th><th>Deals</th><th>Actions</th></tr></thead>
+          <tbody>
+            {data.reps.map(r=>{
+              const s=crs(r,data.deals);
+              return(
+                <tr key={r.id}>
+                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
+                  <td>{r.dept||'—'}</td>
+                  <td>{fmt(r.psQuota||0)}</td>
+                  <td>{fmt(r.foQuota||0)}</td>
+                  <td>{fmt(r.msQuota||0)}</td>
+                  <td>{s.deals.length}</td>
+                  <td style={{display:'flex',gap:6}}>
+                    <button className="sa-btn sm" onClick={()=>startEdit(r)}>Edit</button>
+                    <button className="sa-btn del sm" onClick={()=>del(r.id)}>Del</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
-export default function SalesAnalytics({onClose}){
-  var [tab,setTab]=useState('dash');
-  var [data,setData]=useState(function(){ return ld(); });
-  useEffect(function(){
-    function onStorage(e){ if(e.key===SK){ setData(ld()); } }
-    window.addEventListener('storage',onStorage);
-    return function(){ window.removeEventListener('storage',onStorage); };
-  },[]);
-  var tabs=[{id:'dash',lbl:'Dashboard'},{id:'reps',lbl:'Reps'},{id:'deals',lbl:'Deals'},{id:'catperf',lbl:'Category Performance'},{id:'arr',lbl:'ARR Calc'},{id:'com',lbl:'Commissions'},{id:'reports',lbl:'Reports'},{id:'settings',lbl:'Settings'}];
-  function renderTab(){
-    var p={reps:data.reps||[],deals:data.deals||[],setData:setData};
-    if(tab==='dash') return React.createElement(TabDash,p);
-    if(tab==='reps') return React.createElement(TabReps,p);
-    if(tab==='deals') return React.createElement(TabDeals,p);
-    if(tab==='catperf') return React.createElement(TabCatPerf,p);
-    if(tab==='arr') return React.createElement(TabARR,p);
-    if(tab==='com') return React.createElement(TabCommissions,p);
-    if(tab==='reports') return React.createElement(TabReports,p);
-    if(tab==='settings') return React.createElement(TabSettings,p);
-    return null;
-  }
-  return React.createElement('div',{className:'sa'},
-    React.createElement('style',null,ST),
-    React.createElement('div',{className:'sa-hd'},
-      React.createElement('h1',null,'Sales Analytics'),
-      React.createElement('button',{className:'sa-x',onClick:onClose},'Back to Home')
-    ),
-    React.createElement('div',{className:'sa-tabs'},
-      tabs.map(function(t){
-        return React.createElement('button',{key:t.id,className:'sa-tab '+(tab===t.id?'on':''),onClick:function(){ setTab(t.id); }},t.lbl);
-      })
-    ),
-    React.createElement('div',{className:'sa-body'},renderTab())
+
+function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,setDf,filterCat,setFilterCat}){
+  const submit=()=>{
+    if(!df.client.trim()||!df.repId) return;
+    const d=ld();
+    const entry={
+      id:editDeal?editDeal.id:nid(),
+      repId:df.repId, cat:df.cat, client:df.client,
+      month:Number(df.month),
+      amount:df.cat==='PS'?Number(df.amount)||0:0,
+      mrr:df.cat!=='PS'?Number(df.mrr)||0:0,
+    };
+    if(editDeal){
+      d.deals=d.deals.map(x=>x.id===editDeal.id?entry:x);
+      setEditDeal(null);
+    } else {
+      d.deals=[...d.deals,entry];
+    }
+    save(d); setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''}); setShowAddDeal(false);
+  };
+  const del=id=>{if(!window.confirm('Delete deal?'))return;const d=ld();d.deals=d.deals.filter(x=>x.id!==id);save(d);};
+  const startEdit=deal=>{setEditDeal(deal);setDf({repId:deal.repId,cat:deal.cat,client:deal.client,month:deal.month,amount:deal.amount||'',mrr:deal.mrr||''});setShowAddDeal(true);};
+  const filtered=filterCat==='All'?data.deals:data.deals.filter(d=>d.cat===filterCat);
+  return(
+    <div>
+      <div className="sa-pills">
+        {['All','PS','FO','MS'].map(c=>(
+          <button key={c} className={`sa-pill${filterCat===c?' on':''}`} onClick={()=>setFilterCat(c)}>{c==='All'?'All':c==='FO'?'FinOps':c==='PS'?'Professional Services':'Managed Services'}</button>
+        ))}
+        <button className="sa-btn" style={{marginLeft:'auto'}} onClick={()=>{setShowAddDeal(!showAddDeal);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});}}>+ Add Deal</button>
+      </div>
+      {showAddDeal&&(
+        <div className="sa-card" style={{marginBottom:16}}>
+          <h2>{editDeal?'Edit Deal':'New Deal'}</h2>
+          <div className="sa-form-row">
+            <div><label className="sa-label">Rep</label>
+              <select className="sa-select" value={df.repId} onChange={e=>setDf({...df,repId:e.target.value})}>
+                <option value="">Select rep…</option>
+                {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+            <div><label className="sa-label">Category</label>
+              <select className="sa-select" value={df.cat} onChange={e=>setDf({...df,cat:e.target.value})}>
+                <option value="PS">Professional Services (PS)</option>
+                <option value="FO">FinOps (recurring)</option>
+                <option value="MS">Managed Services (recurring)</option>
+              </select>
+            </div>
+            <div><label className="sa-label">Client</label><input className="sa-input" value={df.client} onChange={e=>setDf({...df,client:e.target.value})} placeholder="Client name"/></div>
+          </div>
+          <div className="sa-form-row">
+            <div><label className="sa-label">Month Closed</label>
+              <select className="sa-select" value={df.month} onChange={e=>setDf({...df,month:e.target.value})}>
+                {MN.map((m,i)=><option key={i} value={i+1}>{m} ({13-(i+1)} months remaining)</option>)}
+              </select>
+            </div>
+            {df.cat==='PS'
+              ? <div><label className="sa-label">One-Time Amount ($)</label><input className="sa-input" type="number" value={df.amount} onChange={e=>setDf({...df,amount:e.target.value})} placeholder="e.g. 50000"/></div>
+              : <div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={df.mrr} onChange={e=>setDf({...df,mrr:e.target.value})} placeholder="e.g. 8000"/></div>
+            }
+            <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
+              <button className="sa-btn" onClick={submit}>{editDeal?'Save':'Add Deal'}</button>
+              <button className="sa-btn del sm" onClick={()=>{setShowAddDeal(false);setEditDeal(null);}}>Cancel</button>
+            </div>
+          </div>
+          {(df.cat==='FO'||df.cat==='MS')&&df.mrr&&(
+            <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:8,padding:'10px 14px',fontSize:12,color:'#818cf8',marginTop:8}}>
+              Preview: ARR = {fmt(Number(df.mrr)*(13-Number(df.month)))} &nbsp;|&nbsp; Commission = {fmt(Number(df.mrr)*(13-Number(df.month))*CR[df.cat])}
+              &nbsp; ({13-Number(df.month)} months remaining × {fmt(Number(df.mrr))} MRR)
+            </div>
+          )}
+          {df.cat==='PS'&&df.amount&&(
+            <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:8,padding:'10px 14px',fontSize:12,color:'#818cf8',marginTop:8}}>
+              Preview: ARR = {fmt(Number(df.amount)*12)} &nbsp;|&nbsp; Commission = {fmt(Number(df.amount)*CR.PS)}
+              &nbsp; (one-time {fmt(Number(df.amount))} × 10%)
+            </div>
+          )}
+        </div>
+      )}
+      <div className="sa-card">
+        <table className="sa-tbl">
+          <thead><tr><th>Rep</th><th>Cat</th><th>Client</th><th>Month</th><th>Amount/MRR</th><th>ARR Value</th><th>Commission</th><th>Actions</th></tr></thead>
+          <tbody>
+            {filtered.length===0&&<tr><td colSpan={8} style={{textAlign:'center',color:'#475569',padding:24}}>No deals yet</td></tr>}
+            {filtered.map(d=>{
+              const rep=data.reps.find(r=>r.id===d.repId);
+              const arr=dealARR(d);
+              const com=dealComm(d);
+              return(
+                <tr key={d.id}>
+                  <td>{rep?rep.name:'Unknown'}</td>
+                  <td><span style={{background:d.cat==='PS'?'rgba(99,102,241,.2)':d.cat==='FO'?'rgba(14,165,233,.2)':'rgba(16,185,129,.2)',color:d.cat==='PS'?'#818cf8':d.cat==='FO'?'#38bdf8':'#34d399',padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
+                  <td>{d.client}</td>
+                  <td>{MN[(d.month||1)-1]}</td>
+                  <td>{d.cat==='PS'?fmt(d.amount)+' (fee)':fmt(d.mrr)+'/mo'}</td>
+                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(arr)}</td>
+                  <td style={{color:'#34d399'}}>{fmt(com)}</td>
+                  <td style={{display:'flex',gap:6}}>
+                    <button className="sa-btn sm" onClick={()=>startEdit(d)}>Edit</button>
+                    <button className="sa-btn del sm" onClick={()=>del(d.id)}>Del</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
+
+function CatPerfTab({data,filterRep,setFilterRep}){
+  const repsToShow=filterRep==='All'?data.reps:data.reps.filter(r=>r.id===filterRep);
+  const dealsFor=filterRep==='All'?data.deals:data.deals.filter(d=>d.repId===filterRep);
+  const cats=[
+    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,rate:CR.PS,rateLabel:'10% of deal amount',calcNote:'ARR = one-time fee × 12'},
+    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,rate:CR.FO,rateLabel:'7% × MRR × months remaining',calcNote:'ARR = MRR × months remaining in year'},
+    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,rate:CR.MS,rateLabel:'7% × MRR × months remaining',calcNote:'ARR = MRR × months remaining in year'},
+  ];
+  return(
+    <div>
+      <div className="sa-pills">
+        <button className={`sa-pill${filterRep==='All'?' on':''}`} onClick={()=>setFilterRep('All')}>All Reps</button>
+        {data.reps.map(r=>(
+          <button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>
+        ))}
+      </div>
+      {cats.map(c=>{
+        const ds=dealsFor.filter(d=>d.cat===c.id);
+        const arr=ds.reduce((a,d)=>a+dealARR(d),0);
+        const com=ds.reduce((a,d)=>a+dealComm(d),0);
+        const p=c.quota>0?Math.min(1,arr/c.quota):0;
+        const avgDeal=ds.length>0?arr/ds.length:0;
+        return(
+          <div className="sa-card" key={c.id}>
+            <h2 style={{color:c.color}}>{c.label}</h2>
+            <div style={{fontSize:11,color:'#475569',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.calcNote} &nbsp;|&nbsp; Commission: {c.rateLabel}</div>
+            <div className="sa-grid3">
+              <div className="sa-stat">
+                <div className="lbl">ARR</div>
+                <div className="val">{fmt(arr)}</div>
+                <div className="sub">of {fmt(c.quota)} quota</div>
+                <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:c.color}}/></div>
+                <div style={{fontSize:11,color:'#475569',marginTop:4}}>{pct(p)} attained &nbsp;|&nbsp; Pace: {pct(CM/12)}</div>
+              </div>
+              <div className="sa-stat">
+                <div className="lbl">Attainment</div>
+                <div className="val">{pct(p)}</div>
+                <div className="sub">Deals: {ds.length} &nbsp;|&nbsp; Avg ARR: {fmt(avgDeal)}</div>
+              </div>
+              <div className="sa-stat">
+                <div className="lbl">Commission</div>
+                <div className="val" style={{color:'#34d399'}}>{fmt(com)}</div>
+                <div className="sub">{c.rateLabel}</div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ArrCalcTab({calcCat,setCalcCat,calcAmt,setCalcAmt,calcMonth,setCalcMonth}){
+  const amt=Number(calcAmt)||0;
+  let arrVal=0, commVal=0, calcDetail='';
+  if(calcCat==='PS'){
+    arrVal=amt*12;
+    commVal=amt*CR.PS;
+    calcDetail=`One-time fee of ${fmt(amt)} × 12 = ${fmt(arrVal)} ARR | Commission = ${fmt(amt)} × 10% = ${fmt(commVal)}`;
+  } else {
+    const rem=mrem(Number(calcMonth));
+    arrVal=amt*rem;
+    commVal=amt*rem*CR[calcCat];
+    calcDetail=`MRR ${fmt(amt)} × ${rem} months remaining (closed in ${MN[calcMonth-1]}) = ${fmt(arrVal)} ARR | Commission = ${pct(CR[calcCat])} × ${fmt(arrVal)} = ${fmt(commVal)}`;
+  }
+  return(
+    <div>
+      <div className="sa-card">
+        <h2>ARR Calculator</h2>
+        <div style={{fontSize:12,color:'#475569',marginBottom:16,fontStyle:'italic'}}>
+          PS deals are one-time fees — ARR is annualized (× 12), commission is 10% of the fee amount.<br/>
+          FinOps &amp; MS deals are recurring — ARR is time-weighted (MRR × months remaining in year), commission is 7% of that ARR value.<br/>
+          A deal closed in January contributes more ARR than the same deal closed in November.
+        </div>
+        <div className="sa-form-row">
+          <div>
+            <label className="sa-label">Category</label>
+            <select className="sa-select" value={calcCat} onChange={e=>setCalcCat(e.target.value)}>
+              <option value="PS">Professional Services (one-time)</option>
+              <option value="FO">FinOps (recurring MRR)</option>
+              <option value="MS">Managed Services (recurring MRR)</option>
+            </select>
+          </div>
+          {calcCat==='PS'
+            ? <div><label className="sa-label">One-Time Amount ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 50000"/></div>
+            : <div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 8000"/></div>
+          }
+          {calcCat!=='PS'&&(
+            <div>
+              <label className="sa-label">Month Closed</label>
+              <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
+                {MN.map((m,i)=><option key={i} value={i+1}>{m} — {13-(i+1)} months remaining</option>)}
+              </select>
+            </div>
+          )}
+        </div>
+        <div className="sa-grid3">
+          <div className="sa-stat">
+            <div className="lbl">ARR Value</div>
+            <div className="val">{fmt(arrVal)}</div>
+            <div className="sub">{calcCat==='PS'?'Fee × 12':'MRR × '+mrem(Number(calcMonth))+' months'}</div>
+          </div>
+          <div className="sa-stat">
+            <div className="lbl">Commission Earned</div>
+            <div className="val" style={{color:'#34d399'}}>{fmt(commVal)}</div>
+            <div className="sub">{calcCat==='PS'?'10% of fee amount':pct(CR[calcCat])+' of ARR value'}</div>
+          </div>
+          <div className="sa-stat">
+            <div className="lbl">{calcCat==='PS'?'ARR/MRR Ratio':'Months Remaining'}</div>
+            <div className="val">{calcCat==='PS'?'×12':mrem(Number(calcMonth))}</div>
+            <div className="sub">{calcCat==='PS'?'Full year annualized':MN[calcMonth-1]+' close → '+mrem(Number(calcMonth))+' months count'}</div>
+          </div>
+        </div>
+        {amt>0&&<div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:8,padding:'12px 16px',fontSize:12,color:'#a5b4fc',marginTop:8,lineHeight:1.7}}>{calcDetail}</div>}
+      </div>
+      {calcCat!=='PS'&&(
+        <div className="sa-card">
+          <h2>Time-Weighted ARR by Month (MRR = {fmt(amt)})</h2>
+          <div style={{fontSize:11,color:'#475569',marginBottom:14}}>Shows how ARR contribution changes based on which month a deal is closed. Earlier = more value.</div>
+          <table className="sa-tbl">
+            <thead><tr><th>Month</th><th>Months Remaining</th><th>ARR Value</th><th>Commission ({pct(CR[calcCat])})</th></tr></thead>
+            <tbody>
+              {MN.map((m,i)=>{
+                const rem=mrem(i+1);
+                const a=amt*rem;
+                const c=a*CR[calcCat];
+                const isCurrent=i+1===Number(calcMonth);
+                return(
+                  <tr key={i} style={isCurrent?{background:'rgba(99,102,241,.08)'}:{}}>
+                    <td style={isCurrent?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCurrent?' ◀':''}</td>
+                    <td>{rem}</td>
+                    <td style={{fontWeight:isCurrent?700:400,color:isCurrent?'#f1f5f9':'#cbd5e1'}}>{fmt(a)}</td>
+                    <td style={{color:'#34d399'}}>{fmt(c)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommTab({data,filterRep,setFilterRep}){
+  const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
+  const earning=data.reps.filter(r=>{const s=crs(r,data.deals);return(s.psc+s.foc+s.msc)>0;}).length;
+  const avgComm=data.reps.length>0?totalComm/data.reps.length:0;
+  return(
+    <div>
+      <div className="sa-grid3">
+        <div className="sa-stat"><div className="lbl">Total Commissions</div><div className="val">{fmt(totalComm)}</div><div className="sub">all reps combined</div></div>
+        <div className="sa-stat"><div className="lbl">Reps Earning</div><div className="val">{earning} / {data.reps.length}</div><div className="sub">reps with commission</div></div>
+        <div className="sa-stat"><div className="lbl">Avg Commission/Rep</div><div className="val">{fmt(avgComm)}</div><div className="sub">across all reps</div></div>
+      </div>
+      <div className="sa-pills">
+        <button className={`sa-pill${filterRep==='All'?' on':''}`} onClick={()=>setFilterRep('All')}>All Reps</button>
+        {data.reps.map(r=><button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>)}
+      </div>
+      <div className="sa-card">
+        <table className="sa-tbl">
+          <thead><tr><th>Rep</th><th>PS Comm (10%)</th><th>FO Comm (7%)</th><th>MS Comm (7%)</th><th>Total</th></tr></thead>
+          <tbody>
+            {data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
+              const s=crs(r,data.deals);
+              const tot=s.psc+s.foc+s.msc;
+              return(
+                <tr key={r.id}>
+                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
+                  <td>{fmt(s.psc)}</td>
+                  <td>{fmt(s.foc)}</td>
+                  <td>{fmt(s.msc)}</td>
+                  <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ReportsTab({data}){
+  const exportCSV=rep=>{
+    const s=crs(rep,data.deals);
+    const rows=[['Client','Category','Month','Amount/MRR','ARR Value','Commission']];
+    s.deals.forEach(d=>{
+      rows.push([d.client,d.cat,MN[(d.month||1)-1],d.cat==='PS'?d.amount:d.mrr,dealARR(d),dealComm(d)]);
+    });
+    const csv=rows.map(r=>r.join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download=rep.name.replace(/\s+/g,'_')+'_commission.csv';
+    a.click();
+  };
+  return(
+    <div>
+      <div className="sa-card">
+        <h2>Export Commission Statements</h2>
+        <p style={{color:'#64748b',fontSize:13,marginTop:-8,marginBottom:16}}>Generate CSV commission statements for each rep.</p>
+        {data.reps.map(r=>{
+          const s=crs(r,data.deals);
+          const tot=s.psc+s.foc+s.msc;
+          return(
+            <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
+              <div>
+                <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
+                <div style={{fontSize:12,color:'#475569',marginTop:3}}>{r.dept||'No dept'} &nbsp;|&nbsp; {s.deals.length} deals &nbsp;|&nbsp; Total: {fmt(tot)}</div>
+              </div>
+              <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SettingsTab({data,save}){
+  const [quotas,setQuotas]=useState({PS:CQ.PS,FO:CQ.FO,MS:CQ.MS});
+  const tots=cc(data.deals);
+  return(
+    <div>
+      <div className="sa-grid2">
+        <div className="sa-card">
+          <h2>Company Annual Quotas</h2>
+          {[{id:'PS',label:'Professional Services',color:'#6366f1'},{id:'FO',label:'FinOps',color:'#0ea5e9'},{id:'MS',label:'Managed Services',color:'#10b981'}].map(c=>(
+            <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,marginBottom:10,border:'1px solid rgba(255,255,255,.06)'}}>
+              <div style={{fontWeight:700,color:c.color,fontSize:12,textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
+              <div style={{fontSize:26,fontWeight:700,color:'#f1f5f9'}}>{fmt(CQ[c.id])}</div>
+              <div style={{fontSize:11,color:'#475569',marginTop:2}}>Annual Quota</div>
+            </div>
+          ))}
+        </div>
+        <div className="sa-card">
+          <h2>Data Summary</h2>
+          <div style={{background:'#0f172a',borderRadius:10,padding:16,marginBottom:10,border:'1px solid rgba(255,255,255,.06)'}}>
+            <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Reps</div>
+            <div style={{fontSize:26,fontWeight:700,color:'#f1f5f9'}}>{data.reps.length}</div>
+          </div>
+          <div style={{background:'#0f172a',borderRadius:10,padding:16,marginBottom:10,border:'1px solid rgba(255,255,255,.06)'}}>
+            <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Deals</div>
+            <div style={{fontSize:26,fontWeight:700,color:'#f1f5f9'}}>{data.deals.length}</div>
+            <div style={{fontSize:12,color:'#475569',marginTop:2}}>Total ARR: {fmt(tots.ps+tots.fo+tots.ms)}</div>
+          </div>
+          <div style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
+            <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Total Commissions</div>
+            <div style={{fontSize:26,fontWeight:700,color:'#34d399'}}>{fmt(data.deals.reduce((a,d)=>a+dealComm(d),0))}</div>
+          </div>
+        </div>
+      </div>
+      <div className="sa-card">
+        <h2>Commission Rates</h2>
+        <div className="sa-grid3">
+          {[{id:'PS',label:'Professional Services',note:'10% of one-time deal amount'},{id:'FO',label:'FinOps',note:'7% of MRR × months remaining'},{id:'MS',label:'Managed Services',note:'7% of MRR × months remaining'}].map(c=>(
+            <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
+              <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
+              <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9'}}>{pct(CR[c.id])}</div>
+              <div style={{fontSize:11,color:'#818cf8',marginTop:4,fontStyle:'italic'}}>{c.note}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+        }
