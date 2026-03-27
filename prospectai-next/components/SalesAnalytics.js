@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from 'react';
-
 const SK = 'pai_quotaTracker';
 const CQ = { PS: 6500000, FO: 32000000, MS: 1500000 };
 const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CM = new Date().getMonth() + 1;
-
-// Months remaining in year from month m (inclusive). Jan=12, Nov=2, Dec=1
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
-function ld(){ try{ var r=localStorage.getItem(SK); if(r){ var p=JSON.parse(r); return {reps:Array.isArray(p.reps)?p.reps:[],deals:Array.isArray(p.deals)?p.deals:[]}; } }catch(e){} return {reps:[],deals:[]}; }
+function ld(){
+  try{
+    var r=localStorage.getItem(SK);
+    if(r){
+      var p=JSON.parse(r);
+      return {
+        reps:Array.isArray(p.reps)?p.reps:[],
+        deals:Array.isArray(p.deals)?p.deals:[],
+        actuals:Array.isArray(p.actuals)?p.actuals:[]
+      };
+    }
+  }catch(e){}
+  return {reps:[],deals:[],actuals:[]};
+}
 function sd(d){ try{ localStorage.setItem(SK,JSON.stringify(d)); }catch(e){} }
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
-
-// PS: one-time project fee. ARR = amount * 12
-// FO/MS: recurring MRR. ARR = MRR * months remaining in year (time-weighted)
-// A deal closed in Jan is worth 12x, Nov is 2x, Dec is 1x
 function dealARR(d){
   if(d.cat==='PS') return (d.amount||0)*12;
   return (d.mrr||0)*mrem(d.month||CM);
 }
-// Commission: PS = 10% of fee (not ARR). FO/MS = 7% of time-weighted ARR
 function dealComm(d){
   if(d.cat==='PS') return (d.amount||0)*CR.PS;
   if(d.cat==='FO') return (d.mrr||0)*mrem(d.month||CM)*CR.FO;
@@ -48,6 +53,14 @@ function cc(deals){
   });
   return {ps,fo,ms};
 }
+// Sum actuals for a rep+cat combo
+function repActuals(repId, cat, actuals){
+  return actuals.filter(a=>a.repId===repId&&a.cat===cat).reduce((s,a)=>s+(a.arr||0),0);
+}
+// Total actuals by category
+function totalActuals(cat, actuals){
+  return actuals.filter(a=>a.cat===cat).reduce((s,a)=>s+(a.arr||0),0);
+}
 
 export default function SalesAnalytics({onBack}){
   const [tab,setTab]=useState('dash');
@@ -56,6 +69,7 @@ export default function SalesAnalytics({onBack}){
   const [showAddDeal,setShowAddDeal]=useState(false);
   const [editRep,setEditRep]=useState(null);
   const [editDeal,setEditDeal]=useState(null);
+  const [editActual,setEditActual]=useState(null);
   const [calcCat,setCalcCat]=useState('PS');
   const [calcAmt,setCalcAmt]=useState('');
   const [calcMonth,setCalcMonth]=useState(CM);
@@ -63,17 +77,15 @@ export default function SalesAnalytics({onBack}){
   const [filterRep,setFilterRep]=useState('All');
   const [rf,setRf]=useState({name:'',dept:''});
   const [df,setDf]=useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
-
+  const [af,setAf]=useState({repId:'',cat:'PS',month:CM,arr:'',note:''});
   const save=d=>{sd(d);setData({...d});};
   const tots=cc(data.deals);
   const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
-
   const dashCards=[
-    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,arr:tots.ps,note:'One-time fee × 12 = ARR | Commission: 10% of fee'},
-    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,arr:tots.fo,note:'Recurring MRR × months remaining = ARR | Commission: 7% × ARR'},
-    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,arr:tots.ms,note:'Recurring MRR × months remaining = ARR | Commission: 7% × ARR'},
+    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,arr:tots.ps,actArr:totalActuals('PS',data.actuals||[]),note:'One-time fee × 12 = ARR | Commission: 10% of fee'},
+    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,arr:tots.fo,actArr:totalActuals('FO',data.actuals||[]),note:'Recurring MRR × months remaining = ARR | Commission: 7% × ARR'},
+    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS,arr:tots.ms,actArr:totalActuals('MS',data.actuals||[]),note:'Recurring MRR × months remaining = ARR | Commission: 7% × ARR'},
   ];
-
   return(<>
     <style>{`
       .sa{display:flex;flex-direction:column;min-height:100vh;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;}
@@ -118,11 +130,12 @@ export default function SalesAnalytics({onBack}){
       .sa-pill.on{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#c7d2fe;}
       .sa-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
       .sa-preview{background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#a5b4fc;margin-top:8px;line-height:1.7;}
+      .sa-act-row{background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
     `}</style>
     <div className="sa">
       <div className="sa-hd"><h1>Sales Analytics</h1><button className="sa-x" onClick={()=>onBack&&onBack()}>Back to Home</button></div>
       <div className="sa-tabs">
-        {[['dash','Dashboard'],['reps','Reps'],['deals','Deals'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['reports','Reports'],['settings','Settings']].map(([id,label])=>(
+        {[['dash','Dashboard'],['reps','Reps'],['deals','Deals'],['actuals','Actuals'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['reports','Reports'],['settings','Settings']].map(([id,label])=>(
           <button key={id} className={`sa-tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{label}</button>
         ))}
       </div>
@@ -130,6 +143,7 @@ export default function SalesAnalytics({onBack}){
         {tab==='dash'&&<DashTab data={data} dashCards={dashCards} tots={tots} totalComm={totalComm}/>}
         {tab==='reps'&&<RepsTab data={data} save={save} showAddRep={showAddRep} setShowAddRep={setShowAddRep} editRep={editRep} setEditRep={setEditRep} rf={rf} setRf={setRf}/>}
         {tab==='deals'&&<DealsTab data={data} save={save} showAddDeal={showAddDeal} setShowAddDeal={setShowAddDeal} editDeal={editDeal} setEditDeal={setEditDeal} df={df} setDf={setDf} filterCat={filterCat} setFilterCat={setFilterCat}/>}
+        {tab==='actuals'&&<ActualsTab data={data} save={save} editActual={editActual} setEditActual={setEditActual} af={af} setAf={setAf}/>}
         {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
         {tab==='arrcalc'&&<ArrCalcTab calcCat={calcCat} setCalcCat={setCalcCat} calcAmt={calcAmt} setCalcAmt={setCalcAmt} calcMonth={calcMonth} setCalcMonth={setCalcMonth}/>}
         {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
@@ -143,20 +157,25 @@ export default function SalesAnalytics({onBack}){
 function DashTab({data,dashCards,tots,totalComm}){
   const totalARR=tots.ps+tots.fo+tots.ms;
   const totalQuota=CQ.PS+CQ.FO+CQ.MS;
+  const actuals=data.actuals||[];
+  const totalActualARR=totalActuals('PS',actuals)+totalActuals('FO',actuals)+totalActuals('MS',actuals);
   return(
     <div>
       <div className="sa-g3">
         {dashCards.map(c=>{
           const p=c.quota>0?Math.min(1,c.arr/c.quota):0;
+          const pAct=c.quota>0?Math.min(1,c.actArr/c.quota):0;
           const pace=CM/12;
           const behind=c.arr<c.quota*pace;
           return(
             <div className="sa-stat" key={c.id}>
               <div className="lbl">{c.label}</div>
               <div className="val">{fmt(c.arr)}</div>
-              <div className="sub">of {fmt(c.quota)} annual quota &nbsp;({pct(p)} attained)</div>
+              <div className="sub">Pipeline ARR of {fmt(c.quota)} annual quota ({pct(p)} attained)</div>
+              {c.actArr>0&&<div style={{fontSize:13,fontWeight:700,color:'#34d399',marginTop:6}}>Actuals: {fmt(c.actArr)} ({pct(pAct)} of quota)</div>}
               <div className="note">{c.note}</div>
               <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:c.color}}/></div>
+              {c.actArr>0&&<div className="sa-bar" style={{marginTop:4}}><div className="sa-bar-fill" style={{width:pAct*100+'%',background:'#34d399'}}/></div>}
               <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
                 <span style={{fontSize:11,color:'#475569'}}>Pace: {pct(pace)}</span>
                 <span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span>
@@ -167,41 +186,249 @@ function DashTab({data,dashCards,tots,totalComm}){
       </div>
       <div className="sa-g3">
         <div className="sa-stat">
-          <div className="lbl">Total ARR (All Categories)</div>
+          <div className="lbl">Total Pipeline ARR</div>
           <div className="val">{fmt(totalARR)}</div>
           <div className="sub">of {fmt(totalQuota)} combined quota</div>
           <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalARR/totalQuota*100)+'%',background:'linear-gradient(90deg,#6366f1,#8b5cf6)'}}/></div>
         </div>
         <div className="sa-stat">
-          <div className="lbl">Total Commissions</div>
-          <div className="val">{fmt(totalComm)}</div>
-          <div className="sub">across {data.deals.length} deals</div>
+          <div className="lbl">Total Actual ARR</div>
+          <div className="val" style={{color:'#34d399'}}>{fmt(totalActualARR)}</div>
+          <div className="sub">of {fmt(totalQuota)} combined quota ({pct(totalQuota>0?totalActualARR/totalQuota:0)})</div>
+          <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalActualARR/totalQuota*100)+'%',background:'#34d399'}}/></div>
         </div>
         <div className="sa-stat">
-          <div className="lbl">Active Reps</div>
-          <div className="val">{data.reps.length}</div>
-          <div className="sub">{data.deals.length} total deals logged</div>
+          <div className="lbl">Total Commissions</div>
+          <div className="val">{fmt(totalComm)}</div>
+          <div className="sub">across {data.deals.length} deals | {data.reps.length} reps</div>
         </div>
       </div>
       <div className="sa-card">
         <h2>Rep Summary</h2>
         <table className="sa-tbl">
-          <thead><tr><th>Rep</th><th>Dept</th><th>PS ARR</th><th>FO ARR</th><th>MS ARR</th><th>Total ARR</th><th>Commission</th><th>Status</th></tr></thead>
+          <thead><tr><th>Rep</th><th>Dept</th><th>PS Actual</th><th>FO Actual</th><th>MS Actual</th><th>Total Actual</th><th>Pipeline ARR</th><th>Commission</th><th>Status</th></tr></thead>
           <tbody>
             {data.reps.map(r=>{
               const s=crs(r,data.deals);
               const repTot=s.ps+s.fo+s.ms;
               const repComm=s.psc+s.foc+s.msc;
+              const psAct=repActuals(r.id,'PS',actuals);
+              const foAct=repActuals(r.id,'FO',actuals);
+              const msAct=repActuals(r.id,'MS',actuals);
+              const totAct=psAct+foAct+msAct;
               const avgQ=(CQ.PS+CQ.FO+CQ.MS)/Math.max(1,data.reps.length);
-              const behind=repTot<avgQ*(CM/12);
+              const behind=totAct>0?totAct<avgQ*(CM/12):repTot<avgQ*(CM/12);
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||'—'}</td>
-                  <td>{fmt(s.ps)}</td><td>{fmt(s.fo)}</td><td>{fmt(s.ms)}</td>
-                  <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(repTot)}</td>
+                  <td style={{color:'#34d399'}}>{fmt(psAct)}</td>
+                  <td style={{color:'#34d399'}}>{fmt(foAct)}</td>
+                  <td style={{color:'#34d399'}}>{fmt(msAct)}</td>
+                  <td style={{fontWeight:700,color:'#34d399'}}>{fmt(totAct)}</td>
+                  <td style={{color:'#a5b4fc'}}>{fmt(repTot)}</td>
                   <td style={{color:'#34d399'}}>{fmt(repComm)}</td>
                   <td><span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ActualsTab({data,save,editActual,setEditActual,af,setAf}){
+  const [showForm,setShowForm]=useState(false);
+  const actuals=data.actuals||[];
+
+  const submit=()=>{
+    if(!af.repId||!af.arr) return;
+    const d=ld();
+    if(!Array.isArray(d.actuals)) d.actuals=[];
+    const entry={
+      id:editActual?editActual.id:nid(),
+      repId:af.repId,
+      cat:af.cat,
+      month:Number(af.month),
+      arr:Number(af.arr)||0,
+      note:af.note||''
+    };
+    if(editActual){
+      d.actuals=d.actuals.map(a=>a.id===editActual.id?entry:a);
+      setEditActual(null);
+    } else {
+      d.actuals=[...d.actuals,entry];
+    }
+    save(d);
+    setAf({repId:'',cat:'PS',month:CM,arr:'',note:''});
+    setShowForm(false);
+  };
+
+  const del=id=>{
+    if(!window.confirm('Delete actual entry?'))return;
+    const d=ld();
+    if(!Array.isArray(d.actuals)) d.actuals=[];
+    d.actuals=d.actuals.filter(a=>a.id!==id);
+    save(d);
+  };
+
+  const startEdit=a=>{
+    setEditActual(a);
+    setAf({repId:a.repId,cat:a.cat,month:a.month,arr:a.arr,note:a.note||''});
+    setShowForm(true);
+  };
+
+  // Quota attainment by rep x cat
+  const catList=[
+    {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS},
+    {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO},
+    {id:'MS',label:'Managed Services',color:'#10b981',quota:CQ.MS},
+  ];
+
+  return(
+    <div>
+      <div style={{background:'rgba(16,185,129,.08)',border:'1px solid rgba(16,185,129,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#6ee7b7',lineHeight:1.6}}>
+        <strong>Actuals</strong> are the real closed ARR amounts — enter these as deals close. Quota attainment = Actuals ÷ Annual Quota.
+        Pipeline deals (from the Deals tab) are separate and used for forecasting.
+      </div>
+
+      <div className="sa-shd">
+        <div/>
+        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditActual(null);setAf({repId:'',cat:'PS',month:CM,arr:'',note:''});}}>+ Add Actual</button>
+      </div>
+
+      {showForm&&(
+        <div className="sa-card" style={{marginBottom:16}}>
+          <h2>{editActual?'Edit Actual':'Enter Actual'}</h2>
+          <div className="sa-frow">
+            <div>
+              <label className="sa-label">Rep</label>
+              <select className="sa-select" value={af.repId} onChange={e=>setAf({...af,repId:e.target.value})}>
+                <option value="">Select rep...</option>
+                {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="sa-label">Category</label>
+              <select className="sa-select" value={af.cat} onChange={e=>setAf({...af,cat:e.target.value})}>
+                <option value="PS">Professional Services</option>
+                <option value="FO">FinOps</option>
+                <option value="MS">Managed Services</option>
+              </select>
+            </div>
+            <div>
+              <label className="sa-label">Month Closed</label>
+              <select className="sa-select" value={af.month} onChange={e=>setAf({...af,month:e.target.value})}>
+                {MN.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="sa-frow">
+            <div>
+              <label className="sa-label">Actual ARR ($)</label>
+              <input className="sa-input" type="number" value={af.arr} onChange={e=>setAf({...af,arr:e.target.value})} placeholder="e.g. 500000"/>
+              <div style={{fontSize:11,color:'#475569',marginTop:4}}>
+                {af.cat==='PS'?'For PS: enter fee × 12 (annualized). E.g. $50k fee → $600,000 ARR':'For FO/MS: enter MRR × months remaining. E.g. $8k MRR closed Jan → $96,000 ARR'}
+              </div>
+            </div>
+            <div>
+              <label className="sa-label">Notes (optional)</label>
+              <input className="sa-input" value={af.note} onChange={e=>setAf({...af,note:e.target.value})} placeholder="e.g. Acme Corp expansion"/>
+            </div>
+            <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
+              <button className="sa-btn" onClick={submit}>{editActual?'Save':'Add'}</button>
+              <button className="sa-btn del sm" onClick={()=>{setShowForm(false);setEditActual(null);}}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="sa-g3" style={{marginBottom:16}}>
+        {catList.map(c=>{
+          const act=totalActuals(c.id,actuals);
+          const p=c.quota>0?Math.min(1,act/c.quota):0;
+          const pace=CM/12;
+          return(
+            <div className="sa-stat" key={c.id}>
+              <div className="lbl">{c.label}</div>
+              <div className="val" style={{color:c.color}}>{fmt(act)}</div>
+              <div className="sub">of {fmt(c.quota)} annual quota</div>
+              <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:c.color}}/></div>
+              <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
+                <span style={{fontSize:11,color:'#a5b4fc',fontWeight:600}}>{pct(p)} attained</span>
+                <span style={{fontSize:11,color:'#475569'}}>Pace: {pct(pace)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="sa-card">
+        <h2>Quota Attainment by Rep</h2>
+        <table className="sa-tbl">
+          <thead>
+            <tr>
+              <th>Rep</th><th>Dept</th>
+              <th>PS Actual</th><th>PS Quota</th><th>PS %</th>
+              <th>FO Actual</th><th>FO Quota</th><th>FO %</th>
+              <th>MS Actual</th><th>MS Quota</th><th>MS %</th>
+              <th>Total Actual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.reps.map(r=>{
+              const repQ=3; // reps share quota equally for simplicity
+              const psQ=CQ.PS/Math.max(1,data.reps.length);
+              const foQ=CQ.FO/Math.max(1,data.reps.length);
+              const msQ=CQ.MS/Math.max(1,data.reps.length);
+              const psA=repActuals(r.id,'PS',actuals);
+              const foA=repActuals(r.id,'FO',actuals);
+              const msA=repActuals(r.id,'MS',actuals);
+              const tot=psA+foA+msA;
+              return(
+                <tr key={r.id}>
+                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
+                  <td>{r.dept||'—'}</td>
+                  <td style={{color:'#34d399'}}>{fmt(psA)}</td>
+                  <td style={{color:'#475569'}}>{fmt(psQ)}</td>
+                  <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
+                  <td style={{color:'#34d399'}}>{fmt(foA)}</td>
+                  <td style={{color:'#475569'}}>{fmt(foQ)}</td>
+                  <td><span className={`sa-badge ${foA>=foQ*(CM/12)?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
+                  <td style={{color:'#34d399'}}>{fmt(msA)}</td>
+                  <td style={{color:'#475569'}}>{fmt(msQ)}</td>
+                  <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
+                  <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="sa-card">
+        <h2>Actuals Log</h2>
+        {actuals.length===0&&<div style={{color:'#475569',textAlign:'center',padding:24}}>No actuals entered yet. Click "+ Add Actual" to log closed deals.</div>}
+        <table className="sa-tbl">
+          <thead><tr><th>Rep</th><th>Category</th><th>Month</th><th>Actual ARR</th><th>Notes</th><th>Actions</th></tr></thead>
+          <tbody>
+            {actuals.map(a=>{
+              const rep=data.reps.find(r=>r.id===a.repId);
+              const catColor=a.cat==='PS'?'#818cf8':a.cat==='FO'?'#38bdf8':'#34d399';
+              const catBg=a.cat==='PS'?'rgba(99,102,241,.2)':a.cat==='FO'?'rgba(14,165,233,.2)':'rgba(16,185,129,.2)';
+              return(
+                <tr key={a.id}>
+                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{rep?rep.name:'Unknown'}</td>
+                  <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{a.cat}</span></td>
+                  <td>{MN[(a.month||1)-1]}</td>
+                  <td style={{fontWeight:700,color:'#34d399'}}>{fmt(a.arr)}</td>
+                  <td style={{color:'#64748b'}}>{a.note||'—'}</td>
+                  <td style={{display:'flex',gap:6}}>
+                    <button className="sa-btn sm" onClick={()=>startEdit(a)}>Edit</button>
+                    <button className="sa-btn del sm" onClick={()=>del(a.id)}>Del</button>
+                  </td>
                 </tr>
               );
             })}
@@ -372,6 +599,7 @@ function DealsTab({data,save,showAddDeal,setShowAddDeal,editDeal,setEditDeal,df,
 
 function CatPerfTab({data,filterRep,setFilterRep}){
   const dealsFor=filterRep==='All'?data.deals:data.deals.filter(d=>d.repId===filterRep);
+  const actualsFor=filterRep==='All'?(data.actuals||[]):(data.actuals||[]).filter(a=>a.repId===filterRep);
   const cats=[
     {id:'PS',label:'Professional Services',color:'#6366f1',quota:CQ.PS,calcNote:'ARR = one-time fee × 12',rateNote:'Commission: 10% of fee amount'},
     {id:'FO',label:'FinOps',color:'#0ea5e9',quota:CQ.FO,calcNote:'ARR = MRR × months remaining in year',rateNote:'Commission: 7% of time-weighted ARR'},
@@ -387,7 +615,9 @@ function CatPerfTab({data,filterRep,setFilterRep}){
         const ds=dealsFor.filter(d=>d.cat===c.id);
         const arr=ds.reduce((a,d)=>a+dealARR(d),0);
         const com=ds.reduce((a,d)=>a+dealComm(d),0);
+        const act=actualsFor.filter(a=>a.cat===c.id).reduce((s,a)=>s+(a.arr||0),0);
         const p=c.quota>0?Math.min(1,arr/c.quota):0;
+        const pAct=c.quota>0?Math.min(1,act/c.quota):0;
         const avgDeal=ds.length>0?arr/ds.length:0;
         return(
           <div className="sa-card" key={c.id}>
@@ -395,21 +625,22 @@ function CatPerfTab({data,filterRep,setFilterRep}){
             <div style={{fontSize:11,color:'#475569',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.calcNote} | {c.rateNote}</div>
             <div className="sa-g3">
               <div className="sa-stat">
-                <div className="lbl">ARR</div>
+                <div className="lbl">Pipeline ARR</div>
                 <div className="val">{fmt(arr)}</div>
                 <div className="sub">of {fmt(c.quota)} annual quota</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:c.color}}/></div>
                 <div style={{fontSize:11,color:'#475569',marginTop:4}}>{pct(p)} attained | Pace: {pct(CM/12)}</div>
               </div>
               <div className="sa-stat">
-                <div className="lbl">Attainment</div>
-                <div className="val">{pct(p)}</div>
-                <div className="sub">Deals: {ds.length} | Avg ARR: {fmt(avgDeal)}</div>
+                <div className="lbl">Actual ARR</div>
+                <div className="val" style={{color:'#34d399'}}>{fmt(act)}</div>
+                <div className="sub">of {fmt(c.quota)} quota | {pct(pAct)} attained</div>
+                <div className="sa-bar"><div className="sa-bar-fill" style={{width:pAct*100+'%',background:'#34d399'}}/></div>
               </div>
               <div className="sa-stat">
                 <div className="lbl">Commission</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(com)}</div>
-                <div className="sub">{c.rateNote}</div>
+                <div className="sub">Deals: {ds.length} | Avg pipeline ARR: {fmt(avgDeal)}</div>
               </div>
             </div>
           </div>
@@ -481,7 +712,7 @@ function ArrCalcTab({calcCat,setCalcCat,calcAmt,setCalcAmt,calcMonth,setCalcMont
       {calcCat!=='PS'&&(
         <div className="sa-card">
           <h2>Time-Weighted ARR by Month (MRR = {fmt(amt)})</h2>
-          <div style={{fontSize:11,color:'#475569',marginBottom:12}}>Earlier deals = more months = higher ARR contribution. Closing in January vs November makes a significant difference.</div>
+          <div style={{fontSize:11,color:'#475569',marginBottom:12}}>Earlier deals = more months = higher ARR contribution.</div>
           <table className="sa-tbl">
             <thead><tr><th>Month</th><th>Months Remaining</th><th>ARR Value</th><th>Commission ({pct(CR[calcCat])})</th></tr></thead>
             <tbody>
@@ -550,17 +781,18 @@ function ReportsTab({data}){
     s.deals.forEach(d=>{
       rows.push([d.client,d.cat,MN[(d.month||1)-1],d.cat==='PS'?d.amount:d.mrr,dealARR(d),dealComm(d)]);
     });
-    const csv=rows.map(r=>r.join(',')).join('\n');
+    const csv=rows.map(r=>r.join(',')).join('
+');
     const a=document.createElement('a');
     a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download=rep.name.replace(/\s+/g,'_')+'_commission.csv';
+    a.download=rep.name.replace(/s+/g,'_')+'_commission.csv';
     a.click();
   };
   return(
     <div>
       <div className="sa-card">
         <h2>Export Commission Statements</h2>
-        <p style={{color:'#64748b',fontSize:13,marginTop:-8,marginBottom:16}}>Generate CSV commission statements for each rep. Includes all deals, ARR values, and commission amounts.</p>
+        <p style={{color:'#64748b',fontSize:13,marginTop:-8,marginBottom:16}}>Generate CSV commission statements for each rep.</p>
         {data.reps.map(r=>{
           const s=crs(r,data.deals);
           const tot=s.psc+s.foc+s.msc;
@@ -574,7 +806,7 @@ function ReportsTab({data}){
             </div>
           );
         })}
-        {data.reps.length===0&&<div style={{color:'#475569',textAlign:'center',padding:24}}>No reps added yet. Add reps in the Reps tab.</div>}
+        {data.reps.length===0&&<div style={{color:'#475569',textAlign:'center',padding:24}}>No reps added yet.</div>}
       </div>
     </div>
   );
@@ -583,6 +815,7 @@ function ReportsTab({data}){
 function SettingsTab({data,save}){
   const tots=cc(data.deals);
   const totalComm=data.deals.reduce((a,d)=>a+dealComm(d),0);
+  const actuals=data.actuals||[];
   return(
     <div>
       <div className="sa-g2">
@@ -603,9 +836,14 @@ function SettingsTab({data,save}){
             <div style={{fontSize:26,fontWeight:700,color:'#f1f5f9'}}>{data.reps.length}</div>
           </div>
           <div style={{background:'#0f172a',borderRadius:10,padding:16,marginBottom:10,border:'1px solid rgba(255,255,255,.06)'}}>
-            <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Deals</div>
+            <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Pipeline Deals</div>
             <div style={{fontSize:26,fontWeight:700,color:'#f1f5f9'}}>{data.deals.length}</div>
-            <div style={{fontSize:12,color:'#475569',marginTop:2}}>Total ARR: {fmt(tots.ps+tots.fo+tots.ms)}</div>
+            <div style={{fontSize:12,color:'#475569',marginTop:2}}>Pipeline ARR: {fmt(tots.ps+tots.fo+tots.ms)}</div>
+          </div>
+          <div style={{background:'#0f172a',borderRadius:10,padding:16,marginBottom:10,border:'1px solid rgba(255,255,255,.06)'}}>
+            <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Actual Entries</div>
+            <div style={{fontSize:26,fontWeight:700,color:'#34d399'}}>{actuals.length}</div>
+            <div style={{fontSize:12,color:'#475569',marginTop:2}}>Total Actual ARR: {fmt(actuals.reduce((s,a)=>s+(a.arr||0),0))}</div>
           </div>
           <div style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
             <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Total Commissions</div>
