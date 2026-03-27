@@ -437,18 +437,21 @@ function RepsTab({data, save}){
       )}
       <div className="sa-card">
         <table className="sa-tbl">
-          <thead><tr><th>Name</th><th>Dept</th><th>Professional Services Quota</th><th>FinOps Quota</th><th>Managed Services Quota</th><th>Professional Services Closed</th><th>FinOps Closed</th><th>Managed Services Closed</th><th>Deals</th><th>Actions</th></tr></thead>
+          <thead><tr><th>Name</th><th>Dept</th><th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th><th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th><th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th><th>Deals</th><th>Actions</th></tr></thead>
           <tbody>
             {data.reps.map(r=>(
               <tr key={r.id}>
                 <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                 <td>{r.dept||r.department||'—'}</td>
-                <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
-                <td>{fmt(getQuota(r,'FO')*(CM/12))}</td>
-                <td>{fmt(getQuota(r,'MS')*(CM/12))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
+                <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
+                <td><span className={`sa-badge ${getActualFromDeals(r.id,'PS',deals)>=getQuota(r,'PS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'PS')>0?getActualFromDeals(r.id,'PS',deals)/(getQuota(r,'PS')*(CM/12)):0)}</span></td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'FO',deals))}</td>
+                <td>{fmt(getQuota(r,'FO')*(CM/12))}</td>
+                <td><span className={`sa-badge ${getActualFromDeals(r.id,'FO',deals)>=getQuota(r,'FO')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'FO')>0?getActualFromDeals(r.id,'FO',deals)/(getQuota(r,'FO')*(CM/12)):0)}</span></td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'MS',deals))}</td>
+                <td>{fmt(getQuota(r,'MS')*(CM/12))}</td>
+                <td><span className={`sa-badge ${getActualFromDeals(r.id,'MS',deals)>=getQuota(r,'MS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'MS')>0?getActualFromDeals(r.id,'MS',deals)/(getQuota(r,'MS')*(CM/12)):0)}</span></td>
                 <td>{deals.filter(d=>d.repId===r.id).length}</td>
                 <td style={{display:'flex',gap:6}}>
                   <button className="sa-btn sm" onClick={()=>startEdit(r)}>Edit</button>
