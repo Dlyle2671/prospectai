@@ -9,10 +9,10 @@ function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleStrin
 function pct(n){ return (n*100).toFixed(1)+'%'; }
 function ld(){
   try{
-    const r = localStorage.getItem(SK);
+    const r = localStorage.getItem(SK)
     if(r){
       const p = JSON.parse(r);
-      const reps = (Array.isArray(p.reps)?p.reps:[]).map(rep => ({
+      const reps = (Array.isArray(p.re)?p.reps:[]).map(rep => ({
         ...rep,
         actuals: rep.actuals || { 'Professional Services':0, 'FinOps':0, 'Managed Services':0 },
         quotas: rep.quotas || { 'Professional Services':0, 'FinOps':0, 'Managed Services':0 },
@@ -73,7 +73,7 @@ export default function SalesAnalytics({onBack}){
       .sa-card h2{font-size:16px;font-weight:600;color:#f1f5f9;margin:0 0 16px;}
       .sa-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
       .sa-g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;}
-      .sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;}
+      .sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;text-align:center;}
       .sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;margin-bottom:6px;}
       .sa-stat .val{font-size:22px;font-weight:700;color:#f1f5f9;}
       .sa-stat .sub{font-size:11px;color:#fff;margin-top:4px;}
@@ -152,8 +152,7 @@ function DashTab({data}){
               <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
               <div className="sub">of {fmt(quota)} quota ({pct(p)} attained)</div>
               <div className="sub" style={{marginTop:3}}>YTD: {fmt(ytdQ)} target ({pct(ytdPct2)} attained)</div>
-              <div className="note">{c.note}</div>
-              <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
+                            <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
                 <span style={{fontSize:11,color:'#fff'}}>Pace: {pct(pace)}</span>
                 <span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span>
@@ -185,10 +184,17 @@ function DashTab({data}){
         <div style={{overflowX:'auto'}}><table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Dept</th>
+<<<<<<< HEAD
+            <th>PS Closed</th><th>PS Quota (YTD)</th><th>PS %</th>
+                    <th>FO Closed</th><th>FO Quota (YTD)</th><th>FO %</th>
+                    <th>MS Closed</th><th>MS Quota (YTD)</th><th>MS %</th>
+            <th>Total Closed</th><th>Commission</th>
+=======
             <th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th>
             <th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th>
             <th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th>
             <th>Total Closed</th>
+>>>>>>> aa2064041d0c241d3e7fec03ac1172dabf50b1b7
           </tr></thead>
           <tbody>
             {reps.map(r => {
@@ -198,16 +204,21 @@ function DashTab({data}){
               const tot=psA+foA+msA;
               return(
                 <tr key={r.id}>
+<<<<<<< HEAD
+                              <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
+                  <td>{r.dept||r.department||'—'}</td>
+=======
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||r.department||'ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ'}</td>
+>>>>>>> aa2064041d0c241d3e7fec03ac1172dabf50b1b7
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
-                  <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
+                              <td style={{color:'#fff',fontSize:11}}>{fmt(psQ*(CM/12))}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(foA)}</td>
-                  <td style={{color:'#fff',fontSize:11}}>{fmt(foQ)}</td>
+                              <td style={{color:'#fff',fontSize:11}}>{fmt(foQ*(CM/12))}</td>
                   <td><span className={`sa-badge ${foA>=foQ*(CM/12)?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(msA)}</td>
-                  <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
+                              <td style={{color:'#fff',fontSize:11}}>{fmt(msQ*(CM/12))}</td>
                   <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
                 </tr>
