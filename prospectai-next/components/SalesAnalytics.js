@@ -184,17 +184,10 @@ function DashTab({data}){
         <div style={{overflowX:'auto'}}><table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Dept</th>
-<<<<<<< HEAD
-            <th>PS Closed</th><th>PS Quota (YTD)</th><th>PS %</th>
-                    <th>FO Closed</th><th>FO Quota (YTD)</th><th>FO %</th>
-                    <th>MS Closed</th><th>MS Quota (YTD)</th><th>MS %</th>
-            <th>Total Closed</th><th>Commission</th>
-=======
             <th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th>
             <th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th>
             <th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th>
             <th>Total Closed</th>
->>>>>>> aa2064041d0c241d3e7fec03ac1172dabf50b1b7
           </tr></thead>
           <tbody>
             {reps.map(r => {
@@ -204,13 +197,8 @@ function DashTab({data}){
               const tot=psA+foA+msA;
               return(
                 <tr key={r.id}>
-<<<<<<< HEAD
                               <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||r.department||'—'}</td>
-=======
-                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ'}</td>
->>>>>>> aa2064041d0c241d3e7fec03ac1172dabf50b1b7
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
                               <td style={{color:'#fff',fontSize:11}}>{fmt(psQ*(CM/12))}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
