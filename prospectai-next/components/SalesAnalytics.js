@@ -801,65 +801,34 @@ function ArrCalcTab(){
   );
 }
 function CommTab({data, filterRep, setFilterRep}){
-  const deals = data.deals || [];
-  const [sortField, setSortField] = useState('name');
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortBy, setSortBy] = useState('rep');
   const [filterMonth, setFilterMonth] = useState('All');
-  const toggleSort = field => {
-    if(sortField===field) setSortDir(d=>d==='asc'?'desc':'asc');
-    else { setSortField(field); setSortDir('asc'); }
-  };
-  const SortArrow = ({field}) => {
-    if(sortField!==field) return React.createElement('span',{style:{color:'#475569',marginLeft:4}},'⇅');
-    return React.createElement('span',{style:{color:'#818cf8',marginLeft:4}},sortDir==='asc'?'↑':'↓');
-  };
-  const repRows = data.reps.map(r => {
-    const myDeals = deals.filter(d => d.repId===r.id && (filterMonth==='All' || d.month===Number(filterMonth)));
-    const ps = myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
-    const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
-    const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
-    const tot = ps+fo+ms;
-    const arr = myDeals.reduce((s,d)=>s+dealARR(d),0);
-    const dealsCount = myDeals.length;
-    return { rep:r, ps, fo, ms, tot, arr, dealsCount, myDeals };
-  }).filter(r => filterRep==='All' || r.rep.id===filterRep);
-  const sorted = [...repRows].sort((a,b) => {
-    let va, vb;
-    if(sortField==='name'){ va=a.rep.name.toLowerCase(); vb=b.rep.name.toLowerCase(); }
-    else if(sortField==='ps'){ va=a.ps; vb=b.ps; }
-    else if(sortField==='fo'){ va=a.fo; vb=b.fo; }
-    else if(sortField==='ms'){ va=a.ms; vb=b.ms; }
-    else if(sortField==='tot'){ va=a.tot; vb=b.tot; }
-    else if(sortField==='arr'){ va=a.arr; vb=b.arr; }
-    else if(sortField==='deals'){ va=a.dealsCount; vb=b.dealsCount; }
-    if(va<vb) return sortDir==='asc'?-1:1;
-    if(va>vb) return sortDir==='asc'?1:-1;
-    return 0;
-  });
-  const totalComm = sorted.reduce((s,r)=>s+r.tot,0);
-  const earning = sorted.filter(r=>r.tot>0).length;
-  const totalArr = sorted.reduce((s,r)=>s+r.arr,0);
-  const allFilteredDeals = deals.filter(d =>
-    (filterRep==='All' || data.reps.find(r=>r.id===d.repId&&r.id===filterRep)) &&
-    (filterMonth==='All' || d.month===Number(filterMonth))
-  );
-  const printReport = () => {
-    const repName = filterRep==='All' ? 'All Reps' : (data.reps.find(r=>r.id===filterRep)||{name:'Unknown'}).name;
-    const monthLabel = filterMonth==='All' ? 'Full Year (YTD)' : MN[Number(filterMonth)-1];
-    const rows = sorted.map(r => {
-      const dealRows = r.myDeals.map(d => {
-        const repN = data.reps.find(x=>x.id===d.repId);
-        return '<tr><td>'+(repN?repN.name:'?')+'</td><td>'+d.cat+'</td><td>'+d.client+'</td><td>'+MN[(d.month||1)-1]+'</td><td>'+fmt(d.cat==='PS'?d.amount:d.mrr)+'</td><td>'+fmt(dealARR(d))+'</td><td>'+fmt(dealComm(d))+'</td></tr>';
-      }).join('');
-      return '<tr style="background:#f1f5f9"><td colspan="7" style="padding:8px 12px;font-weight:700;color:#1e293b">'+r.rep.name+' — '+(r.rep.dept||'Sales')+' | '+r.dealsCount+' deal'+(r.dealsCount!==1?'s':'')+' | ARR: '+fmt(r.arr)+' | Commission: '+fmt(r.tot)+'</td></tr>'+dealRows;
-    }).join('');
-    const html = '<!DOCTYPE html><html><head><title>Commission Report</title><style>body{font-family:-apple-system,Arial,sans-serif;margin:0;padding:24px;color:#1e293b;}h1{font-size:22px;margin:0 0 4px;}.meta{font-size:13px;color:#64748b;margin-bottom:20px;}.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}.kpi-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;}.kpi-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:4px;}.kpi-val{font-size:20px;font-weight:700;color:#1e293b;}table{width:100%;border-collapse:collapse;font-size:13px;}th{background:#1e293b;color:#fff;padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;}td{padding:7px 12px;border-bottom:1px solid #f1f5f9;}tfoot td{font-weight:700;background:#f1f5f9;padding:10px 12px;}@media print{body{padding:0;}}</style></head><body><h1>Commission Report</h1><div class="meta">Rep: '+repName+' &nbsp;|&nbsp; Period: '+monthLabel+' &nbsp;|&nbsp; Generated: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})+'</div><div class="kpi"><div class="kpi-card"><div class="kpi-lbl">Total Commissions</div><div class="kpi-val">'+fmt(totalComm)+'</div></div><div class="kpi-card"><div class="kpi-lbl">Total ARR Closed</div><div class="kpi-val">'+fmt(totalArr)+'</div></div><div class="kpi-card"><div class="kpi-lbl">Reps Earning</div><div class="kpi-val">'+earning+' / '+sorted.length+'</div></div><div class="kpi-card"><div class="kpi-lbl">Total Deals</div><div class="kpi-val">'+sorted.reduce((s,r)=>s+r.dealsCount,0)+'</div></div></div><table><thead><tr><th>Rep</th><th>Category</th><th>Client</th><th>Month</th><th>Fee/MRR</th><th>ARR Value</th><th>Commission</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr><td colspan="6">GRAND TOTAL — '+sorted.reduce((s,r)=>s+r.dealsCount,0)+' deals</td><td>'+fmt(totalComm)+'</td></tr></tfoot></table></body></html>';
-    const w = window.open('','_blank','width=900,height=700');
-    w.document.write(html);
-    w.document.close();
-    setTimeout(()=>w.print(),400);
-  };
-  const thStyle = {cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'};
+  const deals = data.deals || [];
+  const allMonths = [...new Set(deals.map(d=>d.month||1))].sort((a,b)=>a-b);
+  const filteredDeals = filterMonth==='All' ? deals : deals.filter(d=>(d.month||1)===Number(filterMonth));
+  const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
+  const totalComm = repsFor.reduce((s,r)=>s+repCommissionFromDeals(r,filteredDeals).tot,0);
+  const earning = repsFor.filter(r=>repCommissionFromDeals(r,filteredDeals).tot>0).length;
+
+  // Build rows based on sortBy
+  let rows = [];
+  if(sortBy==='rep'){
+    rows = data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
+      const c = repCommissionFromDeals(r, filteredDeals);
+      return { key: r.id, label: r.name, dept: r.dept||r.department||'Sales', ps: c.ps, fo: c.fo, ms: c.ms, tot: c.tot };
+    });
+  } else {
+    // Sort by month
+    const months = filterMonth==='All' ? allMonths : [Number(filterMonth)];
+    rows = months.map(m=>{
+      const mDeals = filteredDeals.filter(d=>(d.month||1)===m);
+      const ps = mDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
+      const fo = mDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
+      const ms = mDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
+      return { key: 'mo-'+m, label: MN[m-1], dept: '', ps, fo, ms, tot: ps+fo+ms };
+    });
+  }
+
   return(
     <div>
       <div className="sa-g3">
@@ -867,46 +836,41 @@ function CommTab({data, filterRep, setFilterRep}){
         <div className="sa-stat"><div className="lbl">Reps Earning</div><div className="val">{earning} / {data.reps.length}</div><div className="sub">reps with closed deals</div></div>
         <div className="sa-stat"><div className="lbl">Avg Commission/Rep</div><div className="val">{fmt(data.reps.length>0?totalComm/data.reps.length:0)}</div><div className="sub">across all reps</div></div>
       </div>
-      <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'flex-end',marginBottom:16}}>
-        <div style={{flex:1}}>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',color:'#94a3b8',marginBottom:6}}>Filter by Rep</div>
-          <div className="sa-pills" style={{marginBottom:0}}>
+      <div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap',marginBottom:12}}>
+        <div style={{display:'flex',gap:6,alignItems:'center'}}>
+          <span style={{fontSize:11,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Sort By:</span>
+          <button className={`sa-pill${sortBy==='rep'?' on':''}`} onClick={()=>setSortBy('rep')}>Rep</button>
+          <button className={`sa-pill${sortBy==='month'?' on':''}`} onClick={()=>setSortBy('month')}>Month</button>
+        </div>
+        {sortBy==='rep'&&(
+          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+            <span style={{fontSize:11,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep:</span>
             <button className={`sa-pill${filterRep==='All'?' on':''}`} onClick={()=>setFilterRep('All')}>All Reps</button>
             {data.reps.map(r=><button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>)}
           </div>
-        </div>
-        <div>
-          <div style={{fontSize:10,fontWeight:700,letterSpacing:1,textTransform:'uppercase',color:'#94a3b8',marginBottom:6}}>Filter by Month</div>
-          <select className="sa-select" style={{width:'auto',minWidth:140}} value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}>
-            <option value="All">All Months (YTD)</option>
-            {MN.map((m,i)=><option key={i} value={i+1}>{m}</option>)}
-          </select>
-        </div>
-        <button className="sa-btn" style={{marginBottom:1}} onClick={printReport}>🖨 Generate Report</button>
+        )}
+        {allMonths.length>0&&(
+          <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+            <span style={{fontSize:11,color:'#94a3b8',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Month:</span>
+            <button className={`sa-pill${filterMonth==='All'?' on':''}`} onClick={()=>setFilterMonth('All')}>All</button>
+            {allMonths.map(m=><button key={m} className={`sa-pill${filterMonth===String(m)?' on':''}`} onClick={()=>setFilterMonth(String(m))}>{MN[m-1]}</button>)}
+          </div>
+        )}
       </div>
       <div className="sa-card">
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-          <h2 style={{margin:0}}>Commission Summary</h2>
-          <div style={{fontSize:11,color:'#64748b',fontStyle:'italic'}}>Click column headers to sort</div>
-        </div>
         <table className="sa-tbl">
           <thead><tr>
-            <th style={thStyle} onClick={()=>toggleSort('name')}>Rep <SortArrow field="name"/></th>
-            <th>Dept</th>
-            <th style={thStyle} onClick={()=>toggleSort('deals')}>Deals <SortArrow field="deals"/></th>
-            <th style={thStyle} onClick={()=>toggleSort('arr')}>Total ARR <SortArrow field="arr"/></th>
-            <th style={thStyle} onClick={()=>toggleSort('ps')}>PS Comm (10% fee) <SortArrow field="ps"/></th>
-            <th style={thStyle} onClick={()=>toggleSort('fo')}>FO Comm (7% MRR) <SortArrow field="fo"/></th>
-            <th style={thStyle} onClick={()=>toggleSort('ms')}>MS Comm (1x MRR) <SortArrow field="ms"/></th>
-            <th style={thStyle} onClick={()=>toggleSort('tot')}>Total Commission <SortArrow field="tot"/></th>
+            <th>{sortBy==='rep'?'Rep':'Month'}</th>{sortBy==='rep'&&<th>Dept</th>}
+            <th>PS Comm (10% of fee)</th>
+            <th>FO Comm (7% of 1st mo MRR)</th>
+            <th>MS Comm (1x MRR)</th>
+            <th>Total Commission</th>
           </tr></thead>
           <tbody>
-            {sorted.map(r=>(
-              <tr key={r.rep.id}>
-                <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.rep.name}</td>
-                <td>{r.rep.dept||r.rep.department||'—'}</td>
-                <td style={{color:'#94a3b8'}}>{r.dealsCount}</td>
-                <td style={{color:'#f1f5f9',fontWeight:600}}>{fmt(r.arr)}</td>
+            {rows.map(r=>(
+              <tr key={r.key}>
+                <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.label}</td>
+                {sortBy==='rep'&&<td>{r.dept}</td>}
                 <td>{fmt(r.ps)}</td>
                 <td>{fmt(r.fo)}</td>
                 <td>{fmt(r.ms)}</td>
@@ -914,57 +878,11 @@ function CommTab({data, filterRep, setFilterRep}){
               </tr>
             ))}
           </tbody>
-          {sorted.length>1&&(
-            <tfoot><tr>
-              <td colSpan={3} style={{color:'#94a3b8',fontWeight:700,fontSize:11}}>TOTALS ({sorted.reduce((s,r)=>s+r.dealsCount,0)} deals)</td>
-              <td style={{color:'#34d399',fontWeight:700}}>{fmt(totalArr)}</td>
-              <td style={{color:'#34d399',fontWeight:700}}>{fmt(sorted.reduce((s,r)=>s+r.ps,0))}</td>
-              <td style={{color:'#34d399',fontWeight:700}}>{fmt(sorted.reduce((s,r)=>s+r.fo,0))}</td>
-              <td style={{color:'#34d399',fontWeight:700}}>{fmt(sorted.reduce((s,r)=>s+r.ms,0))}</td>
-              <td style={{color:'#34d399',fontWeight:700}}>{fmt(totalComm)}</td>
-            </tr></tfoot>
-          )}
         </table>
       </div>
-      {filterMonth!=='All'&&(
-        <div className="sa-card">
-          <h2>{MN[Number(filterMonth)-1]} — Deal Detail</h2>
-          <table className="sa-tbl">
-            <thead><tr>
-              <th>Rep</th><th>Category</th><th>Client</th><th>Fee/MRR</th><th>ARR Value</th><th>Commission</th>
-            </tr></thead>
-            <tbody>
-              {allFilteredDeals.length===0&&<tr><td colSpan={6} style={{textAlign:'center',color:'#475569',padding:20}}>No deals in {MN[Number(filterMonth)-1]}</td></tr>}
-              {allFilteredDeals.map(d=>{
-                const rep=data.reps.find(r=>r.id===d.repId);
-                const catColor=d.cat==='PS'?'#818cf8':d.cat==='FO'?'#38bdf8':'#34d399';
-                const catBg=d.cat==='PS'?'rgba(99,102,241,.2)':d.cat==='FO'?'rgba(14,165,233,.2)':'rgba(16,185,129,.2)';
-                return(
-                  <tr key={d.id}>
-                    <td style={{fontWeight:600,color:'#f1f5f9'}}>{rep?rep.name:'Unknown'}</td>
-                    <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
-                    <td>{d.client}</td>
-                    <td>{d.cat==='PS'?fmt(d.amount)+' fee':fmt(d.mrr)+'/mo MRR'}</td>
-                    <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
-                    <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            {allFilteredDeals.length>0&&(
-              <tfoot><tr>
-                <td colSpan={4} style={{color:'#94a3b8',fontWeight:700,fontSize:11}}>TOTALS ({allFilteredDeals.length} deals)</td>
-                <td style={{color:'#34d399',fontWeight:700}}>{fmt(allFilteredDeals.reduce((s,d)=>s+dealARR(d),0))}</td>
-                <td style={{color:'#34d399',fontWeight:700}}>{fmt(allFilteredDeals.reduce((s,d)=>s+dealComm(d),0))}</td>
-              </tr></tfoot>
-            )}
-          </table>
-        </div>
-      )}
     </div>
   );
 }
-
 function ReportsTab({data}){
   const deals = data.deals || [];
   const exportCSV = rep => {
@@ -993,484 +911,6 @@ function ReportsTab({data}){
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
                 <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
-              </div>
-              <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
-            </div>
-          );
-        })}
-        {data.reps.length===0&&<div style={{color:'#fff',textAlign:'center',padding:24}}>No reps added yet.</div>}
-      </div>
-    </div>
-  );
-}
-function SettingsTab({data, save}){
-  const deals = data.deals || [];
-  const cq = data.companyQuotas || { PS:0, FO:0, MS:0 };
-  const [qf, setQf] = useState({ PS: cq.PS||'', FO: cq.FO||'', MS: cq.MS||'' });
-  const [saved, setSaved] = useState(false);
-  const totalClosed = data.reps.reduce((s,r)=>s+getActualFromDeals(r.id,'PS',deals)+getActualFromDeals(r.id,'FO',deals)+getActualFromDeals(r.id,'MS',deals),0);
-  const totalComm = deals.reduce((s,d)=>s+dealComm(d),0);
-  const totalQuota = (Number(qf.PS)||0)+(Number(qf.FO)||0)+(Number(qf.MS)||0);
-  const saveQuotas = () => {
-    const d = JSON.parse(JSON.stringify(data));
-    d.companyQuotas = { PS: Number(qf.PS)||0, FO: Number(qf.FO)||0, MS: Number(qf.MS)||0 };
-    save(d);
-    setSaved(true);
-    setTimeout(()=>setSaved(false), 2000);
-  };
-  return(
-    <div>
-      <div className="sa-g3">
-        <div className="sa-stat"><div className="lbl">Total Closed ARR</div><div className="val" style={{color:'#34d399'}}>{fmt(totalClosed)}</div><div className="sub">across all reps</div></div>
-        <div className="sa-stat"><div className="lbl">Total Company Quota</div><div className="val">{fmt(totalQuota)}</div><div className="sub">PS + FO + MS combined</div></div>
-        <div className="sa-stat"><div className="lbl">Total Commissions</div><div className="val" style={{color:'#34d399'}}>{fmt(totalComm)}</div><div className="sub">based on deals</div></div>
-      </div>
-      <div className="sa-card">
-        <h2>Company Quota by Category</h2>
-        <div style={{fontSize:13,color:'#a5b4fc',marginBottom:16,lineHeight:1.6}}>
-          Set the total annual quota for each category. These drive attainment % on the Dashboard and Category Performance tabs.
-        </div>
-        <div className="sa-frow">
-          <div>
-            <label className="sa-label">Professional Services Annual Quota ($)</label>
-            <input className="sa-input" type="number" value={qf.PS} onChange={e=>setQf({...qf,PS:e.target.value})} placeholder="e.g. 6500000"/>
-            <div style={{fontSize:11,color:'#fff',marginTop:4}}>One-time project fees</div>
-          </div>
-          <div>
-            <label className="sa-label">FinOps Annual Quota ($)</label>
-            <input className="sa-input" type="number" value={qf.FO} onChange={e=>setQf({...qf,FO:e.target.value})} placeholder="e.g. 32000000"/>
-            <div style={{fontSize:11,color:'#fff',marginTop:4}}>Recurring MRR x months remaining</div>
-          </div>
-          <div>
-            <label className="sa-label">Managed Services Annual Quota ($)</label>
-            <input className="sa-input" type="number" value={qf.MS} onChange={e=>setQf({...qf,MS:e.target.value})} placeholder="e.g. 1500000"/>
-            <div style={{fontSize:11,color:'#fff',marginTop:4}}>Recurring MRR x months remaining</div>
-          </div>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:12,marginTop:4}}>
-          <button className="sa-btn" onClick={saveQuotas}>Save Quotas</button>
-          {saved&&<span style={{color:'#34d399',fontSize:13,fontWeight:600}}>Saved!</span>}
-          {totalQuota>0&&<span style={{color:'#fff',fontSize:12}}>Total: {fmt(totalQuota)}</span>}
-        </div>
-      </div>
-      <div className="sa-card">
-        <h2>Commission Rates</h2>
-        <div className="sa-g3">
-          {[
-            {id:'PS',label:'Professional Services',rate:'10%',note:'10% of one-time project fee'},
-            {id:'FO',label:'FinOps',rate:'7% of 1st mo MRR',note:'7% of 1st month MRR (not of full ARR)'},
-            {id:'MS',label:'Managed Services',rate:'1x MRR',note:'1x MRR flat (not a % of ARR)'},
-          ].map(c=>(
-            <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
-              <div style={{fontSize:11,color:'#fff',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
-              <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9'}}>{c.rate}</div>
-              <div style={{fontSize:11,color:'#818cf8',marginTop:4,fontStyle:'italic'}}>{c.note}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="sa-card">
-        <h2>Rep Quotas</h2>
-        <div style={{fontSize:12,color:'#a5b4fc',marginBottom:12}}>Individual rep quotas are set in the Reps tab.</div>
-        <table className="sa-tbl">
-          <thead><tr><th>Rep</th><th>Professional Services Quota</th><th>FinOps Quota</th><th>Managed Services Quota</th><th>Total Quota</th></tr></thead>
-          <tbody>
-            {data.reps.map(r=>(
-              <tr key={r.id}>
-                <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
-                <td>{fmt(getQuota(r,'FO')*(CM/12))}</td>
-                <td>{fmt(getQuota(r,'MS')*(CM/12))}</td>
-                <td style={{fontWeight:600}}>{fmt((getQuota(r,'PS')+getQuota(r,'FO')+getQuota(r,'MS'))*(CM/12))}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-          <div className="rdm-sec">Deals Won by Category</div>
-          {catData.map(c=>(
-            <div className="rdm-cat-block" key={c.id}>
-              <div className="rdm-cat-hd" style={{borderLeftColor:c.border}}>
-                <span style={{background:c.bg,color:c.color,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:700}}>{c.id}</span>
-                <span className="rdm-cat-name" style={{color:c.color}}>{c.label}</span>
-                <div className="rdm-cat-meta">
-                  <span>{c.deals.length} deal{c.deals.length!==1?'s':''}</span>
-                  <span style={{color:'#f1f5f9',fontWeight:700}}>{fmt(c.arr)} ARR</span>
-                  <span style={{color:'#34d399'}}>{fmt(c.comm)} commission</span>
-                </div>
-              </div>
-              {c.deals.length===0
-                ?<div className="rdm-no-deals">No {c.label} deals</div>
-                :<table className="rdm-tbl">
-                  <thead><tr>
-                    <th>Client</th><th>Month Closed</th>
-                    <th>{c.id==='PS'?'Fee':'MRR'}</th>
-                    <th>Mo. Remaining</th>
-                    <th>ARR Value</th><th>Commission</th>
-                  </tr></thead>
-                  <tbody>
-                    {c.deals.map(d=>(
-                      <tr key={d.id}>
-                        <td style={{fontWeight:600}}>{d.client}</td>
-                        <td>{MN[(d.month||1)-1]}</td>
-                        <td>{c.id==='PS'
-                          ?<span>{fmt(d.amount)} <span style={{color:'#64748b',fontSize:11}}>one-time</span></span>
-                          :<span>{fmt(d.mrr)} <span style={{color:'#64748b',fontSize:11}}>/mo MRR</span></span>
-                        }</td>
-                        <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'Ã¢ÂÂ':mrem(d.month)}</td>
-                        <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
-                        <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot><tr>
-                    <td colSpan={4}>TOTALS ({c.deals.length} deal{c.deals.length!==1?'s':''})</td>
-                    <td style={{color:'#f1f5f9'}}>{fmt(c.arr)}</td>
-                    <td style={{color:'#34d399'}}>{fmt(c.comm)}</td>
-                  </tr></tfoot>
-                </table>
-              }
-            </div>
-          ))}
-          <div className="rdm-grand">
-            <span style={{fontSize:13,fontWeight:700,color:'#818cf8'}}>GRAND TOTAL</span>
-            <span style={{fontSize:13,color:'#94a3b8'}}>{totalDeals} deals won</span>
-            <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalARR)} ARR</span>
-            <span style={{fontSize:15,fontWeight:700,color:'#34d399'}}>{fmt(totalComm)} commission</span>
-            <span style={{fontSize:13,color:overallAttain>=CM/12?'#34d399':'#f87171',marginLeft:'auto'}}>{ytdTotalQuota>0?pct(overallAttain)+' of YTD target':'No quota set'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-function RepsTab({data, save}){
-  const [showForm, setShowForm] = useState(false);
-  const [editRep, setEditRep] = useState(null);
-  const [rf, setRf] = useState({name:'',dept:'',psQ:'',foQ:'',msQ:''});
-  const [selectedRep, setSelectedRep] = useState(null);
-  const submit = () => {
-    if(!rf.name.trim()) return;
-    const d = JSON.parse(JSON.stringify(data));
-    const repData = {
-      name: rf.name.trim(), dept: rf.dept.trim(),
-      quotas: { 'Professional Services': Number(rf.psQ)||0, 'FinOps': Number(rf.foQ)||0, 'Managed Services': Number(rf.msQ)||0 },
-      actuals: {'Professional Services':0,'FinOps':0,'Managed Services':0},
-      psWins: [], recurringDeals: {'FinOps':[],'Managed Services':[]},
-    };
-    if(editRep){ d.reps = d.reps.map(r => r.id===editRep.id ? {...r,...repData} : r); setEditRep(null); }
-    else { d.reps = [...d.reps, {id:nid(), ...repData}]; }
-    save(d);
-    setRf({name:'',dept:'',psQ:'',foQ:'',msQ:''});
-    setShowForm(false);
-  };
-  const del = id => {
-    if(!window.confirm('Delete rep?')) return;
-    const d = JSON.parse(JSON.stringify(data));
-    d.reps = d.reps.filter(r => r.id !== id);
-    save(d);
-  };
-  const startEdit = r => {
-    setEditRep(r);
-    setRf({ name:r.name, dept:r.dept||r.department||'', psQ:getQuota(r,'PS')||'', foQ:getQuota(r,'FO')||'', msQ:getQuota(r,'MS')||'' });
-    setShowForm(true);
-  };
-  const deals = data.deals || [];
-  return(
-    <div>
-      {selectedRep&&<RepDetailModal rep={selectedRep} deals={deals} onClose={()=>setSelectedRep(null)}/>}
-      <div className="sa-shd">
-        <div style={{fontSize:12,color:'#818cf8',fontStyle:'italic'}}>Click any rep name to view their full deal breakdown</div>
-        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditRep(null);setRf({name:'',dept:'',psQ:'',foQ:'',msQ:''});}}>+ Add Rep</button>
-      </div>
-      {showForm&&(
-        <div className="sa-card" style={{marginBottom:16}}>
-          <h2>{editRep?'Edit Rep':'New Rep'}</h2>
-          <div className="sa-frow">
-            <div><label className="sa-label">Name</label><input className="sa-input" value={rf.name} onChange={e=>setRf({...rf,name:e.target.value})} placeholder="Full name"/></div>
-            <div><label className="sa-label">Department</label><input className="sa-input" value={rf.dept} onChange={e=>setRf({...rf,dept:e.target.value})} placeholder="e.g. Sales"/></div>
-            <div/>
-          </div>
-          <div className="sa-frow">
-            <div><label className="sa-label">PS Annual Quota ($)</label><input className="sa-input" type="number" value={rf.psQ} onChange={e=>setRf({...rf,psQ:e.target.value})} placeholder="e.g. 1200000"/></div>
-            <div><label className="sa-label">FO Annual Quota ($)</label><input className="sa-input" type="number" value={rf.foQ} onChange={e=>setRf({...rf,foQ:e.target.value})} placeholder="e.g. 7020000"/></div>
-            <div><label className="sa-label">MS Annual Quota ($)</label><input className="sa-input" type="number" value={rf.msQ} onChange={e=>setRf({...rf,msQ:e.target.value})} placeholder="e.g. 390000"/></div>
-          </div>
-          <div style={{display:'flex',gap:8}}>
-            <button className="sa-btn" onClick={submit}>{editRep?'Save':'Add Rep'}</button>
-            <button className="sa-btn del sm" onClick={()=>{setShowForm(false);setEditRep(null);}}>Cancel</button>
-          </div>
-        </div>
-      )}
-      <div className="sa-card">
-        <table className="sa-tbl">
-          <thead><tr><th>Name</th><th>Dept</th><th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th><th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th><th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th></tr></thead>
-          <tbody>
-            {data.reps.map(r=>(
-              <tr key={r.id} className="rep-row-link" title={`Click to view ${r.name}'s deal breakdown`} onClick={()=>setSelectedRep(r)}>
-                <td style={{fontWeight:600,color:'#818cf8',textDecoration:'underline',textDecorationColor:'#818cf8',cursor:'pointer'}}>{r.name}</td>
-                <td>{r.dept||r.department||'Ã¢ÂÂ'}</td>
-                <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
-                <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
-                <td><span className={`sa-badge ${getActualFromDeals(r.id,'PS',deals)>=getQuota(r,'PS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'PS')>0?getActualFromDeals(r.id,'PS',deals)/(getQuota(r,'PS')*(CM/12)):0)}</span></td>
-                <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'FO',deals))}</td>
-                <td>{fmt(getQuota(r,'FO')*(CM/12))}</td>
-                <td><span className={`sa-badge ${getActualFromDeals(r.id,'FO',deals)>=getQuota(r,'FO')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'FO')>0?getActualFromDeals(r.id,'FO',deals)/(getQuota(r,'FO')*(CM/12)):0)}</span></td>
-                <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'MS',deals))}</td>
-                <td>{fmt(getQuota(r,'MS')*(CM/12))}</td>
-                <td><span className={`sa-badge ${getActualFromDeals(r.id,'MS',deals)>=getQuota(r,'MS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'MS')>0?getActualFromDeals(r.id,'MS',deals)/(getQuota(r,'MS')*(CM/12)):0)}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-function CatPerfTab({data, filterRep, setFilterRep}){
-  const deals = data.deals || [];
-  const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
-  const dealsFor = filterRep==='All' ? deals : deals.filter(d=>d.repId===filterRep);
-  const cats = [
-    {id:'PS', label:'Professional Services', color:'#6366f1', note:'One-time project fee | Commission: 10% of fee'},
-    {id:'FO', label:'FinOps', color:'#0ea5e9', note:'Recurring MRR x months remaining = ARR | Commission: 7% of 1st month MRR'},
-    {id:'MS', label:'Managed Services', color:'#10b981', note:'Recurring MRR x months remaining = ARR | Commission: 1x MRR'},
-  ];
-  return(
-    <div>
-      <div className="sa-pills">
-        <button className={`sa-pill${filterRep==='All'?' on':''}`} onClick={()=>setFilterRep('All')}>All Reps</button>
-        {data.reps.map(r=><button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>)}
-      </div>
-      {cats.map(c=>{
-        const closed = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealARR(d),0);
-        const quota = repsFor.reduce((s,r)=>s+getQuota(r,c.id),0);
-        const ytdQuota = quota*(CM/12);
-        const comm = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealComm(d),0);
-        const p = ytdQuota>0 ? Math.min(1,closed/ytdQuota) : 0;
-        const remaining = Math.max(0, ytdQuota-closed);
-        const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
-        return(
-          <div className="sa-card" key={c.id}>
-            <h2 style={{color:c.color}}>{c.label}</h2>
-            <div style={{fontSize:11,color:'#fff',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.note}</div>
-            <div className="sa-g3">
-              <div className="sa-stat">
-                <div className="lbl">Closed ARR</div>
-                <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                <div className="sub">of {fmt(ytdQuota)} YTD target â {pct(p)} attained</div>
-              <div style={{fontSize:10,color:'#64748b',marginTop:1}}>Annual: {fmt(quota)}</div>
-                <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
-                <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
-              </div>
-              <div className="sa-stat">
-                <div className="lbl">Remaining to Quota</div>
-                <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
-                <div className="sub">{pct(ytdQuota>0?remaining/ytdQuota:0)} left of YTD target</div>
-              </div>
-              <div className="sa-stat">
-                <div className="lbl">Commission Earned</div>
-                <div className="val" style={{color:'#34d399'}}>{fmt(comm)}</div>
-                <div className="sub">{commLabel}</div>
-              </div>
-            </div>
-            {dealsFor.filter(d=>d.cat===c.id).length>0&&(
-              <table className="sa-tbl" style={{marginTop:8}}>
-                <thead><tr><th>Rep</th><th>Client</th><th>Month</th><th>{c.id==='PS'?'Fee':'MRR'}</th><th>ARR</th><th>Commission</th></tr></thead>
-                <tbody>
-                  {dealsFor.filter(d=>d.cat===c.id).map(d=>{
-                    const rep=data.reps.find(r=>r.id===d.repId);
-                    return(
-                      <tr key={d.id}>
-                        <td>{rep?rep.name:'Unknown'}</td>
-                        <td>{d.client}</td>
-                        <td>{MN[(d.month||1)-1]}</td>
-                        <td>{c.id==='PS'?fmt(d.amount):fmt(d.mrr)+'/mo'}</td>
-                        <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
-                        <td style={{color:'#34d399'}}>{fmt(dealComm(d))}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-function ArrCalcTab(){
-  const [calcCat, setCalcCat] = useState('PS');
-  const [calcAmt, setCalcAmt] = useState('');
-  const [calcMonth, setCalcMonth] = useState(CM);
-  const amt = Number(calcAmt)||0;
-  const rem = mrem(Number(calcMonth));
-  let arrVal=0, commVal=0, detail='';
-  if(calcCat==='PS'){
-    arrVal=amt; commVal=amt*0.10;
-    detail=fmt(amt)+' fee | Commission: '+fmt(amt)+' x 10% = '+fmt(commVal);
-  } else if(calcCat==='FO'){
-    arrVal=amt*rem; commVal=amt*0.07;
-    detail=fmt(amt)+' MRR x '+rem+' months = '+fmt(arrVal)+' ARR | Commission: '+fmt(amt)+' x 7% = '+fmt(commVal)+' (1st month MRR only)';
-  } else {
-    arrVal=amt*rem; commVal=amt*1.0;
-    detail=fmt(amt)+' MRR x '+rem+' months = '+fmt(arrVal)+' ARR | Commission: '+fmt(amt)+' x 1 = '+fmt(commVal)+' (1x MRR flat)';
-  }
-  return(
-    <div>
-      <div className="sa-card">
-        <h2>ARR Calculator</h2>
-        <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
-          <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value ÃÂ¢ÃÂÃÂ not annualized. Commission = 10% of fee.<br/>
-          <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
-          <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
-          January close = 12 months = max ARR. November close = 2 months.
-        </div>
-        <div className="sa-frow">
-          <div><label className="sa-label">Category</label>
-            <select className="sa-select" value={calcCat} onChange={e=>setCalcCat(e.target.value)}>
-              <option value="PS">Professional Services (one-time fee)</option>
-              <option value="FO">FinOps (recurring MRR)</option>
-              <option value="MS">Managed Services (recurring MRR)</option>
-            </select>
-          </div>
-          {calcCat==='PS'
-            ?<div><label className="sa-label">One-Time Fee ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 50000"/></div>
-            :<div><label className="sa-label">Monthly MRR ($)</label><input className="sa-input" type="number" value={calcAmt} onChange={e=>setCalcAmt(e.target.value)} placeholder="e.g. 8000"/></div>
-          }
-          {calcCat!=='PS'&&(
-            <div><label className="sa-label">Month Closed</label>
-              <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
-                {MN.map((m,i)=><option key={i} value={i+1}>{m} ÃÂ¢ÃÂÃÂ {13-(i+1)} months remaining</option>)}
-              </select>
-            </div>
-          )}
-        </div>
-        <div className="sa-g3">
-          <div className="sa-stat">
-            <div className="lbl">{calcCat==='PS'?'Fee Value':'ARR Value'}</div>
-            <div className="val">{fmt(arrVal)}</div>
-            <div className="sub">{calcCat==='PS'?'One-time (not annualized)':'MRR x '+rem+' months'}</div>
-          </div>
-          <div className="sa-stat">
-            <div className="lbl">Commission</div>
-            <div className="val" style={{color:'#34d399'}}>{fmt(commVal)}</div>
-            <div className="sub">{calcCat==='PS'?'10% of fee':calcCat==='FO'?'7% of 1st month MRR':'1x MRR (flat)'}</div>
-          </div>
-          <div className="sa-stat">
-            <div className="lbl">{calcCat==='PS'?'Type':'Months Remaining'}</div>
-            <div className="val">{calcCat==='PS'?'1x':rem}</div>
-            <div className="sub">{calcCat==='PS'?'One-time project':MN[Number(calcMonth)-1]+' close'}</div>
-          </div>
-        </div>
-        {amt>0&&<div className="sa-preview">{detail}</div>}
-      </div>
-      {calcCat!=='PS'&&(
-        <div className="sa-card">
-          <h2>Time-Weighted ARR by Month (MRR = {fmt(amt)})</h2>
-          <table className="sa-tbl">
-            <thead><tr><th>Month</th><th>Months Remaining</th><th>ARR Value</th><th>Commission</th></tr></thead>
-            <tbody>
-              {MN.map((m,i)=>{
-                const r=mrem(i+1), a=amt*r;
-                const c = calcCat==='FO' ? amt*0.07 : amt*1.0;
-                const isCur=i+1===Number(calcMonth);
-                return(
-                  <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
-                    <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ÃÂ¢ÃÂÃÂ':''}</td>
-                    <td>{r}</td>
-                    <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
-                    <td style={{color:'#34d399'}}>{fmt(c)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
-            {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR ÃÂ¢ÃÂÃÂ same regardless of month closed.':'Note: Commission = 1x MRR flat ÃÂ¢ÃÂÃÂ same regardless of month closed.'}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-function CommTab({data, filterRep, setFilterRep}){
-  const deals = data.deals || [];
-  const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
-  const totalComm = repsFor.reduce((s,r)=>s+repCommissionFromDeals(r,deals).tot,0);
-  const earning = repsFor.filter(r=>repCommissionFromDeals(r,deals).tot>0).length;
-  return(
-    <div>
-      <div className="sa-g3">
-        <div className="sa-stat"><div className="lbl">Total Commissions</div><div className="val" style={{color:'#34d399'}}>{fmt(totalComm)}</div><div className="sub">based on closed deals</div></div>
-        <div className="sa-stat"><div className="lbl">Reps Earning</div><div className="val">{earning} / {data.reps.length}</div><div className="sub">reps with closed deals</div></div>
-        <div className="sa-stat"><div className="lbl">Avg Commission/Rep</div><div className="val">{fmt(data.reps.length>0?totalComm/data.reps.length:0)}</div><div className="sub">across all reps</div></div>
-      </div>
-      <div className="sa-pills">
-        <button className={`sa-pill${filterRep==='All'?' on':''}`} onClick={()=>setFilterRep('All')}>All Reps</button>
-        {data.reps.map(r=><button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>)}
-      </div>
-      <div className="sa-card">
-        <table className="sa-tbl">
-          <thead><tr>
-            <th>Rep</th><th>Dept</th>
-            <th>PS Comm (10% of fee)</th>
-            <th>FO Comm (7% of 1st mo MRR)</th>
-            <th>MS Comm (1x MRR)</th>
-            <th>Total Commission</th>
-          </tr></thead>
-          <tbody>
-            {data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
-              const c = repCommissionFromDeals(r,deals);
-              return(
-                <tr key={r.id}>
-                  <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'ÃÂ¢ÃÂÃÂ'}</td>
-                  <td>{fmt(c.ps)}</td>
-                  <td>{fmt(c.fo)}</td>
-                  <td>{fmt(c.ms)}</td>
-                  <td style={{fontWeight:700,color:'#34d399'}}>{fmt(c.tot)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-function ReportsTab({data}){
-  const deals = data.deals || [];
-  const exportCSV = rep => {
-    const myDeals = deals.filter(d=>d.repId===rep.id);
-    const rows = [['Client','Category','Month','Fee/MRR','ARR Value','Commission']];
-    myDeals.forEach(d=>{
-      rows.push([d.client, d.cat, MN[(d.month||1)-1], d.cat==='PS'?d.amount:d.mrr, dealARR(d), dealComm(d)]);
-    });
-    const csv = rows.map(r=>r.join(',')).join(String.fromCharCode(10));
-    const el = document.createElement('a');
-    el.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    el.download = rep.name.replace(/s+/g,'_')+'_deals.csv';
-    el.click();
-  };
-  return(
-    <div>
-      <div className="sa-card">
-        <h2>Export Rep Reports</h2>
-        <p style={{color:'#fff',fontSize:13,marginTop:-8,marginBottom:16}}>Download closed deals and commissions for each rep as CSV.</p>
-        {data.reps.map(r=>{
-          const myDeals = deals.filter(d=>d.repId===r.id);
-          const tot = myDeals.reduce((s,d)=>s+dealARR(d),0);
-          const comm = myDeals.reduce((s,d)=>s+dealComm(d),0);
-          return(
-            <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
-              <div>
-                <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'ÃÂ¢ÃÂÃÂ'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
