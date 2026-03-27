@@ -63,8 +63,8 @@ export default function SalesAnalytics({onBack}){
     .sa-hd h1{font-size:20px;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0;}
     .sa-x{background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.4);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;}
     .sa-tabs{display:flex;gap:4px;background:#1e293b;padding:8px 24px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;overflow-x:auto;}
-    .sa-tab{background:transparent;border:none;color:#64748b;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .15s;}
-    .sa-tab:hover{color:#e2e8f0;background:rgba(255,255,255,.05);}
+    .sa-tab{background:transparent;border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .15s;}
+    .sa-tab:hover{color:#fff;background:rgba(255,255,255,.05);}
     .sa-tab.on{background:rgba(99,102,241,.2);color:#818cf8;border:1px solid rgba(99,102,241,.3);}
     .sa-body{flex:1;overflow-y:auto;padding:24px;}
     .sa-card{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px;}
@@ -72,15 +72,15 @@ export default function SalesAnalytics({onBack}){
     .sa-g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;}
     .sa-g2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px;}
     .sa-stat{background:#0f172a;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;}
-    .sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;margin-bottom:6px;}
+    .sa-stat .lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;margin-bottom:6px;}
     .sa-stat .val{font-size:22px;font-weight:700;color:#f1f5f9;}
-    .sa-stat .sub{font-size:11px;color:#475569;margin-top:4px;}
+    .sa-stat .sub{font-size:11px;color:#fff;margin-top:4px;}
     .sa-stat .note{font-size:11px;color:#818cf8;margin-top:6px;font-style:italic;}
     .sa-bar{height:6px;background:#1e293b;border-radius:3px;margin-top:10px;overflow:hidden;}
     .sa-bar-fill{height:100%;border-radius:3px;transition:width .4s;}
     .sa-tbl{width:100%;border-collapse:collapse;}
-    .sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#475569;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);}
-    .sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#cbd5e1;}
+    .sa-tbl th{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#fff;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);}
+    .sa-tbl td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px;color:#fff;}
     .sa-tbl tr:last-child td{border-bottom:none;}
     .sa-tbl tr:hover td{background:rgba(255,255,255,.02);}
     .sa-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
@@ -93,7 +93,7 @@ export default function SalesAnalytics({onBack}){
     .sa-input{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;}
     .sa-input:focus{outline:none;border-color:#6366f1;}
     .sa-select{background:#0f172a;border:1px solid rgba(255,255,255,.1);color:#f1f5f9;padding:10px 14px;border-radius:8px;font-size:13px;width:100%;box-sizing:border-box;}
-    .sa-label{font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block;}
+    .sa-label{font-size:11px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block;}
     .sa-frow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px;}
     .sa-shd{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
     .sa-pill{display:inline-flex;align-items:center;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#818cf8;padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;}
@@ -149,7 +149,7 @@ function DashTab({data}){
               <div className="note">{c.note}</div>
               <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
-                <span style={{fontSize:11,color:'#475569'}}>Pace: {pct(pace)}</span>
+                <span style={{fontSize:11,color:'#fff'}}>Pace: {pct(pace)}</span>
                 <span className={`sa-badge ${behind?'behind':'ahead'}`}>{behind?'Behind':'On Track'}</span>
               </div>
             </div>
@@ -198,13 +198,13 @@ function DashTab({data}){
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||r.department||'—'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
-                  <td style={{color:'#475569',fontSize:11}}>{fmt(psQ)}</td>
+                  <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(foA)}</td>
-                  <td style={{color:'#475569',fontSize:11}}>{fmt(foQ)}</td>
+                  <td style={{color:'#fff',fontSize:11}}>{fmt(foQ)}</td>
                   <td><span className={`sa-badge ${foA>=foQ*(CM/12)?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(msA)}</td>
-                  <td style={{color:'#475569',fontSize:11}}>{fmt(msQ)}</td>
+                  <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
                   <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
                   <td style={{color:'#34d399'}}>{fmt(comm.tot)}</td>
@@ -273,7 +273,7 @@ function ActualsTab({data, save}){
               <input className="sa-input" type="number" value={editAmt}
                 onChange={e=>setEditAmt(e.target.value)}
                 placeholder={editCat==='PS'?'e.g. 115300':'e.g. 282000'}/>
-              <div style={{fontSize:11,color:'#475569',marginTop:4}}>
+              <div style={{fontSize:11,color:'#fff',marginTop:4}}>
                 {editCat==='PS'
                   ?'Enter total PS fees closed YTD. Commission = total x 10%.'
                   :'Enter total ARR closed YTD (MRR x months remaining per deal). Commission = total x 7%.'}
@@ -307,13 +307,13 @@ function ActualsTab({data, save}){
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||r.department||'—'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
-                  <td style={{color:'#475569',fontSize:11}}>{fmt(psQ)}</td>
+                  <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
                   <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(foA)}</td>
-                  <td style={{color:'#475569',fontSize:11}}>{fmt(foQ)}</td>
+                  <td style={{color:'#fff',fontSize:11}}>{fmt(foQ)}</td>
                   <td><span className={`sa-badge ${foA>=foQ*(CM/12)?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(msA)}</td>
-                  <td style={{color:'#475569',fontSize:11}}>{fmt(msQ)}</td>
+                  <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
                   <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
                 </tr>
@@ -409,9 +409,9 @@ function RepsTab({data, save}){
               <tr key={r.id}>
                 <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                 <td>{r.dept||r.department||'—'}</td>
-                <td style={{color:'#475569'}}>{fmt(getQuota(r,'PS'))}</td>
-                <td style={{color:'#475569'}}>{fmt(getQuota(r,'FO'))}</td>
-                <td style={{color:'#475569'}}>{fmt(getQuota(r,'MS'))}</td>
+                <td style={{color:'#fff'}}>{fmt(getQuota(r,'PS'))}</td>
+                <td style={{color:'#fff'}}>{fmt(getQuota(r,'FO'))}</td>
+                <td style={{color:'#fff'}}>{fmt(getQuota(r,'MS'))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActual(r,'PS'))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActual(r,'FO'))}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActual(r,'MS'))}</td>
@@ -450,14 +450,14 @@ function CatPerfTab({data, filterRep, setFilterRep}){
         return(
           <div className="sa-card" key={c.id}>
             <h2 style={{color:c.color}}>{c.label}</h2>
-            <div style={{fontSize:11,color:'#475569',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.note}</div>
+            <div style={{fontSize:11,color:'#fff',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.note}</div>
             <div className="sa-g3">
               <div className="sa-stat">
                 <div className="lbl">Closed ARR</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
                 <div className="sub">of {fmt(quota)} quota — {pct(p)} attained</div>
                 <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
-                <div style={{fontSize:11,color:'#475569',marginTop:4}}>Pace: {pct(CM/12)}</div>
+                <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
               </div>
               <div className="sa-stat">
                 <div className="lbl">Remaining to Quota</div>
@@ -495,7 +495,7 @@ function ArrCalcTab(){
     <div>
       <div className="sa-card">
         <h2>ARR Calculator</h2>
-        <div style={{fontSize:12,color:'#475569',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
+        <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
           <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value — not annualized. Commission = 10% of fee.<br/>
           <strong style={{color:'#38bdf8'}}>FinOps &amp; Managed Services:</strong> Recurring. ARR = MRR x months remaining in the year.<br/>
           January close = 12 months = max ARR. November close = 2 months.
@@ -552,7 +552,7 @@ function ArrCalcTab(){
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
                     <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ◄':''}</td>
                     <td>{r}</td>
-                    <td style={{fontWeight:isCur?700:400,color:isCur?'#f1f5f9':'#cbd5e1'}}>{fmt(a)}</td>
+                    <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
                   </tr>
                 );
@@ -623,7 +623,7 @@ function ReportsTab({data}){
     <div>
       <div className="sa-card">
         <h2>Export Rep Reports</h2>
-        <p style={{color:'#64748b',fontSize:13,marginTop:-8,marginBottom:16}}>Download closed actuals and attainment for each rep as CSV.</p>
+        <p style={{color:'#fff',fontSize:13,marginTop:-8,marginBottom:16}}>Download closed actuals and attainment for each rep as CSV.</p>
         {data.reps.map(r=>{
           const tot = getActual(r,'PS')+getActual(r,'FO')+getActual(r,'MS');
           const comm = repCommission(r).tot;
@@ -631,13 +631,13 @@ function ReportsTab({data}){
             <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
               <div>
                 <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                <div style={{fontSize:12,color:'#475569',marginTop:3}}>{r.dept||r.department||'—'} | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
+                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'—'} | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
               </div>
               <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
             </div>
           );
         })}
-        {data.reps.length===0&&<div style={{color:'#475569',textAlign:'center',padding:24}}>No reps added yet.</div>}
+        {data.reps.length===0&&<div style={{color:'#fff',textAlign:'center',padding:24}}>No reps added yet.</div>}
       </div>
     </div>
   );
@@ -663,7 +663,7 @@ function SettingsTab({data, save}){
             {id:'MS',label:'Managed Services',note:'7% of time-weighted ARR (MRR x months remaining)'},
           ].map(c=>(
             <div key={c.id} style={{background:'#0f172a',borderRadius:10,padding:16,border:'1px solid rgba(255,255,255,.06)'}}>
-              <div style={{fontSize:11,color:'#475569',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
+              <div style={{fontSize:11,color:'#fff',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{c.label}</div>
               <div style={{fontSize:22,fontWeight:700,color:'#f1f5f9'}}>{pct(CR[c.id])}</div>
               <div style={{fontSize:11,color:'#818cf8',marginTop:4,fontStyle:'italic'}}>{c.note}</div>
             </div>
