@@ -185,7 +185,7 @@ function DashTab({data}){
             <th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th>
             <th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th>
             <th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th>
-            <th>Total Closed</th><th>Commission</th>
+            <th>Total Closed</th>
           </tr></thead>
           <tbody>
             {reps.map(r => {
@@ -193,7 +193,6 @@ function DashTab({data}){
               const foA=getActualFromDeals(r.id,'FO',deals), foQ=getQuota(r,'FO');
               const msA=getActualFromDeals(r.id,'MS',deals), msQ=getQuota(r,'MS');
               const tot=psA+foA+msA;
-              const comm=repCommissionFromDeals(r,deals);
               return(
                 <tr key={r.id}>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
@@ -208,7 +207,6 @@ function DashTab({data}){
                   <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
                   <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
-                  <td style={{color:'#34d399'}}>{fmt(comm.tot)}</td>
                 </tr>
               );
             })}
