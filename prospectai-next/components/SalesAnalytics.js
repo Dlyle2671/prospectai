@@ -4,7 +4,6 @@ const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','D
 const CM = new Date().getMonth() + 1;
 const CR = { PS: 0.10, FO: 0.07, MS: 0.07 };
 const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Services' };
-const COMPANY_QUOTA = { PS: 6500000, FO: 32000000, MS: 1500000 };
 
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
@@ -43,8 +42,7 @@ function dealComm(d){
   return 0;
 }
 
-// Helpers: read actuals and quotas from rep object
-function getActual(rep, cat){ return (rep.actuals && rep.actuals[CAT_KEYS[cat]]) || 0; }
+// Helpers: read quotas from rep object
 function getQuota(rep, cat){ return (rep.quotas && rep.quotas[CAT_KEYS[cat]]) || 0; }
 
 // Get actuals from DEALS (summed per rep per category)
