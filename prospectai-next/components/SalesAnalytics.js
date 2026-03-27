@@ -12,7 +12,7 @@ function ld(){
     const r = localStorage.getItem(SK)
     if(r){
       const p = JSON.parse(r);
-      const reps = (Array.isArray(p.re)?p.reps:[]).map(rep => ({
+    const reps = (Array.isArray(p.reps)?p.reps:[]).map(rep => ({
         ...rep,
         actuals: rep.actuals || { 'Professional Services':0, 'FinOps':0, 'Managed Services':0 },
         quotas: rep.quotas || { 'Professional Services':0, 'FinOps':0, 'Managed Services':0 },
