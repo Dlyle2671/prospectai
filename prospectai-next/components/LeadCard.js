@@ -19,6 +19,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
   // Draft email state
   const [emailDrafting, setEmailDrafting] = useState(false);
     const [emailError, setEmailError] = useState(null);
+    const [tonePicking, setTonePicking] = useState(false);
     const [tone, setTone] = useState('conversational');
     const [emailCopied, setEmailCopied] = useState(false);
     const [selectedSender, setSelectedSender] = useState('');
@@ -129,11 +130,17 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
         }
   }
 
-  async function handleDraftEmail() {
+  function handleDraftEmail() {
         if (!p.email) { setEmailError('No email address for this lead.'); return; }
+        setSenderPickerOpen(false);
+        setTonePicking(true);
+  }
+
+  async function handleDraftWithTone(selectedTone) {
+        setTonePicking(false);
+        setTone(selectedTone);
         setEmailDrafting(true);
         setEmailError(null);
-        setSenderPickerOpen(false);
         try {
                 // Fetch recent news for this lead
                 let recentNews = [];
@@ -162,7 +169,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                                       annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount,
                                       top_investors: p.top_investors || [], intent_signals: p.intent_signals || [],
                                       recent_news: recentNews,
-                                      tone: tone,
+                                      tone: selectedTone,
                           }),
                 });
                 const data = await resp.json();
@@ -443,31 +450,30 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                 🚀 Add to Apollo Sequence {seqOpen ? '▲' : '▼'}
 </button>
             )}
-
-{/* Tone selector */}
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              {['formal','conversational','direct'].map(t => (
-                <button
-                  key={t}
-                  onClick={() => setTone(t)}
-                  style={{
-                    padding: '3px 10px',
-                    borderRadius: 20,
-                    border: tone === t ? '1.5px solid #0e7490' : '1.5px solid #334155',
-                    background: tone === t ? '#0e7490' : 'transparent',
-                    color: tone === t ? '#fff' : '#94a3b8',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    textTransform: 'capitalize',
-                    transition: 'all 0.15s',
-                  }}
-                >{t}</button>
-              ))}
-            </div>
-
 {/* Draft Email button */}
             <div style={{ position: 'relative' }}>
+              {/* Tone picker popover */}
+              {tonePicking && (
+                <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 200, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: '10px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: 200 }}>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select tone</div>
+                  {[
+                    { key: 'formal', label: 'Formal', desc: 'Professional, no contractions' },
+                    { key: 'conversational', label: 'Conversational', desc: 'Human, approachable' },
+                    { key: 'direct', label: 'Direct', desc: 'Blunt, value-first' },
+                  ].map(opt => (
+                    <button key={opt.key} onClick={() => handleDraftWithTone(opt.key)}
+                      style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: 4, borderRadius: 7, border: '1px solid #334155', background: 'transparent', color: '#f1f5f9', cursor: 'pointer', transition: 'background 0.1s' }}
+                      onMouseEnter={e => e.currentTarget.style.background='#0e7490'}
+                      onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                    >
+                      <div style={{ fontSize: 12, fontWeight: 600 }}>{opt.label}</div>
+                      <div style={{ fontSize: 10, color: '#94a3b8' }}>{opt.desc}</div>
+                    </button>
+                  ))}
+                  <button onClick={() => setTonePicking(false)} style={{ marginTop: 4, fontSize: 10, color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 0' }}>Cancel</button>
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 0, borderRadius: 8, overflow: 'hidden', border: '1px solid #0e7490' }}>
                 <button onClick={handleDraftEmail} disabled={emailDrafting || !p.email}
                   title={!p.email ? 'No email address for this lead' : 'Draft a personalized email with AI and open in Outlook'}
