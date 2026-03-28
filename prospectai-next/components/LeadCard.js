@@ -470,7 +470,7 @@ function handleQueueTrigger() {
                     { key: 'conversational', label: 'Conversational', desc: 'Human, approachable' },
                     { key: 'direct', label: 'Direct', desc: 'Blunt, value-first' },
                   ].map(opt => (
-                    <button key={opt.key} onClick={() => handleDraftWithTone(opt.key)}
+                    <button key={opt.key} onClick={() => handleToneSelected(opt.key)}
                       style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: 4, borderRadius: 7, border: '1px solid #334155', background: 'transparent', color: '#f1f5f9', cursor: 'pointer', transition: 'background 0.1s' }}
                       onMouseEnter={e => e.currentTarget.style.background='#0e7490'}
                       onMouseLeave={e => e.currentTarget.style.background='transparent'}
