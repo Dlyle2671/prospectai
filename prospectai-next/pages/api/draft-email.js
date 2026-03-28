@@ -188,7 +188,7 @@ export default async function handler(req, res) {
     const apiKey = userAnthropicKey || process.env.ANTHROPIC_API_KEY;
 
   const body = req.body || {};
-    const { name, first_name, title, seniority, company_name, company_description, keywords, tech_stack, aws_services, funding_stage, recently_funded, hiring_surge, location, time_in_role_months, prev_jobs, headcount_growth, annual_revenue, funding_round_amount, top_investors, company_founded, intent_signals } = body;
+    const { name, first_name, title, seniority, company_name, company_description, keywords, tech_stack, aws_services, funding_stage, recently_funded, hiring_surge, location, time_in_role_months, prev_jobs, headcount_growth, annual_revenue, funding_round_amount, top_investors, company_founded, intent_signals, recent_news, tone = 'conversational' } = body;
 
   if (!name) return res.status(400).json({ error: 'name is required' });
     if (!apiKey) {
