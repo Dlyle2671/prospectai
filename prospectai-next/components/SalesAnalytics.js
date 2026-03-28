@@ -1086,9 +1086,10 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   const moLabel  = moAll ? 'YTD (All Months)' : filterMonth+' '+YEAR;
 
   // Quota helper - rep quotas stored by rep.id
+  const catNames={'PS':'Professional Services','FO':'FinOps','MS':'Managed Services'};
   const getQ=(rep,cid)=>{
-    const rq=(data.repQuotas||{})[rep.id]||{};
-    return Number(rq[cid]||0);
+    const rq=rep.quotas||{};
+    return Number(rq[catNames[cid]]||0);
   };
 
   // deal.month is numeric (1-12), deal.cat is category key
