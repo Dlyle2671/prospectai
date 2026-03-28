@@ -42,7 +42,7 @@ function StepWelcome({ onNext }) {
     return (
           <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>🎯</div>
-      <h2 style={{ fontSize: 26, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Welcome to ProspectAI</h2>
+      <h2 style={{ fontSize: 26, fontWeight: 700, color: '#fff', marginBottom: 12 }}>Welcome to Cloudelligent</h2>
       <p style={{ fontSize: 15, color: '#6b7a99', lineHeight: 1.7, marginBottom: 32, maxWidth: 420, margin: '0 auto 32px' }}>
         Let&apos;s get you set up in 3 minutes. Connect your tools, configure your ICP, and you&apos;ll be finding hot leads right away.
           </p>
@@ -133,7 +133,7 @@ function StepIntegrations({ onNext, onSkip }) {
   const selectedProvider = EMAIL_PROVIDERS.find(p => p.id === emailProvider);
 
   async function handleNext() {
-        if (!keys.apollo.trim()) { setError('Apollo API key is required to use ProspectAI.'); return; }
+        if (!keys.apollo.trim()) { setError('Apollo API key is required to use Cloudelligent.'); return; }
         setSaving(true);
         const payload = {};
         if (keys.apollo.trim())    payload.apollo    = keys.apollo.trim();
@@ -281,7 +281,7 @@ function StepICP({ onNext, onSkip }) {
   return (
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>🎯 Who is your ideal customer?</h2>
-      <p style={{ fontSize: 14, color: '#6b7a99', marginBottom: 24, lineHeight: 1.6 }}>These settings control how ProspectAI scores leads. You can always refine them in Settings.</p>
+      <p style={{ fontSize: 14, color: '#6b7a99', marginBottom: 24, lineHeight: 1.6 }}>These settings control how Cloudelligent scores leads. You can always refine them in Settings.</p>
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontSize: 12, color: '#6b7a99', fontWeight: 500, marginBottom: 10 }}>TARGET COMPANY SIZE</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -344,7 +344,7 @@ function StepEmail({ onNext, onSkip }) {
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>✉️ Add your sender email</h2>
       <p style={{ fontSize: 14, color: '#6b7a99', marginBottom: 24, lineHeight: 1.6 }}>
-        This is the display name and address shown when ProspectAI drafts outreach emails. You can add more in Settings.
+        This is the display name and address shown when Cloudelligent drafts outreach emails. You can add more in Settings.
           </p>
       <div style={{ marginBottom: 16 }}>
         <label style={label}>EMAIL ADDRESS *</label>
@@ -374,7 +374,7 @@ function StepDone({ onFinish }) {
       <div style={{ fontSize: 56, marginBottom: 16 }}>🚀</div>
       <h2 style={{ fontSize: 26, fontWeight: 700, color: '#fff', marginBottom: 12 }}>You&apos;re all set!</h2>
       <p style={{ fontSize: 15, color: '#6b7a99', lineHeight: 1.7, marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
-        ProspectAI is ready to find your next great customer. You can update any integration or setting at any time from the Settings tab.
+        Cloudelligent is ready to find your next great customer. You can update any integration or setting at any time from the Settings tab.
           </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', marginBottom: 36 }}>
 {[
@@ -390,7 +390,7 @@ function StepDone({ onFinish }) {
                         ))}
 </div>
         <button style={{ ...primaryBtn(false), fontSize: 16, padding: '14px 40px' }} onClick={onFinish}>
-          Go to ProspectAI →
+          Go to Cloudelligent →
   </button>
   </div>
   );
