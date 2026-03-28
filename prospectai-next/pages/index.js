@@ -79,7 +79,7 @@ const HOME_STYLES = `
 
 const APP_STYLES = `
   .sidebar{background:#0d1117;border-right:1px solid rgba(255,255,255,0.07);padding:16px 10px;}
-    .sidebar-logo{font-size:17px;font-weight:700;letter-spacing:-0.3px;padding:8px 8px 20px 8px;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:12px;display:block;}
+    .sidebar-logo{padding:12px 8px 16px 8px;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:12px;display:block;}
       .sidebar-logo span{color:#818cf8;}
         .sidebar-nav{display:flex;flex-direction:column;gap:2px;}
           .sidebar-btn{background:transparent;border:none;color:#94a3b8;border-radius:8px;padding:9px 12px;font-size:13px;font-weight:400;text-align:left;cursor:pointer;transition:all 0.15s ease;letter-spacing:0.1px;width:100%;}
@@ -155,7 +155,7 @@ export default function Home() {
         return (
                 <>
                   <Head>
-                    <title>Cloudelligent</title>
+                    <title><img src="/cloudelligent-logo.png" alt="Cloudelligent" style="height:28px;width:auto;" /></title>
               <meta name="description" content="AI-powered prospecting platform" />
                     <meta name="viewport" content="width=device-width, initial-scale=1" />
                     <link rel="icon" href="/favicon.ico" />
@@ -164,7 +164,7 @@ export default function Home() {
           </Head>
             <div className="pai-home">
                     <div className="pai-home-topbar">
-                      <div className="pai-home-logo">Cloudelligent</div>
+                      <div className="pai-home-logo"><img src="/cloudelligent-logo.png" alt="Cloudelligent" style="height:28px;width:auto;" /></div>
                       <div className="pai-home-user">
         {user?.imageUrl && <img src={user.imageUrl} alt="avatar" className="pai-home-avatar" />}
                   <span className="pai-home-username">{user?.fullName || firstName}</span>
@@ -210,7 +210,7 @@ export default function Home() {
   return (
         <>
           <Head>
-            <title>Cloudelligent</title>
+            <title><img src="/cloudelligent-logo.png" alt="Cloudelligent" style="height:28px;width:auto;" /></title>
         <meta name="description" content="AI-powered prospecting platform" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <link rel="icon" href="/favicon.ico" />
@@ -219,7 +219,7 @@ export default function Home() {
     </Head>
       <div className="app-layout">
             <aside className="sidebar">
-              <div className="sidebar-logo" onClick={() => setShowHome(true)} style={{ cursor: 'pointer' }}>Cloudelligent</div>
+              <div className="sidebar-logo" onClick={() => setShowHome(true)} style={{ cursor: 'pointer' }}><img src="/cloudelligent-logo.png" alt="Cloudelligent" style="height:28px;width:auto;" /></div>
               <nav className="sidebar-nav">
   {TABS.map(tab => (
                   <button
