@@ -106,7 +106,7 @@ export default function SalesAnalytics({onBack}){
     <div className="sa">
       <div className="sa-hd"><h1>Sales Analytics</h1><button className="sa-x" onClick={()=>onBack&&onBack()}>Back to Home</button></div>
       <div className="sa-tabs">
-        {[['dash','Dashboard'],['deals','Deals'],['reps','Reps'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['reports','Reports'],['settings','Settings']].map(([id,label])=>(
+        {[['dash','Dashboard'],['deals','Deals'],['reps','Reps'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['settings','Settings']].map(([id,label])=>(
           <button key={id} className={`sa-tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{label}</button>
         ))}
       </div>
@@ -117,7 +117,6 @@ export default function SalesAnalytics({onBack}){
         {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
         {tab==='arrcalc'&&<ArrCalcTab/>}
         {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
-        {tab==='reports'&&<ReportsTab data={data}/>}
         {tab==='settings'&&<SettingsTab data={data} save={save}/>}
       </div>
     </div>
@@ -1196,44 +1195,6 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   iframe.contentDocument.close();
 }
 
-function ReportsTab({data}){
-  const deals = data.deals || [];
-  const exportCSV = rep => {
-    const myDeals = deals.filter(d=>d.repId===rep.id);
-    const rows = [['Client','Category','Month','Fee/MRR','ARR Value','Commission']];
-    myDeals.forEach(d=>{
-      rows.push([d.client, d.cat, MN[(d.month||1)-1], d.cat==='PS'?d.amount:d.mrr, dealARR(d), dealComm(d)]);
-    });
-    const csv = rows.map(r=>r.join(',')).join(String.fromCharCode(10));
-    const el = document.createElement('a');
-    el.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    el.download = rep.name.replace(/s+/g,'_')+'_deals.csv';
-    el.click();
-  };
-  return(
-    <div>
-      <div className="sa-card">
-        <h2>Export Rep Reports</h2>
-        <p style={{color:'#fff',fontSize:13,marginTop:-8,marginBottom:16}}>Download closed deals and commissions for each rep as CSV.</p>
-        {data.reps.map(r=>{
-          const myDeals = deals.filter(d=>d.repId===r.id);
-          const tot = myDeals.reduce((s,d)=>s+dealARR(d),0);
-          const comm = myDeals.reduce((s,d)=>s+dealComm(d),0);
-          return(
-            <div key={r.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 16px',background:'#0f172a',borderRadius:10,marginBottom:8,border:'1px solid rgba(255,255,255,.06)'}}>
-              <div>
-                <div style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</div>
-                                <div style={{fontSize:12,color:'#fff',marginTop:3}}>{r.dept||r.department||'—'} | {myDeals.length} deals | Total Closed: {fmt(tot)} | Commission: {fmt(comm)}</div>
-              </div>
-              <button className="sa-btn sm" onClick={()=>exportCSV(r)}>Export CSV</button>
-            </div>
-          );
-        })}
-        {data.reps.length===0&&<div style={{color:'#fff',textAlign:'center',padding:24}}>No reps added yet.</div>}
-      </div>
-    </div>
-  );
-}
 function SettingsTab({data, save}){
   const deals = data.deals || [];
   const cq = data.companyQuotas || { PS:0, FO:0, MS:0 };
