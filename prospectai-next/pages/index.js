@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { UserButton, useUser } from '@clerk/nextjs';
+import { UserButton, useUser, useClerk } from '@clerk/nextjs';
 import FindLeads from '../components/FindLeads';
 import CompanyIntel from '../components/CompanyIntel';
 import BulkProspector from '../components/BulkProspector';
@@ -104,6 +104,7 @@ export default function Home() {
     const [loadedSnapshot, setLoadedSnapshot] = useState(null);
     const [checkingOnboard, setCheckingOnboard] = useState(true);
     const { user, isLoaded } = useUser();
+    const { signOut } = useClerk();
     const router = useRouter();
 
   const hour = typeof window !== 'undefined' ? new Date().getHours() : 12;
@@ -235,12 +236,15 @@ export default function Home() {
                   </Link>
             )}
 </nav>
-          <div className="sidebar-footer">
-            {user && (
-                            <span className="sidebar-email">{user.primaryEmailAddress?.emailAddress}</span>
-            )}
-            <UserButton afterSignOutUrl="/sign-in" />
-              </div>
+          <div className="sidebar-footer" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+              {user && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UserButton afterSignOutUrl="/sign-in" />
+                  <span className="sidebar-email" style={{ flex: 1 }}>{user.primaryEmailAddress?.emailAddress}</span>
+                </div>
+              )}
+              <button onClick={() => signOut()} style={{ width: '100%', padding: '7px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.4)', background: 'transparent', color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.03em' }}>Sign Out</button>
+            </div>
               </aside>
         <main className="app-main">
             {activeTab === 'leads' && <FindLeads />}
