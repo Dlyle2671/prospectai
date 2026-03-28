@@ -45,7 +45,7 @@ function fmtFundingAmt(a) {
 }
 
 function pickBestHook(body) {
-    const { first_name, name, company_name, aws_services, tech_stack, recently_funded, hiring_surge, funding_stage, funding_round_amount, top_investors, headcount_growth, time_in_role_months, prev_jobs } = body;
+    const { first_name, name, company_name, aws_services, tech_stack, recently_funded, hiring_surge, funding_stage, funding_round_amount, top_investors, headcount_growth, time_in_role_months, prev_jobs, recent_news } = body;
     const co = company_name || 'your company';
     const fn = first_name || (name || '').split(' ')[0] || 'there';
     if (recently_funded && funding_round_amount && top_investors && top_investors.length > 0) {
@@ -229,6 +229,10 @@ export default async function handler(req, res) {
     }
     if (intent_signals && intent_signals.length > 0) ctx.push('Intent signals: ' + intent_signals.map(function(s) { return s.label; }).join(', '));
     if (keywords && keywords.length > 0) ctx.push('Keywords: ' + keywords.slice(0, 5).join(', '));
+    if (recent_news && recent_news.length > 0) {
+        const headlines = recent_news.map(a => a.title).filter(Boolean).join(' | ');
+        ctx.push('Recent news: ' + headlines);
+    }
     const contextStr = ctx.join('\n');
 
   const programInfo = [
@@ -247,17 +251,23 @@ export default async function handler(req, res) {
         '- Direct value: "Free AWS optimization for [Company]" or "Cutting [Company] cloud spend 18-30%"',
         '- Suggested subject (use or improve): ' + suggestedSubject,
       ].join('\n');
+  const newsSection = (recent_news && recent_news.length > 0)
+    ? 'RECENT NEWS (use the most relevant headline as your email opener if it connects to cloud spend, growth, or AWS):\n' +
+      recent_news.filter(a => a.title).map(a => '- ' + a.title + (a.description ? ': ' + a.description.slice(0, 120) : '')).join('\n')
+    : '';
+
 
   const prompt = [
         'You are a B2B sales expert writing a short, personalized cold outreach email for RRIL Solutions, a FinOps firm that cuts AWS spend.',
         '', 'LEAD:', 'Name: ' + name, contextStr, '',
+        ...(newsSection ? [newsSection, ''] : []),
         'BEST HOOK: ' + bestHook,
         'PAIN ANGLE: ' + suggestedPain, '',
         subjectExamples, '', programInfo, '',
         'OFFER: RRIL runs a free optimization assessment. Average savings are 18-30% on AWS bills within 30 days.',
         '', 'RULES:',
         '- Subject: max 8 words, punchy and curiosity-driven, personalized to this lead, do NOT just restate the hook',
-        '- Open with the BEST HOOK above',
+        '- If RECENT NEWS is provided above and a headline relates to cloud, AWS, growth, or funding, open the email referencing that news naturally. Otherwise open with the BEST HOOK above',
         '- Para 2: specific pain point (2-3 sentences)',
         '- Para 3: header "Benefits of the Altus Cloud AWS FinOps Program:" then list all 5 program details as bullet points',
         '- CTA: offer a free optimization assessment (not a generic call)',
