@@ -850,6 +850,10 @@ function CommTab({data, filterRep, setFilterRep}){
           style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
           onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
         >⬇ Export Commission Statement</button>
+        <button
+          style={{background:'linear-gradient(135deg,#1d4ed8,#3b82f6)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6,marginLeft:8}}
+          onClick={()=>exportCommissionPDF({data,filterRep,filterMonth})}
+        >📄 Export PDF</button>
       </div>
       <div className="sa-card">
         <table className="sa-tbl">
@@ -1063,6 +1067,94 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   XL.utils.book_append_sheet(wb,wsMOM,'MoM Trend');
   const dateStr=new Date().toISOString().slice(0,10);
   XL.writeFile(wb,'Commission_'+repLabel.replace(/\s+/g,'_')+'_'+moLabel.replace(/\s+/g,'_')+'_'+YEAR+'_'+dateStr+'.xlsx');
+}
+
+function exportCommissionPDF({data,filterRep,filterMonth}){
+  const deals = data.deals||[];
+  const reps = data.reps||[];
+  const YEAR = new Date().getFullYear();
+  const CM_now = new Date().getMonth()+1;
+  const repList = filterRep==='All' ? reps : reps.filter(r=>r.id===filterRep||r.name===filterRep);
+  const moNums = filterMonth==='All'
+    ? Array.from({length:CM_now},(_,i)=>i+1)
+    : [MN.indexOf(filterMonth)+1].filter(x=>x>0);
+  const repLabel = filterRep==='All' ? 'All Reps' : (repList[0]?.name||filterRep);
+  const moLabel  = filterMonth==='All' ? 'YTD (All Months)' : filterMonth+' '+YEAR;
+  const getQ=(rep,cid)=>{
+    const rq=(data.repQuotas||{})[rep.id]||(data.repQuotas||{})[rep.name]||{};
+    return Number(rq[cid]||0);
+  };
+  let sections = '';
+  repList.forEach(rep=>{
+    const repDeals = deals.filter(d=>{
+      const m=MN.indexOf(d.month)+1;
+      return (d.repId===rep.id||d.rep===rep.name) && moNums.includes(m);
+    });
+    const ytdDeals = deals.filter(d=>{
+      const m=MN.indexOf(d.month)+1;
+      return (d.repId===rep.id||d.rep===rep.name) && m>=1 && m<=CM_now;
+    });
+    let totARR=0,totComm=0,totPS=0,totFO=0,totMS=0;
+    ytdDeals.forEach(d=>{
+      const fee=Number(d.fee||d.amount||0);
+      const mrr=Number(d.mrr||0);
+      const rem=mrem(MN.indexOf(d.month)+1);
+      let arr=0,comm=0;
+      if(d.category==='PS'){arr=fee;comm=fee*CR.PS;}
+      else if(d.category==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
+      else if(d.category==='MS'){arr=mrr*12;comm=mrr*CR.MS;}
+      totARR+=arr;totComm+=comm;
+      if(d.category==='PS') totPS+=comm;
+      if(d.category==='FO') totFO+=comm;
+      if(d.category==='MS') totMS+=comm;
+    });
+    const ytdPct=CM_now/12;
+    let totQ=0;
+    ['PS','FO','MS'].forEach(cid=>{ totQ+=getQ(rep,cid); });
+    const attain=totQ>0?Math.round(totARR/(totQ*ytdPct)*100):0;
+    const status=totQ>0&&totARR>=(totQ*ytdPct)?'On Track':'Behind Pace';
+    const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
+    let catRows='';
+    cats.forEach(c=>{
+      const cDeals=ytdDeals.filter(d=>d.category===c.id);
+      let cARR=0;
+      cDeals.forEach(d=>{
+        const fee=Number(d.fee||d.amount||0);
+        const mrr=Number(d.mrr||0);
+        const rem=mrem(MN.indexOf(d.month)+1);
+        if(d.category==='PS') cARR+=fee;
+        else if(d.category==='FO') cARR+=mrr*rem;
+        else if(d.category==='MS') cARR+=mrr*12;
+      });
+      const cQ=getQ(rep,c.id);
+      const ytdQ=Math.round(cQ*ytdPct);
+      const cAtt=ytdQ>0?Math.round(cARR/ytdQ*100):0;
+      catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num">${fmt(cQ)}</td><td class="num">${fmt(ytdQ)}</td><td class="num ${cAtt>=100?'good':cAtt>=75?'warn':'bad'}">${cAtt}%</td></tr>`;
+    });
+    catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totARR)}</td><td class="num">${fmt(totQ)}</td><td class="num">${fmt(Math.round(totQ*ytdPct))}</td><td class="num ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</td></tr>`;
+    let dealRows='';
+    if(repDeals.length===0){
+      dealRows='<tr><td colspan="6" style="text-align:center;color:#888;font-style:italic;">No deals in selected period</td></tr>';
+    } else {
+      repDeals.forEach(d=>{
+        const fee=Number(d.fee||d.amount||0);
+        const mrr=Number(d.mrr||0);
+        const rem=mrem(MN.indexOf(d.month)+1);
+        let arr=0,comm=0;
+        if(d.category==='PS'){arr=fee;comm=fee*CR.PS;}
+        else if(d.category==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
+        else if(d.category==='MS'){arr=mrr*12;comm=mrr*CR.MS;}
+        const catName=CAT_KEYS[d.category]||d.category;
+        dealRows+=`<tr><td>${d.client||d.company||''}</td><td><span class="badge badge-${(d.category||'').toLowerCase()}">${catName}</span></td><td class="num">${d.category==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${d.month||''} ${YEAR}</td></tr>`;
+      });
+    }
+    sections+=`<div class="rep-section"><div class="rep-header"><div class="rep-name">${rep.name}</div><div class="rep-meta">Dept: ${rep.dept||'Sales'} &nbsp;|&nbsp; Period: ${moLabel}</div></div><div class="kpi-grid"><div class="kpi-box"><div class="kpi-label">Total ARR (YTD)</div><div class="kpi-value">${fmt(totARR)}</div></div><div class="kpi-box"><div class="kpi-label">Total Commission (YTD)</div><div class="kpi-value green">${fmt(totComm)}</div></div><div class="kpi-box"><div class="kpi-label">Quota Attainment</div><div class="kpi-value ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</div></div><div class="kpi-box"><div class="kpi-label">Status</div><div class="kpi-value ${status==='On Track'?'good':'bad'}">${status}</div></div></div><div class="section-title">Commission Breakdown (YTD)</div><div class="comm-pills"><div class="pill"><span class="pill-label">PS Commission</span><span class="pill-value">${fmt(totPS)}</span></div><div class="pill"><span class="pill-label">FO Commission</span><span class="pill-value">${fmt(totFO)}</span></div><div class="pill"><span class="pill-label">MS Commission</span><span class="pill-value">${fmt(totMS)}</span></div></div><div class="section-title">Category Breakdown (YTD)</div><table><thead><tr><th>Category</th><th>ARR Closed (YTD)</th><th>Annual Quota</th><th>YTD Quota</th><th>Attainment</th></tr></thead><tbody>${catRows}</tbody></table><div class="section-title">Deal Detail${filterMonth!=='All'?' - '+filterMonth+' '+YEAR:' (YTD)'}</div><table><thead><tr><th>Client</th><th>Category</th><th>Amount/MRR</th><th>ARR</th><th>Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table></div>`;
+  });
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Commission Statement</title><style>@page{margin:18mm 15mm;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a2e;background:#fff;}.page-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #059669;padding-bottom:10px;margin-bottom:18px;}.company-name{font-size:20px;font-weight:700;color:#059669;letter-spacing:1px;}.doc-title{font-size:13px;color:#555;margin-top:4px;}.doc-meta{text-align:right;font-size:11px;color:#555;line-height:1.7;}.doc-meta .period{font-size:13px;font-weight:700;color:#1a1a2e;}.rep-section{margin-bottom:28px;page-break-inside:avoid;}.rep-header{background:#f0fdf4;border-left:4px solid #059669;padding:10px 14px;margin-bottom:14px;border-radius:4px;}.rep-name{font-size:16px;font-weight:700;color:#1a1a2e;}.rep-meta{font-size:11px;color:#666;margin-top:3px;}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}.kpi-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;text-align:center;}.kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:4px;}.kpi-value{font-size:15px;font-weight:700;color:#1a1a2e;}.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669;border-bottom:1px solid #d1fae5;padding-bottom:4px;margin-bottom:8px;margin-top:14px;}.comm-pills{display:flex;gap:10px;margin-bottom:14px;}.pill{flex:1;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;}.pill-label{font-size:10px;color:#555;}.pill-value{font-size:13px;font-weight:700;color:#059669;}table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:10.5px;}thead tr{background:#059669;color:#fff;}thead th{padding:5px 8px;text-align:left;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px;}tbody tr:nth-child(even){background:#f8fafc;}td{padding:5px 8px;border-bottom:1px solid #e2e8f0;}.num{text-align:right;font-variant-numeric:tabular-nums;}.total-row{background:#e6f7f0!important;font-weight:700;}.green{color:#059669;font-weight:600;}.good{color:#059669;}.warn{color:#d97706;}.bad{color:#dc2626;}.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}.badge-ps{background:#dbeafe;color:#1d4ed8;}.badge-fo{background:#fef3c7;color:#92400e;}.badge-ms{background:#d1fae5;color:#065f46;}.footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:8px;text-align:center;font-size:9px;color:#aaa;}@media print{.rep-section{page-break-inside:avoid;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><div class="page-header"><div><div class="company-name">ProspectAI</div><div class="doc-title">Commission Statement</div></div><div class="doc-meta"><div class="period">${moLabel}</div><div>Generated: ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div>Fiscal Year: ${YEAR}</div></div></div>${sections}<div class="footer">ProspectAI Commission Statement &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Generated ${new Date().toLocaleString()}</div></body></html>`;
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{w.focus();w.print();},600);
 }
 
 function ReportsTab({data}){
