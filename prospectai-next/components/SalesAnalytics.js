@@ -1175,16 +1175,22 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
 
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Commission Statement</title><style>@page{margin:18mm 15mm;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a2e;background:#fff;}.page-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #059669;padding-bottom:10px;margin-bottom:18px;}.company-name{font-size:20px;font-weight:700;color:#059669;letter-spacing:1px;}.doc-title{font-size:13px;color:#555;margin-top:4px;}.doc-meta{text-align:right;font-size:11px;color:#555;line-height:1.7;}.doc-meta .period{font-size:13px;font-weight:700;color:#1a1a2e;}.rep-section{margin-bottom:28px;page-break-inside:avoid;}.rep-header{background:#f0fdf4;border-left:4px solid #059669;padding:10px 14px;margin-bottom:14px;border-radius:4px;}.rep-name{font-size:16px;font-weight:700;color:#1a1a2e;}.rep-meta{font-size:11px;color:#666;margin-top:3px;}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}.kpi-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;text-align:center;}.kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:4px;}.kpi-value{font-size:15px;font-weight:700;color:#1a1a2e;}.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669;border-bottom:1px solid #d1fae5;padding-bottom:4px;margin-bottom:8px;margin-top:14px;}.comm-pills{display:flex;gap:10px;margin-bottom:14px;}.pill{flex:1;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;}.pill-label{font-size:10px;color:#555;}.pill-value{font-size:13px;font-weight:700;color:#059669;}table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:10.5px;}thead tr{background:#059669;color:#fff;}thead th{padding:5px 8px;text-align:left;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px;}tbody tr:nth-child(even){background:#f8fafc;}td{padding:5px 8px;border-bottom:1px solid #e2e8f0;}.num{text-align:right;font-variant-numeric:tabular-nums;}.total-row{background:#e6f7f0!important;font-weight:700;}.green{color:#059669;font-weight:600;}.good{color:#059669;}.warn{color:#d97706;}.bad{color:#dc2626;}.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}.badge-ps{background:#dbeafe;color:#1d4ed8;}.badge-fo{background:#fef3c7;color:#92400e;}.badge-ms{background:#d1fae5;color:#065f46;}.footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:8px;text-align:center;font-size:9px;color:#aaa;}@media print{.rep-section{page-break-inside:avoid;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><div class="page-header"><div><div class="company-name">ProspectAI</div><div class="doc-title">Commission Statement</div></div><div class="doc-meta"><div class="period">${moLabel}</div><div>Generated: ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div>Fiscal Year: ${YEAR}</div></div></div>${sections}<div class="footer">ProspectAI Commission Statement &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Generated ${new Date().toLocaleString()}</div></body></html>`;
 
-  // Open in new tab via data URI - avoids popup blockers
-  const encoded=btoa(unescape(encodeURIComponent(html)));
-  const a=document.createElement('a');
-  a.href='data:text/html;base64,'+encoded;
-  a.target='_blank';
-  a.rel='noopener noreferrer';
-  a.style.display='none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>document.body.removeChild(a),100);
+  // Render in fullscreen iframe overlay - no popup required
+  const overlay=document.createElement('div');
+  overlay.id='pdf-preview-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:99999;display:flex;flex-direction:column;';
+  const toolbar=document.createElement('div');
+  toolbar.style.cssText='background:#1e293b;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;';
+  toolbar.innerHTML='<span style="font-weight:600;font-size:14px;">Commission Statement Preview</span><button onclick="window.frames[\'pdfFrame\'].print()" style="background:#059669;color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;">🖨 Print / Save as PDF</button><button onclick="document.getElementById(\'pdf-preview-overlay\').remove()" style="background:#dc2626;color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;margin-left:auto;">✕ Close</button>';
+  const iframe=document.createElement('iframe');
+  iframe.name='pdfFrame';
+  iframe.style.cssText='flex:1;width:100%;border:none;background:#fff;';
+  overlay.appendChild(toolbar);
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+  iframe.contentDocument.open();
+  iframe.contentDocument.write(html);
+  iframe.contentDocument.close();
 }
 
 function ReportsTab({data}){
