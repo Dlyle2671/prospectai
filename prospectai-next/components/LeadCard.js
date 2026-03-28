@@ -439,15 +439,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
   </button>
                   ))}
                     </div>
-              )}
-{/* Active sender indicator */}
-{activeSender && (
-                  <div style={{ fontSize: 10, color: '#0e7490', marginTop: 3, paddingLeft: 2 }}>From: {activeSender.email}</div>
-              )}
-{!activeSender && senderEmails.length === 0 && (
-                  <div style={{ fontSize: 10, color: '#475569', marginTop: 3, paddingLeft: 2 }}>Add senders in Settings</div>
-              )}
-</div>
+              )}</div>
 
 {/* Add to Email Queue button */}
             <button
