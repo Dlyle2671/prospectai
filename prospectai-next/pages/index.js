@@ -27,8 +27,8 @@ const TABS = [
   { id: 'awsopps', label: 'Lead Scoring' },
   { id: 'emailqueue', label: 'Email Queue' },
   { id: 'credits', label: 'Credits' },
-  { id: 'settings', label: 'Settings' },
   { id: 'salesanalytics', label: 'Sales Analytics' },
+  { id: 'settings', label: 'Settings' },
   ];
 
 const FEATURES = [
