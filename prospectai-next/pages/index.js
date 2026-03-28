@@ -11,7 +11,7 @@ import PeopleLookup from '../components/PeopleLookup';
 import Credits from '../components/Credits';
 import LookalikSearch from '../components/LookalikSearch';
 import Settings from '../components/Settings';
-import AwsOpportunities from '../components/AwsOpportunities';
+import LeadScoring from '../components/AwsOpportunities';
 import EmailQueue from '../components/EmailQueue';
 import SalesAnalytics from '../components/SalesAnalytics';
 
@@ -24,7 +24,7 @@ const TABS = [
   { id: 'jobchanges', label: 'Job Changes' },
   { id: 'people', label: 'People Lookup' },
   { id: 'lookalike', label: 'Lookalike' },
-  { id: 'awsopps', label: 'AWS Opportunities' },
+  { id: 'awsopps', label: 'Lead Scoring' },
   { id: 'emailqueue', label: 'Email Queue' },
   { id: 'credits', label: 'Credits' },
   { id: 'settings', label: 'Settings' },
@@ -38,7 +38,7 @@ const FEATURES = [
   { id: 'jobchanges', icon: '📈', title: 'Job Changes', desc: 'Track when key contacts change roles or companies — the ideal trigger for timely outreach.', accent: 'linear-gradient(90deg,#10b981,#34d399)', iconBg: 'rgba(16,185,129,0.12)' },
   { id: 'people', icon: '👤', title: 'People Lookup', desc: 'Search for specific individuals by name, title, or company and pull a full enriched contact profile.', accent: 'linear-gradient(90deg,#8b5cf6,#a78bfa)', iconBg: 'rgba(139,92,246,0.12)' },
   { id: 'lookalike', icon: '🔗', title: 'Lookalike', desc: 'Find companies that look just like your best customers. Surface new accounts that fit your ICP.', accent: 'linear-gradient(90deg,#ec4899,#f472b6)', iconBg: 'rgba(236,72,153,0.12)' },
-  { id: 'awsopps', icon: '☁️', title: 'AWS Opportunities', desc: 'Identify companies with strong AWS spend and usage signals — purpose-built for cloud sellers.', accent: 'linear-gradient(90deg,#f97316,#fb923c)', iconBg: 'rgba(249,115,22,0.12)' },
+  { id: 'awsopps', icon: '☁️', title: 'Lead Scoring', desc: 'Score and prioritize your leads by fit, intent, and opportunity signals.', accent: 'linear-gradient(90deg,#f97316,#fb923c)', iconBg: 'rgba(249,115,22,0.12)' },
   { id: 'emailqueue', icon: '📧', title: 'Email Queue', desc: 'Review, edit, and send drafted emails to your prospects. Manage your full outreach pipeline here.', accent: 'linear-gradient(90deg,#a855f7,#c084fc)', iconBg: 'rgba(168,85,247,0.12)' },
   { id: 'salesanalytics', icon: '📊', title: 'Sales Analytics', desc: 'Track quota attainment, commissions, and rep performance across PS, FinOps, and Managed Services.', accent: 'linear-gradient(90deg,#6366f1,#34d399)', iconBg: 'rgba(99,102,241,0.12)' },
   ];
@@ -250,7 +250,7 @@ export default function Home() {
 {activeTab === 'people' && <PeopleLookup />}
 {activeTab === 'credits' && <Credits />}
 {activeTab === 'lookalike' && <LookalikSearch />}
-{activeTab === 'awsopps' && <AwsOpportunities initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
+{activeTab === 'awsopps' && <LeadScoring initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
 {activeTab === 'settings' && <Settings />}
 {activeTab === 'emailqueue' && <EmailQueue />}
 {activeTab === 'salesanalytics' && <SalesAnalytics onBack={() => setShowHome(true)} />}
