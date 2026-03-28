@@ -243,7 +243,7 @@ function IntegrationsCard() {
 {/* Email SMTP Config */}
       <div style={{ background: '#080c14', border: '1px solid #1e293b', borderRadius: 10, padding: '16px 18px', marginBottom: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#e2e8f0', marginBottom: 4 }}>📧 Email SMTP</div>
-        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>Configure how ProspectAI sends emails on your behalf.</div>
+        <div style={{ fontSize: 12, color: '#64748b', marginBottom: 14 }}>Configure how Cloudelligent sends emails on your behalf.</div>
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 12, color: '#94a3b8', display: 'block', marginBottom: 4 }}>Provider</label>
                               <select style={dropStyle} value={emailProvider} onChange={e => setEmailProvider(e.target.value)}>
