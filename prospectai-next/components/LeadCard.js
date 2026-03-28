@@ -436,7 +436,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
 </div>
 {/* Actions */}
         <div className="card-actions">
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', overflow: 'visible' }}>
 {/* HubSpot */}
             <button className={`btn-sm btn-hs${hsSent ? ' sent' : ''}`} onClick={handleHubspot} disabled={hsPushing || hsSent}>
             {hsSent ? '✓ In HubSpot' : hsPushing ? 'Pushing…' : '⬆ Push to HubSpot'}
@@ -451,10 +451,10 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
 </button>
             )}
 {/* Draft Email button */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', overflow: 'visible' }}>
               {/* Tone picker popover */}
               {tonePicking && (
-                <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 200, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: '10px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: 200 }}>
+                <div style={{ position: 'absolute', bottom: '110%', left: 0, zIndex: 200, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: '10px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: 200 }}>
                   <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select tone</div>
                   {[
                     { key: 'formal', label: 'Formal', desc: 'Professional, no contractions' },
