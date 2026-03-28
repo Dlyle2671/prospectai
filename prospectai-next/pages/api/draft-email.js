@@ -45,7 +45,7 @@ function fmtFundingAmt(a) {
 }
 
 function pickBestHook(body) {
-    const { first_name, name, company_name, aws_services, tech_stack, recently_funded, hiring_surge, funding_stage, funding_round_amount, top_investors, headcount_growth, time_in_role_months, prev_jobs, recent_news } = body;
+    const { first_name, name, company_name, aws_services, tech_stack, recently_funded, hiring_surge, funding_stage, funding_round_amount, top_investors, headcount_growth, time_in_role_months, prev_jobs, recent_news, tone = 'conversational' } = body;
     const co = company_name || 'your company';
     const fn = first_name || (name || '').split(' ')[0] || 'there';
     if (recently_funded && funding_round_amount && top_investors && top_investors.length > 0) {
@@ -255,6 +255,12 @@ export default async function handler(req, res) {
     ? 'RECENT NEWS (use the most relevant headline as your email opener if it connects to cloud spend, growth, or AWS):\n' +
       recent_news.filter(a => a.title).map(a => '- ' + a.title + (a.description ? ': ' + a.description.slice(0, 120) : '')).join('\n')
     : '';
+  const toneInstruction = tone === 'formal'
+    ? 'TONE: Formal and professional. Use full sentences, no contractions, measured and authoritative language. Appropriate for C-suite at large enterprises.'
+    : tone === 'direct'
+    ? 'TONE: Direct and blunt. Cut all filler. Lead with the value immediately. Short punchy sentences. No pleasantries — respect their time.'
+    : 'TONE: Conversational and human. Write like a sharp colleague, not a sales robot. Contractions are fine. Approachable but still credible.';
+
 
 
   const prompt = [
@@ -266,6 +272,7 @@ export default async function handler(req, res) {
         subjectExamples, '', programInfo, '',
         'OFFER: RRIL runs a free optimization assessment. Average savings are 18-30% on AWS bills within 30 days.',
         '', 'RULES:',
+        toneInstruction,
         '- Subject: max 8 words, punchy and curiosity-driven, personalized to this lead, do NOT just restate the hook',
         '- If RECENT NEWS is provided above and a headline relates to cloud, AWS, growth, or funding, open the email referencing that news naturally. Otherwise open with the BEST HOOK above',
         '- Para 2: specific pain point (2-3 sentences)',
