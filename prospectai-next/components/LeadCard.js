@@ -134,6 +134,17 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
         setEmailError(null);
         setSenderPickerOpen(false);
         try {
+                // Fetch recent news for this lead
+                let recentNews = [];
+                try {
+                  const newsParams = new URLSearchParams();
+                  if (p.name) newsParams.set('name', p.name);
+                  if (p.company_name) newsParams.set('company', p.company_name);
+                  const newsResp = await fetch('/api/news?' + newsParams.toString());
+                  const newsData = await newsResp.json();
+                  recentNews = (newsData.articles || []).slice(0, 2).map(a => ({ title: a.title, description: a.description, source: a.source, publishedAt: a.publishedAt }));
+                } catch (_) {}
+
                 const resp = await fetch('/api/draft-email', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
@@ -145,6 +156,11 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                                       aws_services: p.aws_services || [], funding_stage: p.funding_stage || '',
                                       recently_funded: p.recently_funded || false, hiring_surge: p.hiring_surge || false,
                                       location: [p.city, p.state, p.country].filter(Boolean).join(', '),
+                                      seniority: p.seniority || '', time_in_role_months: p.time_in_role_months,
+                                      prev_jobs: p.prev_jobs || [], headcount_growth: p.headcount_growth,
+                                      annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount,
+                                      top_investors: p.top_investors || [], intent_signals: p.intent_signals || [],
+                                      recent_news: recentNews,
                           }),
                 });
                 const data = await resp.json();
@@ -177,6 +193,17 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
         setQueueError(null);
         try {
                 // 1. Draft the email via AI
+                // Fetch recent news for this lead
+                let recentNews = [];
+                try {
+                  const newsParams = new URLSearchParams();
+                  if (p.name) newsParams.set('name', p.name);
+                  if (p.company_name) newsParams.set('company', p.company_name);
+                  const newsResp = await fetch('/api/news?' + newsParams.toString());
+                  const newsData = await newsResp.json();
+                  recentNews = (newsData.articles || []).slice(0, 2).map(a => ({ title: a.title, description: a.description, source: a.source, publishedAt: a.publishedAt }));
+                } catch (_) {}
+
           const draftResp = await fetch('/api/draft-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -192,6 +219,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                                 prev_jobs: p.prev_jobs || [], headcount_growth: p.headcount_growth,
                                 annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount,
                                 top_investors: p.top_investors || [], intent_signals: p.intent_signals || [],
+                                recent_news: recentNews,
                     }),
           });
                 const draft = await draftResp.json();
