@@ -150,7 +150,7 @@ function ScoringConfigEditor({ config, onChange, onReset }) {
 }
 
 // ─── Opportunity Card ─────────────────────────────────────────────────────────
-function OppCard({ opp, scored, index }) {
+function OppCard({ opp, scored, index, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const [hsSent, setHsSent] = useState(false);
   const [hsPushing, setHsPushing] = useState(false);
@@ -225,6 +225,7 @@ function OppCard({ opp, scored, index }) {
         <button className="btn-action btn-action-email" onClick={handleDraftEmail} disabled={emailDrafting}>
           {emailDrafting ? 'Drafting…' : '✉ Draft Email'}
         </button>
+        <button onClick={onDelete} style={{ marginLeft: 4, padding: '4px 8px', borderRadius: 6, border: '1px solid rgba(239,68,68,0.4)', background: 'transparent', color: '#ef4444', fontSize: 11, cursor: 'pointer', lineHeight: 1 }} title="Remove this lead">✕</button>
         {emailError && <div style={{ fontSize: 11, color: '#ef4444', alignSelf: 'center' }}>{emailError}</div>}
       </div>
       {expanded && (
@@ -319,6 +320,13 @@ export default function LeadScoring() {
     const merged = [...(paiLoad('aws_opps') || [])]; parsed.forEach(r => { if (!merged.some(e => e['Opportunity id'] === r['Opportunity id'])) merged.push(r); }); setOpps(merged); paiSave('aws_opps', merged); setStage('results'); setActiveFilters([]);
   }
 
+  function handleDeleteLead(oppId) {
+    const updated = opps.filter(o => o['Opportunity id'] !== oppId);
+    setOpps(updated);
+    paiSave('aws_opps', updated);
+    if (updated.length === 0) setStage('input');
+  }
+
   function toggleFilter(f) { setActiveFilters(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]); }
 
   const hot = scoredOpps.filter(s => s.scored.label === 'hot').length;
@@ -376,7 +384,7 @@ export default function LeadScoring() {
           <div className="legend-item"><div className="legend-dot" style={{ background: '#4f8ef7' }} /> {'Cold (<' + config.warmThreshold.points + ')'}</div>
         </div>
       </div>
-      {filtered.map((item, i) => <OppCard key={item.opp['Opportunity id'] || i} opp={item.opp} scored={item.scored} index={i} />)}
+      {filtered.map((item, i) => <OppCard key={item.opp['Opportunity id'] || i} opp={item.opp} scored={item.scored} index={i} onDelete={() => handleDeleteLead(item.opp['Opportunity id'])} />)}
     </div>
   );
 
