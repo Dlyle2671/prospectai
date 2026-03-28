@@ -20,6 +20,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
   const [emailDrafting, setEmailDrafting] = useState(false);
     const [emailError, setEmailError] = useState(null);
     const [tonePicking, setTonePicking] = useState(false);
+    const [toneAction, setToneAction] = useState('draft');
     const [tone, setTone] = useState('conversational');
     const [emailCopied, setEmailCopied] = useState(false);
     const [selectedSender, setSelectedSender] = useState('');
@@ -133,11 +134,13 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
   function handleDraftEmail() {
         if (!p.email) { setEmailError('No email address for this lead.'); return; }
         setSenderPickerOpen(false);
+        setToneAction('draft');
         setTonePicking(true);
   }
 
-  async function handleDraftWithTone(selectedTone) {
+  async function handleToneSelected(selectedTone) {
         setTonePicking(false);
+        if (toneAction === 'queue') { handleQueueWithTone(selectedTone); return; }
         setTone(selectedTone);
         setEmailDrafting(true);
         setEmailError(null);
@@ -196,12 +199,19 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
         }
   }
 
-  async function handleAddToQueue() {
+function handleQueueTrigger() {
         if (!p.email) { setQueueError('No email address for this lead.'); return; }
+        setSenderPickerOpen(false);
+        setToneAction('queue');
+        setTonePicking(true);
+  }
+
+  async function handleQueueWithTone(selectedTone) {
+        setTonePicking(false);
+        setTone(selectedTone);
         setQueueing(true);
         setQueueError(null);
         try {
-                // 1. Draft the email via AI
                 // Fetch recent news for this lead
                 let recentNews = [];
                 try {
@@ -212,7 +222,6 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                   const newsData = await newsResp.json();
                   recentNews = (newsData.articles || []).slice(0, 2).map(a => ({ title: a.title, description: a.description, source: a.source, publishedAt: a.publishedAt }));
                 } catch (_) {}
-
           const draftResp = await fetch('/api/draft-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -229,7 +238,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                                 annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount,
                                 top_investors: p.top_investors || [], intent_signals: p.intent_signals || [],
                                 recent_news: recentNews,
-                                tone: tone,
+                                tone: selectedTone,
                     }),
           });
                 const draft = await draftResp.json();
@@ -502,7 +511,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
 
 {/* Add to Email Queue button */}
             <button
-              onClick={handleAddToQueue}
+              onClick={handleQueueTrigger}
               disabled={queueing || queued || !p.email}
               title={!p.email ? 'No email address for this lead' : queued ? 'Already added to queue' : 'Draft email with AI and add to Email Queue for review'}
               style={{
