@@ -1007,6 +1007,60 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   const wsM=XL.utils.aoa_to_sheet(mr);
   wsM['!cols']=[{wch:12},{wch:16},{wch:16},{wch:16},{wch:18},{wch:10},{wch:10},{wch:10},{wch:12},{wch:16}];
   XL.utils.book_append_sheet(wb,wsM,'Monthly Breakdown');
+  // SHEET 4: MONTH-OVER-MONTH TREND
+  const allRepsForTrend = data.reps || [];
+  const allDealsForTrend = data.deals || [];
+  // Get all months that have deals across all reps
+  const allMonthNums = [...new Set(allDealsForTrend.map(d => d.month || 1))].sort((a,b)=>a-b);
+  // If filtering by rep, show that rep's months; otherwise all months with deals
+  const trendReps = filterRep === 'All' ? allRepsForTrend : allRepsForTrend.filter(r => r.id === filterRep);
+  const trendDeals = filterRep === 'All' ? allDealsForTrend : allDealsForTrend.filter(d => trendReps.some(r => r.id === d.repId));
+  const trendMonths = [...new Set(trendDeals.map(d => d.month || 1))].sort((a,b)=>a-b);
+  const MOM = [];
+  // Title row
+  MOM.push(['MONTH-OVER-MONTH TREND  ' + YEAR + (filterRep !== 'All' ? '  ('+repLabel+')' : '  (All Reps)'),'','','','','','','','','','','','','','']);
+  MOM.push(['']);
+  // Build header: Month | per-rep columns | Team Totals
+  const hdr = ['Month'];
+  trendReps.forEach(r => {
+    hdr.push(r.name + ' ARR', r.name + ' Comm', r.name + ' Deals');
+  });
+  hdr.push('Team ARR','Team Commission','Team Deals','YTD ARR (Cumulative)','YTD Commission (Cumulative)');
+  MOM.push(hdr);
+  // Data rows - one per month
+  let ytdARR = 0, ytdComm = 0;
+  trendMonths.forEach(m => {
+    const mName = MN[m-1] || ('Month ' + m);
+    const row = [mName];
+    let teamARR = 0, teamComm = 0, teamDeals = 0;
+    trendReps.forEach(r => {
+      const mDeals = trendDeals.filter(d => d.repId === r.id && (d.month || 1) === m);
+      const rARR = mDeals.reduce((s,d) => s + dealARR(d), 0);
+      const rComm = mDeals.reduce((s,d) => s + dealComm(d), 0);
+      row.push(rARR, rComm, mDeals.length);
+      teamARR += rARR;
+      teamComm += rComm;
+      teamDeals += mDeals.length;
+    });
+    ytdARR += teamARR;
+    ytdComm += teamComm;
+    row.push(teamARR, teamComm, teamDeals, ytdARR, ytdComm);
+    MOM.push(row);
+  });
+  // Totals row
+  if (trendMonths.length > 1) {
+    MOM.push(['']);
+    const totRow = ['TOTAL (YTD)'];
+    trendReps.forEach(r => {
+      const rDeals = trendDeals.filter(d => d.repId === r.id);
+      totRow.push(rDeals.reduce((s,d)=>s+dealARR(d),0), rDeals.reduce((s,d)=>s+dealComm(d),0), rDeals.length);
+    });
+    totRow.push(ytdARR, ytdComm, trendDeals.length, ytdARR, ytdComm);
+    MOM.push(totRow);
+  }
+  const wsMOM = XL.utils.aoa_to_sheet(MOM);
+  wsMOM['!cols'] = [{wch:14},...trendReps.flatMap(()=>[{wch:16},{wch:16},{wch:12}]),{wch:16},{wch:20},{wch:14},{wch:22},{wch:26}];
+  XL.utils.book_append_sheet(wb,wsMOM,'MoM Trend');
   const dateStr=new Date().toISOString().slice(0,10);
   XL.writeFile(wb,'Commission_'+repLabel.replace(/\s+/g,'_')+'_'+moLabel.replace(/\s+/g,'_')+'_'+YEAR+'_'+dateStr+'.xlsx');
 }
