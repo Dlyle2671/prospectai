@@ -270,7 +270,7 @@ function OppCard({ opp, scored, index }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 const SAMPLE_DATA = 'Opportunity id\tStage\tCustomer Company Name\tCustomer Email\tCustomer Website\tIndustry Vertical\tPartner Project Title\tAWS Products\tEstimated AWS Monthly Recurring Revenue\tDate Created\tDate Approved/Rejected\nopp-001\tQualified\tAcme Corp\tacme@example.com\tacme.com\tFintech\tCloud Migration\tAmazon Bedrock;AWS Shield;Amazon SageMaker;AWS IAM;Amazon S3\t8500\t2026-03-01\t2026-03-01';
 
-export default function AwsOpportunities() {
+export default function LeadScoring() {
   const [rawInput, setRawInput] = useState('');
   const [opps, setOpps] = useState(() => paiLoad('aws_opps') || []);
   const [stage, setStage] = useState(() => (paiLoad('aws_opps') || []).length > 0 ? 'results' : 'input');
@@ -316,7 +316,7 @@ export default function AwsOpportunities() {
     const text = rawInput.trim() || SAMPLE_DATA;
     const parsed = parseTSV(text);
     if (!parsed.length) { alert('Could not parse data. Paste the spreadsheet rows with headers.'); return; }
-    setOpps(parsed); paiSave('aws_opps', parsed); setStage('results'); setActiveFilters([]);
+    const merged = [...(paiLoad('aws_opps') || [])]; parsed.forEach(r => { if (!merged.some(e => e['Opportunity id'] === r['Opportunity id'])) merged.push(r); }); setOpps(merged); paiSave('aws_opps', merged); setStage('results'); setActiveFilters([]);
   }
 
   function toggleFilter(f) { setActiveFilters(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]); }
@@ -329,7 +329,8 @@ export default function AwsOpportunities() {
   if (stage === 'results') return (
     <div className="fade-up">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <button className="btn-back" style={{ margin: 0 }} onClick={() => setStage('input')}>← Back / Load New Data</button>
+        <button className="btn-back" style={{ margin: 0 }} onClick={() => setStage('input')}>← Back / Add More Data</button>
+        <button onClick={() => { if(window.confirm('Clear all saved records?')) { setOpps([]); paiSave('aws_opps', []); } }} style={{ marginLeft: 8, padding: '6px 14px', borderRadius: 8, border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: 12, cursor: 'pointer' }}>🗑 Clear All Records</button>
         <button onClick={() => setConfigOpen(o => !o)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, border: '1px solid ' + (configOpen ? '#6d28d9' : '#334155'), background: configOpen ? '#1e1b4b' : '#0a0f1a', color: configOpen ? '#a78bfa' : '#64748b', fontSize: 13, cursor: 'pointer' }}>
           ⚙ Scoring
         </button>
@@ -381,8 +382,8 @@ export default function AwsOpportunities() {
 
   return (
     <div className="fade-up">
-      <div className="section-title">📋 AWS Co-Sell Opportunity Scorer</div>
-      <div className="section-sub">Paste your AWS opportunity data (TSV/CSV with headers) to score and prioritize your pipeline.</div>
+      <div className="section-title">📋 Lead Scoring</div>
+      <div className="section-sub">Paste lead data (TSV/CSV with headers) to score and prioritize. New records are added to your history — paste again to add more.</div>
       <div className="settings-card">
         <textarea
           placeholder={'Paste spreadsheet data here (TSV or CSV with headers)…\n\nExample columns:\nOpportunity id, Stage, Customer Company Name, AWS Products, Estimated AWS Monthly Recurring Revenue…'}
@@ -419,7 +420,7 @@ export default function AwsOpportunities() {
               cursor: 'pointer',
             }}
           >
-            ⚡ Score Opportunities
+            ⚡ Score Leads
           </button>
           {opps.length > 0 && (
             <button onClick={() => setStage('results')} className="btn-back" style={{ marginBottom: 0 }}>
