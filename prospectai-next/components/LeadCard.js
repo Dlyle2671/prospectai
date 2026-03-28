@@ -19,6 +19,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
   // Draft email state
   const [emailDrafting, setEmailDrafting] = useState(false);
     const [emailError, setEmailError] = useState(null);
+    const [tone, setTone] = useState('conversational');
     const [emailCopied, setEmailCopied] = useState(false);
     const [selectedSender, setSelectedSender] = useState('');
     const [senderPickerOpen, setSenderPickerOpen] = useState(false);
@@ -161,6 +162,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                                       annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount,
                                       top_investors: p.top_investors || [], intent_signals: p.intent_signals || [],
                                       recent_news: recentNews,
+                                      tone: tone,
                           }),
                 });
                 const data = await resp.json();
@@ -220,6 +222,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                                 annual_revenue: p.annual_revenue, funding_round_amount: p.funding_round_amount,
                                 top_investors: p.top_investors || [], intent_signals: p.intent_signals || [],
                                 recent_news: recentNews,
+                                tone: tone,
                     }),
           });
                 const draft = await draftResp.json();
@@ -440,6 +443,28 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                 🚀 Add to Apollo Sequence {seqOpen ? '▲' : '▼'}
 </button>
             )}
+
+{/* Tone selector */}
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              {['formal','conversational','direct'].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTone(t)}
+                  style={{
+                    padding: '3px 10px',
+                    borderRadius: 20,
+                    border: tone === t ? '1.5px solid #0e7490' : '1.5px solid #334155',
+                    background: tone === t ? '#0e7490' : 'transparent',
+                    color: tone === t ? '#fff' : '#94a3b8',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textTransform: 'capitalize',
+                    transition: 'all 0.15s',
+                  }}
+                >{t}</button>
+              ))}
+            </div>
 
 {/* Draft Email button */}
             <div style={{ position: 'relative' }}>
