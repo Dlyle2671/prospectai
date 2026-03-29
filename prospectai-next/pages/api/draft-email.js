@@ -8,14 +8,13 @@ import { getAuth } from '@clerk/nextjs/server';
 const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
-
+});
 
 // Redis client for user settings (KV store)
 const kvRedis = new Redis({
     url: process.env.KV_REST_API_URL,
     token: process.env.KV_REST_API_TOKEN,
-});});
-
+});
 async function getUserAnthropicKey(userId) {
     if (!userId) return null;
     try {
