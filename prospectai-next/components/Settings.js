@@ -311,6 +311,8 @@ export default function Settings() {
     const [icp, setIcp] = useState({ ...DEFAULT_ICP });
     const [icpSaved, setIcpSaved] = useState(false);
     const [senderEmails, setSenderEmails] = useState([]);
+    const [companyProfile, setCompanyProfile] = useState({ company_name: '', value_prop: '', offer_name: '' });
+    const [profileSaved, setProfileSaved] = useState(false);
     const [newSenderEmail, setNewSenderEmail] = useState('');
     const [newSenderName, setNewSenderName] = useState('');
     const [senderSaved, setSenderSaved] = useState(false);
@@ -318,12 +320,14 @@ export default function Settings() {
   useEffect(() => {
         async function loadAll() {
                 setSettingsLoading(true);
-                const [icpData, senderData] = await Promise.all([
+                const [icpData, senderData, profileData] = await Promise.all([
                           loadSetting('icp_weights'),
                           loadSetting('sender_emails'),
+                          loadSetting('company_profile'),
                         ]);
                 if (icpData) setIcp({ ...DEFAULT_ICP, ...icpData });
                 if (senderData) setSenderEmails(senderData);
+                if (profileData) setCompanyProfile(profileData);
                 setSettingsLoading(false);
         }
         loadAll();
@@ -345,6 +349,12 @@ export default function Settings() {
                 if (idx >= 0) arr.splice(idx, 1); else arr.push(range);
                 return { ...prev, targetSizeRanges: arr };
         });
+  }
+
+  async function saveCompanyProfile() {
+    await saveSetting('company_profile', companyProfile);
+    setProfileSaved(true);
+    setTimeout(() => setProfileSaved(false), 2000);
   }
 
   async function saveIcp() {
@@ -408,6 +418,40 @@ export default function Settings() {
         <div className="fade-up">
           <div className="section-title">Settings</div>
       <div className="section-sub">Customize lead scoring to match your ICP, manage integrations, and configure sending.</div>
+{/* Company Profile */}
+      <div className="settings-card">
+        <h2 className="settings-section-title">🏢 Company Profile</h2>
+        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>Used to personalise every AI-drafted email — prospects see your company name, not ours.</p>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>COMPANY NAME *</label>
+          <input style={{ width: '100%', background: '#0a101e', border: '1px solid #1e293b', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#f1f5f9', outline: 'none', boxSizing: 'border-box' }}
+            type="text" placeholder="e.g. Cloudelligent"
+            value={companyProfile.company_name}
+            onChange={e => setCompanyProfile(p => ({ ...p, company_name: e.target.value }))} />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>WHAT YOU SELL (1–2 sentences)</label>
+          <textarea style={{ width: '100%', background: '#0a101e', border: '1px solid #1e293b', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#f1f5f9', outline: 'none', boxSizing: 'border-box', minHeight: 72, resize: 'vertical', fontFamily: 'inherit' }}
+            placeholder="e.g. We help AWS customers cut cloud spend by 18–30% through rightsizing and commitment strategies."
+            value={companyProfile.value_prop}
+            onChange={e => setCompanyProfile(p => ({ ...p, value_prop: e.target.value }))} />
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>OFFER / PROGRAM NAME (optional)</label>
+          <input style={{ width: '100%', background: '#0a101e', border: '1px solid #1e293b', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#f1f5f9', outline: 'none', boxSizing: 'border-box' }}
+            type="text" placeholder="e.g. AWS FinOps Assessment"
+            value={companyProfile.offer_name}
+            onChange={e => setCompanyProfile(p => ({ ...p, offer_name: e.target.value }))} />
+          <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>Shown in email benefits section, e.g. "Benefits of the [name]:"</div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={saveCompanyProfile} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: profileSaved ? '#16a34a' : '#4f8ef7', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
+            {profileSaved ? '✓ Saved' : 'Save Company Profile'}
+          </button>
+        </div>
+      </div>
+
+
 
 {/* ICP Lead Scoring */}
       <div className="settings-card">
