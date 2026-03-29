@@ -273,14 +273,14 @@ export default async function handler(req, res) {
         'OFFER: RRIL runs a free optimization assessment. Average savings are 18-30% on AWS bills within 30 days.',
         '', 'RULES:',
         toneInstruction,
-        '- Subjects: write exactly 3 subject line options, each max 8 words. Label them: [CURIOSITY] [VALUE] [PERSONAL]. Personalize each to this lead. Do NOT restate the hook verbatim.',
+        '- Subjects: write exactly 3 subject line options, each max 8 words. Write them in this order: 1) curiosity-driven (intrigue, open question), 2) direct value prop (savings/%, company name), 3) personal hook (name or role). No bracket labels. Personalize each to this lead.',
         '- If RECENT NEWS is provided above and a headline relates to cloud, AWS, growth, or funding, open the email referencing that news naturally. Otherwise open with the BEST HOOK above',
         '- Para 2: specific pain point (2-3 sentences)',
         '- Para 3: header "Benefits of the Altus Cloud AWS FinOps Program:" then list all 5 program details as bullet points',
         '- CTA: offer a free optimization assessment (not a generic call)',
         '- Savings: always say 18-30%, timeframe always 30 days',
         '- No sign-off. No buzzwords. Max 180 words in body.',
-        '', 'Return ONLY JSON: { "subjects": ["[CURIOSITY] subject here", "[VALUE] subject here", "[PERSONAL] subject here"], "body": "... use \\n for line breaks" }',
+        '', 'Return ONLY JSON: { "subjects": ["curiosity subject here", "value subject here", "personal subject here"], "body": "... use \\n for line breaks" }',
       ].join('\n');
 
   try {
