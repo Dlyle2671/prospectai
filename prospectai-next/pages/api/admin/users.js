@@ -33,11 +33,12 @@ export default async function handler(req, res) {
       const enriched = await Promise.all(users.map(async (u) => {
         let redisData = {};
         try {
-          const [integRaw, onboarded, icpRaw, senders] = await Promise.all([
+          const [integRaw, onboarded, icpRaw, senders, featureFlagsRaw] = await Promise.all([
             redis.get(`user:${u.id}:integrations`),
             redis.get(`user:${u.id}:onboarding_complete`),
             redis.get(`user:${u.id}:icp_weights`),
             redis.get(`user:${u.id}:sender_emails`),
+            redis.get(`user:${u.id}:feature_flags`),
           ]);
           const integrations = integRaw
             ? (typeof integRaw === 'string' ? JSON.parse(integRaw) : integRaw)
@@ -47,6 +48,7 @@ export default async function handler(req, res) {
             hasIcp: !!icpRaw,
             hasSenders: !!senders,
             connectedApps: Object.keys(integrations).filter(k => integrations[k]),
+            featureFlags: featureFlagsRaw ? (typeof featureFlagsRaw === 'string' ? JSON.parse(featureFlagsRaw) : featureFlagsRaw) : null,
           };
         } catch (_) {}
         return {
@@ -82,11 +84,25 @@ export default async function handler(req, res) {
         `user:${targetId}:icp_weights`,
         `user:${targetId}:sender_emails`,
         `user:${targetId}:credits`,
+        `user:${targetId}:feature_flags`,
       ];
       await Promise.allSettled(keys.map(k => redis.del(k)));
       return res.status(200).json({ ok: true, deleted: targetId });
     } catch (err) {
       console.error('[admin/users DELETE]', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+  }
+
+  // PATCH -- save feature flags for a user
+  if (req.method === 'PATCH') {
+    const { targetId, featureFlags } = req.body || {};
+    if (!targetId) return res.status(400).json({ error: 'targetId required' });
+    if (!featureFlags || typeof featureFlags !== 'object') return res.status(400).json({ error: 'featureFlags object required' });
+    try {
+      await redis.set(`user:${targetId}:feature_flags`, JSON.stringify(featureFlags));
+      return res.status(200).json({ ok: true });
+    } catch (err) {
       return res.status(500).json({ error: err.message });
     }
   }
