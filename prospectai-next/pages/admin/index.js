@@ -176,7 +176,7 @@ export default function AdminPortal() {
                   {filtered.length === 0 && (
                     <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#64748b' }}>No users found</td></tr>
                   )}
-                  {filtered.map((u, i) => (
+                  {filtered.map((u, i) => (<>
                     <tr key={u.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid #1e293b' : 'none', transition: 'background 0.15s' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#1a2332'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
@@ -265,7 +265,7 @@ export default function AdminPortal() {
                         </td>
                       </tr>
                     )}
-                  ))}
+                                    </>))}
                 </tbody>
               </table>
             </div>
