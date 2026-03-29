@@ -3,6 +3,9 @@ import { useUser } from '@clerk/nextjs';
 import Head from 'next/head';
 import Link from 'next/link';
 
+const TAB_IDS = ['leads','company','bulk','jobchanges','people','lookalike','awsopps','emailqueue','credits','salesanalytics'];
+const TAB_LABELS = { leads:'Find Leads', company:'Company Intel', bulk:'Bulk Prospector', jobchanges:'Job Changes', people:'People Lookup', lookalike:'Lookalike', awsopps:'Lead Scoring', emailqueue:'Email Queue', credits:'Credits', salesanalytics:'Sales Analytics' };
+
 function timeAgo(ts) {
   if (!ts) return 'Never';
   const diff = Date.now() - new Date(ts).getTime();
@@ -237,13 +240,13 @@ export default function AdminPortal() {
                           <div style={{ borderTop: '1px solid #1e293b', paddingTop: 14 }}>
                             <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Feature Access</div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                              {["leads","company","bulk","jobchanges","people","lookalike","awsopps","emailqueue","credits","salesanalytics"].map(fid => {
+                              {TAB_IDS.map(fid => {
                                 const flags = pendingFlags[u.id] || u.featureFlags || {};
                                 const enabled = flags[fid] !== false;
                                 return (
                                   <button key={fid} onClick={() => toggleFlag(u.id, fid, u.featureFlags)}
                                     style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', borderColor: enabled ? '#22c55e' : '#475569', background: enabled ? 'rgba(34,197,94,0.12)' : 'rgba(71,85,105,0.12)', color: enabled ? '#86efac' : '#94a3b8' }}>
-                                    {{"leads":"Find Leads","company":"Company Intel","bulk":"Bulk Prospector","jobchanges":"Job Changes","people":"People Lookup","lookalike":"Lookalike","awsopps":"Lead Scoring","emailqueue":"Email Queue","credits":"Credits","salesanalytics":"Sales Analytics"}[fid]}
+                                    {TAB_LABELS[fid]}
                                   </button>
                                 );
                               })}
