@@ -23,6 +23,9 @@ export default function AdminPortal() {
   const [search, setSearch] = useState('');
   const [deleting, setDeleting] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [expandedUser, setExpandedUser] = useState(null);
+  const [pendingFlags, setPendingFlags] = useState({});
+  const [savingFlags, setSavingFlags] = useState(null);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -61,6 +64,26 @@ export default function AdminPortal() {
       setError('Delete failed: ' + err.message);
     }
     setDeleting(null);
+  }
+
+  function toggleFlag(userId, featureId, currentFlags) {
+    const base = pendingFlags[userId] || currentFlags || {};
+    const current = base[featureId] !== false;
+    setPendingFlags(p => ({ ...p, [userId]: { ...base, [featureId]: !current } }));
+  }
+
+  async function saveFlags(userId) {
+    const flags = pendingFlags[userId];
+    if (!flags) return;
+    setSavingFlags(userId);
+    try {
+      const res = await fetch('/api/admin/users', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetId: userId, featureFlags: flags }) });
+      if (!res.ok) throw new Error(await res.text());
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, featureFlags: flags } : u));
+      setPendingFlags(p => { const n={...p}; delete n[userId]; return n; });
+      setExpandedUser(null);
+    } catch (err) { setError('Save failed: ' + err.message); }
+    setSavingFlags(null);
   }
 
   const filtered = users.filter(u =>
@@ -141,7 +164,7 @@ export default function AdminPortal() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #1e293b' }}>
-                    {['User', 'Email', 'Signed Up', 'Last Sign In', 'Onboarded', 'Connected', 'Actions'].map(h => (
+                    {['User', 'Email', 'Signed Up', 'Last Sign In', 'Onboarded', 'Connected', 'Features', 'Actions'].map(h => (
                       <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
@@ -184,6 +207,13 @@ export default function AdminPortal() {
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         <button
+                          onClick={() => { setExpandedUser(expandedUser === u.id ? null : u.id); setPendingFlags(p => ({...p})); }}
+                          style={{ padding: '5px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', background: expandedUser === u.id ? 'rgba(99,102,241,0.2)' : '#1e293b', border: '1px solid ' + (expandedUser === u.id ? '#6366f1' : '#334155'), color: expandedUser === u.id ? '#818cf8' : '#94a3b8' }}>
+                          {expandedUser === u.id ? '▲ Hide' : '▼ Features'}
+                        </button>
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <button
                           onClick={() => deleteUser(u.id, u.email)}
                           disabled={deleting === u.id}
                           style={{
@@ -201,6 +231,37 @@ export default function AdminPortal() {
                         )}
                       </td>
                     </tr>
+                    {expandedUser === u.id && (
+                      <tr>
+                        <td colSpan={7} style={{ background: '#0f172a', padding: '0 16px 16px' }}>
+                          <div style={{ borderTop: '1px solid #1e293b', paddingTop: 14 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Feature Access</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                              {["leads","company","bulk","jobchanges","people","lookalike","awsopps","emailqueue","credits","salesanalytics"].map(fid => {
+                                const flags = pendingFlags[u.id] || u.featureFlags || {};
+                                const enabled = flags[fid] !== false;
+                                return (
+                                  <button key={fid} onClick={() => toggleFlag(u.id, fid, u.featureFlags)}
+                                    style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: '1px solid', borderColor: enabled ? '#22c55e' : '#475569', background: enabled ? 'rgba(34,197,94,0.12)' : 'rgba(71,85,105,0.12)', color: enabled ? '#86efac' : '#94a3b8' }}>
+                                    {{"leads":"Find Leads","company":"Company Intel","bulk":"Bulk Prospector","jobchanges":"Job Changes","people":"People Lookup","lookalike":"Lookalike","awsopps":"Lead Scoring","emailqueue":"Email Queue","credits":"Credits","salesanalytics":"Sales Analytics"}[fid]}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                              <button onClick={() => saveFlags(u.id)} disabled={savingFlags === u.id}
+                                style={{ padding: '6px 16px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#6366f1', border: 'none', color: '#fff', opacity: savingFlags === u.id ? 0.6 : 1 }}>
+                                {savingFlags === u.id ? 'Saving...' : 'Save Changes'}
+                              </button>
+                              <button onClick={() => { setPendingFlags(p => { const n={...p}; delete n[u.id]; return n; }); setExpandedUser(null); }}
+                                style={{ padding: '6px 16px', borderRadius: 6, fontSize: 12, cursor: 'pointer', background: 'transparent', border: '1px solid #334155', color: '#94a3b8' }}>
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
                   ))}
                 </tbody>
               </table>
