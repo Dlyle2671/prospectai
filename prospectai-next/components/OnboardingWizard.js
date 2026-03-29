@@ -4,6 +4,7 @@ import { DEFAULT_ICP } from './Settings';
 
 const STEPS = [
   { id: 'welcome',      label: 'Welcome',      icon: '👋' },
+  { id: 'company_profile', label: 'Your Company', icon: '🏢' },
   { id: 'integrations', label: 'Integrations', icon: '🔌' },
   { id: 'icp',          label: 'Lead Scoring', icon: '🎯' },
   { id: 'email',        label: 'Sender Email', icon: '✉️' },
@@ -63,6 +64,65 @@ function StepWelcome({ onNext }) {
         <button style={primaryBtn(false)} onClick={onNext}>Get Started →</button>
   </div>
   </div>
+  );
+}
+
+/* ─── Step 1 — Company Profile ──────────────────────────────── */
+function StepCompanyProfile({ onNext, onSkip }) {
+  const [profile, setProfile] = useState({
+    company_name: '',
+    value_prop: '',
+    offer_name: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleNext() {
+    if (!profile.company_name.trim()) return;
+    setSaving(true);
+    await save('company_profile', profile);
+    setSaving(false);
+    onNext();
+  }
+
+  const inp = { width: '100%', background: '#0a101e', border: '1px solid #1e293b', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: '#f1f5f9', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' };
+  const lbl = { display: 'block', fontSize: 11, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 };
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>🏢 Tell us about your company</h2>
+      <p style={{ fontSize: 14, color: '#6b7a99', marginBottom: 24, lineHeight: 1.6 }}>
+        This personalises every AI-drafted email — prospects will see your company name, not ours.
+      </p>
+      <div style={{ marginBottom: 16 }}>
+        <label style={lbl}>COMPANY NAME *</label>
+        <input style={inp} type="text" placeholder="e.g. Cloudelligent"
+          value={profile.company_name}
+          onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))} />
+        <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>Appears in every outreach email.</div>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <label style={lbl}>WHAT YOU SELL (1–2 sentences)</label>
+        <textarea style={{ ...inp, minHeight: 72, resize: 'vertical' }}
+          placeholder="e.g. We help AWS customers cut cloud spend by 18–30% through rightsizing and commitment strategies."
+          value={profile.value_prop}
+          onChange={e => setProfile(p => ({ ...p, value_prop: e.target.value }))} />
+        <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>Used as the pain/value angle in email drafts.</div>
+      </div>
+      <div style={{ marginBottom: 28 }}>
+        <label style={lbl}>OFFER / PROGRAM NAME (optional)</label>
+        <input style={inp} type="text" placeholder="e.g. AWS FinOps Assessment"
+          value={profile.offer_name}
+          onChange={e => setProfile(p => ({ ...p, offer_name: e.target.value }))} />
+        <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>Shown in the email benefits section, e.g. "Benefits of the [name]:"</div>
+      </div>
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+        <button style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #1e293b', background: 'transparent', color: '#64748b', cursor: 'pointer', fontSize: 13 }} onClick={onSkip}>Skip for now</button>
+        <button style={{ padding: '10px 22px', borderRadius: 8, border: 'none', background: saving || !profile.company_name.trim() ? '#1e293b' : '#4f8ef7', color: saving || !profile.company_name.trim() ? '#475569' : '#fff', cursor: saving || !profile.company_name.trim() ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}
+          onClick={handleNext} disabled={saving || !profile.company_name.trim()}>
+          {saving ? 'Saving…' : 'Save & Continue →'}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -439,10 +499,11 @@ export default function OnboardingWizard() {
       <ProgressBar step={step} />
                   <div style={card} className="fade-up" key={step}>
           {step === 0 && <StepWelcome      onNext={nextStep} />}
-           {step === 1 && <StepIntegrations onNext={nextStep} onSkip={nextStep} />}
-            {step === 2 && <StepICP          onNext={nextStep} onSkip={nextStep} />}
-             {step === 3 && <StepEmail        onNext={nextStep} onSkip={nextStep} />}
-              {step === 4 && <StepDone         onFinish={finish} />}
+           {step === 1 && <StepCompanyProfile onNext={nextStep} onSkip={nextStep} />}
+            {step === 2 && <StepIntegrations onNext={nextStep} onSkip={nextStep} />}
+             {step === 3 && <StepICP          onNext={nextStep} onSkip={nextStep} />}
+              {step === 4 && <StepEmail        onNext={nextStep} onSkip={nextStep} />}
+               {step === 5 && <StepDone         onFinish={finish} />}
                </div>
                {step > 0 && step < STEPS.length - 1 && (
                          <div style={{ marginTop: 20, fontSize: 12, color: '#334155' }}>Step {step} of {STEPS.length - 1}</div>
