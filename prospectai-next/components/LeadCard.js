@@ -550,8 +550,8 @@ function handleQueueTrigger() {
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
       {(draftResult.subjects || []).map((subj, i) => {
-        const label = subj.startsWith('[CURIOSITY]') ? '🎯' : subj.startsWith('[VALUE]') ? '💰' : '👤';
-        const clean = subj.replace(/^[(CURIOSITY|VALUE|PERSONAL)]s*/, '');
+        const label = i === 0 ? '🎯' : i === 1 ? '💰' : '👤';
+        const clean = subj.replace(/^\[(CURIOSITY|VALUE|PERSONAL)\]\s*/, '');
         return (
           <button key={i} onClick={() => {
             navigator.clipboard.writeText(clean).catch(() => {});
