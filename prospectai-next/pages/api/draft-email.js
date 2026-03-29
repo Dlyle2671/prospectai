@@ -172,7 +172,7 @@ function buildTemplateDraft(body) {
           PROGRAM_BULLETS, '',
           'Worth a quick call to see if there is a fit? I can have a free optimization assessment scheduled for you this week.',
         ].join('\n');
-    return { subject, body: emailBody };
+    return { subject, subjects: [subject], body: emailBody };
 }
 
 export default async function handler(req, res) {
@@ -273,14 +273,14 @@ export default async function handler(req, res) {
         'OFFER: RRIL runs a free optimization assessment. Average savings are 18-30% on AWS bills within 30 days.',
         '', 'RULES:',
         toneInstruction,
-        '- Subject: max 8 words, punchy and curiosity-driven, personalized to this lead, do NOT just restate the hook',
+        '- Subjects: write exactly 3 subject line options, each max 8 words. Label them: [CURIOSITY] [VALUE] [PERSONAL]. Personalize each to this lead. Do NOT restate the hook verbatim.',
         '- If RECENT NEWS is provided above and a headline relates to cloud, AWS, growth, or funding, open the email referencing that news naturally. Otherwise open with the BEST HOOK above',
         '- Para 2: specific pain point (2-3 sentences)',
         '- Para 3: header "Benefits of the Altus Cloud AWS FinOps Program:" then list all 5 program details as bullet points',
         '- CTA: offer a free optimization assessment (not a generic call)',
         '- Savings: always say 18-30%, timeframe always 30 days',
         '- No sign-off. No buzzwords. Max 180 words in body.',
-        '', 'Return ONLY JSON: { "subject": "...", "body": "... use \\n for line breaks" }',
+        '', 'Return ONLY JSON: { "subjects": ["[CURIOSITY] subject here", "[VALUE] subject here", "[PERSONAL] subject here"], "body": "... use \\n for line breaks" }',
       ].join('\n');
 
   try {
@@ -306,8 +306,8 @@ export default async function handler(req, res) {
         } catch (e) {
                 return res.status(200).json(buildTemplateDraft(body));
         }
-        if (!parsed.subject || !parsed.body) return res.status(200).json(buildTemplateDraft(body));
-        return res.status(200).json({ subject: parsed.subject, body: parsed.body });
+        if (!parsed.subjects || !parsed.body) return res.status(200).json(buildTemplateDraft(body));
+        return res.status(200).json({ subject: parsed.subjects[0], subjects: parsed.subjects, body: parsed.body });
   } catch (err) {
         console.error('[draft-email] error:', err.message);
         return res.status(200).json(buildTemplateDraft(body));
