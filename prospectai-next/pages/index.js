@@ -103,6 +103,7 @@ export default function Home() {
     const [showHome, setShowHome] = useState(true);
     const [loadedSnapshot, setLoadedSnapshot] = useState(null);
     const [checkingOnboard, setCheckingOnboard] = useState(true);
+  const [featureFlags, setFeatureFlags] = useState(null);
     const { user, isLoaded } = useUser();
     const { signOut } = useClerk();
     const router = useRouter();
@@ -119,13 +120,16 @@ export default function Home() {
                 fetch('/api/user-settings?ns=onboarding_complete').then(r => r.json()),
                 fetch('/api/user-settings?ns=icp_weights').then(r => r.json()),
                 fetch('/api/user-settings?ns=sender_emails').then(r => r.json()),
+                fetch('/api/user-settings?ns=feature_flags').then(r => r.json()),
               ])
-          .then(([done, icp, senders]) => {
+          .then(([done, icp, senders, flagsRes]) => {
                     const isComplete = done.data || icp.data || senders.data;
                     if (!isComplete) {
                                 router.replace('/onboarding');
                     } else {
                                 setCheckingOnboard(false);
+                                const ff = flagsRes?.data || null;
+                                setFeatureFlags(ff);
                     }
           })
           .catch(() => setCheckingOnboard(false));
@@ -142,6 +146,9 @@ export default function Home() {
   };
 
   const isAdmin = user?.id === ADMIN_USER_ID;
+  const visibleTabs = featureFlags
+    ? TABS.filter(t => featureFlags[t.id] !== false)
+    : TABS;
 
   if (checkingOnboard) {
         return (
@@ -221,7 +228,7 @@ export default function Home() {
             <aside className="sidebar">
               <div className="sidebar-logo" onClick={() => setShowHome(true)} style={{ cursor: 'pointer' }}><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></div>
               <nav className="sidebar-nav">
-  {TABS.map(tab => (
+  {visibleTabs.map(tab => (
                   <button
                             key={tab.id}
                 className={`sidebar-btn${activeTab === tab.id ? ' active' : ''}`}
