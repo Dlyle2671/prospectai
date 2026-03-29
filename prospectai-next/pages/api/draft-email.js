@@ -199,7 +199,9 @@ export default async function handler(req, res) {
   let valuePropLine = 'We typically help teams uncover 18-30% in savings within 30 days';
   try {
     const profileKey = `user:${userId}:company_profile`;
-    const profileData = await kvRedis.get(profileKey);
+    let rawProfile = await kvRedis.get(profileKey);
+    if (typeof rawProfile === 'string') { try { rawProfile = JSON.parse(rawProfile); } catch(_) {} }
+    const profileData = rawProfile;
     if (profileData && profileData.company_name) {
       companyName = profileData.company_name;
       if (profileData.offer_name) offerName = profileData.offer_name;
