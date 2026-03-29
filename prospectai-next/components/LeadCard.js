@@ -23,6 +23,8 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
     const [toneAction, setToneAction] = useState('draft');
     const [tone, setTone] = useState('conversational');
     const [emailCopied, setEmailCopied] = useState(false);
+    const [draftResult, setDraftResult] = useState(null);
+    const [subjectCopied, setSubjectCopied] = useState(null);
     const [selectedSender, setSelectedSender] = useState('');
     const [senderPickerOpen, setSenderPickerOpen] = useState(false);
 
@@ -177,21 +179,12 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
                 });
                 const data = await resp.json();
                 if (data.error) throw new Error(data.error);
-                const to = p.email;
-                const subject = encodeURIComponent(data.subject || '');
-                let body = data.body || '';
-                if (activeSender) { body = '[Send from: ' + activeSender.email + ']\n\n' + body; }
-                if (activeSender) {
-                          const signoff = activeSender.name ? '\n\nBest,\n' + activeSender.name : '\n\nBest,';
-                          body = body + signoff;
-                }
-                const encodedBody = encodeURIComponent(body);
-                const mailtoUrl = 'mailto:' + to + '?subject=' + subject + '&body=' + encodedBody;
-                const a = document.createElement('a');
-                a.href = mailtoUrl;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
+                setDraftResult({
+                  subjects: data.subjects || [data.subject],
+                  body: data.body || '',
+                  to: p.email,
+                  activeSender,
+                });
         } catch (err) {
                 setEmailError(err.message);
         } finally {
@@ -549,6 +542,50 @@ function handleQueueTrigger() {
 {seqError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {seqError}</div>}
 {emailError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ {emailError}</div>}
 {queueError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>⚠️ Queue error: {queueError}</div>}
+{draftResult && (
+  <div style={{ marginTop: 12, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 10, padding: '12px 14px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+      <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>✉️ Draft Ready — Pick a Subject Line</div>
+      <button onClick={() => setDraftResult(null)} style={{ background: 'none', border: 'none', color: '#475569', cursor: 'pointer', fontSize: 14 }}>✕</button>
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+      {(draftResult.subjects || []).map((subj, i) => {
+        const label = subj.startsWith('[CURIOSITY]') ? '🎯' : subj.startsWith('[VALUE]') ? '💰' : '👤';
+        const clean = subj.replace(/^[(CURIOSITY|VALUE|PERSONAL)]s*/, '');
+        return (
+          <button key={i} onClick={() => {
+            navigator.clipboard.writeText(clean).catch(() => {});
+            setSubjectCopied(i);
+            setTimeout(() => setSubjectCopied(null), 2000);
+          }} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 7, border: '1px solid #334155', background: subjectCopied === i ? '#0e7490' : '#1e293b', color: subjectCopied === i ? '#fff' : '#e2e8f0', cursor: 'pointer', textAlign: 'left', fontSize: 12, transition: 'background 0.15s' }}>
+            <span>{label}</span>
+            <span style={{ flex: 1 }}>{clean}</span>
+            <span style={{ fontSize: 10, color: subjectCopied === i ? '#bae6fd' : '#64748b', flexShrink: 0 }}>{subjectCopied === i ? '✓ Copied' : 'Copy'}</span>
+          </button>
+        );
+      })}
+    </div>
+    <textarea readOnly value={(() => { let b = draftResult.body || ''; if (draftResult.activeSender) { b = '[Send from: ' + draftResult.activeSender.email + ']\n\n' + b; b = b + (draftResult.activeSender.name ? '\n\nBest,\n' + draftResult.activeSender.name : '\n\nBest,'); } return b; })()} style={{ width: '100%', minHeight: 140, background: '#020617', border: '1px solid #1e293b', borderRadius: 7, padding: '8px 10px', fontSize: 11, color: '#cbd5e1', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.5 }} onClick={e => e.target.select()} />
+    <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+      <button onClick={() => {
+        const b = (() => { let b = draftResult.body || ''; if (draftResult.activeSender) { b = '[Send from: ' + draftResult.activeSender.email + ']\n\n' + b; b = b + (draftResult.activeSender.name ? '\n\nBest,\n' + draftResult.activeSender.name : '\n\nBest,'); } return b; })();
+        navigator.clipboard.writeText(b).catch(() => {});
+        setEmailCopied(true); setTimeout(() => setEmailCopied(false), 2000);
+      }} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #334155', background: emailCopied ? '#0e7490' : '#1e293b', color: emailCopied ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+        {emailCopied ? '✓ Copied' : '📋 Copy Email'}
+      </button>
+      <button onClick={() => {
+        const subj = (draftResult.subjects && draftResult.subjects[0] || '').replace(/^[(CURIOSITY|VALUE|PERSONAL)]s*/, '');
+        const b = (() => { let b = draftResult.body || ''; if (draftResult.activeSender) { b = '[Send from: ' + draftResult.activeSender.email + ']\n\n' + b; b = b + (draftResult.activeSender.name ? '\n\nBest,\n' + draftResult.activeSender.name : '\n\nBest,'); } return b; })();
+        const a = document.createElement('a');
+        a.href = 'mailto:' + draftResult.to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(b);
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      }} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#0e7490', color: '#fff', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
+        📨 Open in Email Client
+      </button>
+    </div>
+  </div>
+)}
   </div>
   </div>
   </div>
