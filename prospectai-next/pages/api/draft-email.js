@@ -90,7 +90,7 @@ function buildPainPoint(hook, body) {
       case 'new_role':
               return 'New leaders often inherit cloud bills that grew without much governance. It is one of the faster wins to show early — most teams find 18-30% in savings within the first 30 days of a proper audit.';
       default:
-              return 'Most engineering-driven companies have AWS spend that has grown faster than their visibility into it. The Altus Cloud AWS FinOps Program typically uncovers 18-30% in recoverable savings in the first 30 days.';
+              return 'Most engineering-driven companies have AWS spend that has grown faster than their visibility into it. Our program typically uncovers 18-30% in recoverable savings in the first 30 days.';
     }
 }
 
@@ -167,8 +167,8 @@ function buildTemplateDraft(body) {
           fn + ',', '',
           hook + ' — wanted to reach out.', '',
           pain, '',
-          'At RRIL Solutions we run a free optimization assessment for AWS customers. Most teams uncover 18-30% in savings within the first 30 days — through rightsizing, commitment strategies, and spend governance.', '',
-          'Benefits of the Altus Cloud AWS FinOps Program:',
+          'At our company we run a free optimization assessment. Most teams uncover 18-30% in savings within the first 30 days — through rightsizing, commitment strategies, and spend governance.', '',
+          'Benefits of our program:',
           PROGRAM_BULLETS, '',
           'Worth a quick call to see if there is a fit? I can have a free optimization assessment scheduled for you this week.',
         ].join('\n');
@@ -186,6 +186,21 @@ export default async function handler(req, res) {
   const { userId } = getAuth(req);
     const userAnthropicKey = await getUserAnthropicKey(userId);
     const apiKey = userAnthropicKey || process.env.ANTHROPIC_API_KEY;
+
+  // Load company profile from Redis for personalised email copy
+  let companyName = 'our company';
+  let offerName = 'our program';
+  let valuePropLine = 'We typically help teams uncover 18-30% in savings within 30 days';
+  try {
+    const profileKey = `user:${userId}:company_profile`;
+    const profileData = await redis.get(profileKey);
+    if (profileData && profileData.company_name) {
+      companyName = profileData.company_name;
+      if (profileData.offer_name) offerName = profileData.offer_name;
+      if (profileData.value_prop) valuePropLine = profileData.value_prop;
+    }
+  } catch (_) {}
+
 
   const body = req.body || {};
     const { name, first_name, title, seniority, company_name, company_description, keywords, tech_stack, aws_services, funding_stage, recently_funded, hiring_surge, location, time_in_role_months, prev_jobs, headcount_growth, annual_revenue, funding_round_amount, top_investors, company_founded, intent_signals, recent_news, tone = 'conversational' } = body;
@@ -236,7 +251,7 @@ export default async function handler(req, res) {
     const contextStr = ctx.join('\n');
 
   const programInfo = [
-        'PROGRAM DETAILS (label as "Benefits of the Altus Cloud AWS FinOps Program" in the email):',
+        'PROGRAM DETAILS (label as "Benefits of the ' + offerName + '" in the email):',
         '- Prospect receives a discount on their AWS bill',
         '- 100% funded by AWS, no cost to the prospect',
         '- No long-term contracts or commitments',
@@ -264,19 +279,19 @@ export default async function handler(req, res) {
 
 
   const prompt = [
-        'You are a B2B sales expert writing a short, personalized cold outreach email for RRIL Solutions, a FinOps firm that cuts AWS spend.',
+        'You are a B2B sales expert writing a short, personalized cold outreach email for ' + companyName + '. The sender works at ' + companyName + '.',
         '', 'LEAD:', 'Name: ' + name, contextStr, '',
         ...(newsSection ? [newsSection, ''] : []),
         'BEST HOOK: ' + bestHook,
         'PAIN ANGLE: ' + suggestedPain, '',
         subjectExamples, '', programInfo, '',
-        'OFFER: RRIL runs a free optimization assessment. Average savings are 18-30% on AWS bills within 30 days.',
+        'OFFER: ' + companyName + ' offers ' + offerName + '. ' + valuePropLine + '.',
         '', 'RULES:',
         toneInstruction,
         '- Subjects: write exactly 3 subject line options, each max 8 words. Write them in this order: 1) curiosity-driven (intrigue, open question), 2) direct value prop (savings/%, company name), 3) personal hook (name or role). No bracket labels. Personalize each to this lead.',
         '- If RECENT NEWS is provided above and a headline relates to cloud, AWS, growth, or funding, open the email referencing that news naturally. Otherwise open with the BEST HOOK above',
         '- Para 2: specific pain point (2-3 sentences)',
-        '- Para 3: header "Benefits of the Altus Cloud AWS FinOps Program:" then list all 5 program details as bullet points',
+        '- Para 3: header "Benefits of the ' + offerName + ':" then list all 5 program details as bullet points',
         '- CTA: offer a free optimization assessment (not a generic call)',
         '- Savings: always say 18-30%, timeframe always 30 days',
         '- No sign-off. No buzzwords. Max 180 words in body.',
