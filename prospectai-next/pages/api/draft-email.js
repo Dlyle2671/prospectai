@@ -154,12 +154,12 @@ function pickSubject(tier, body) {
 }
 
 const PROGRAM_BULLETS = [
-    '- You receive a discount on your AWS bill',
-    '- 100% funded by AWS — no cost to you',
-    '- No long-term contracts or commitments',
-    '- Does not change your relationship with AWS',
-    '- Requires no changes to your existing infrastructure'
-  ].join('\n');
+    '• A discount applied directly to your AWS bill',
+    '• 100% funded by AWS — zero cost to you (AWS pays us)',
+    '• No long-term contracts or commitments',
+    "• Doesn't change your AWS relationship",
+    '• Requires no infrastructure changes'
+].join('\n');
 
 function buildTemplateDraft(body) {
     const { first_name, name, company_name } = body;
@@ -169,14 +169,17 @@ function buildTemplateDraft(body) {
     const pain = buildPainPoint({ tier }, body);
     const subject = pickSubject(tier, body);
     const emailBody = [
-          fn + ',', '',
-          hook + ' — wanted to reach out.', '',
-          pain, '',
-          'At our company we run a free optimization assessment. Most teams uncover 18-30% in savings within the first 30 days — through rightsizing, commitment strategies, and spend governance.', '',
-          'Benefits of our program:',
-          PROGRAM_BULLETS, '',
-          'Worth a quick call to see if there is a fit? I can have a free optimization assessment scheduled for you this week.',
-        ].join('\n');
+          'Hello ' + fn + ',',
+          '',
+          "If you're NOT working with an AWS Authorized Reseller, you're leaving $$ on the table.",
+          '',
+          'We work closely with AWS to deliver FinOps services to their customers.',
+          '',
+          'Benefits:',
+          PROGRAM_BULLETS,
+          '',
+          "Worth 20 minutes to see what we'd find in your first 30 days?",
+    ].join('\n');
     return { subject, subjects: [subject], body: emailBody };
 }
 
@@ -258,13 +261,13 @@ export default async function handler(req, res) {
     const contextStr = ctx.join('\n');
 
   const programInfo = [
-        'PROGRAM DETAILS (label as "Benefits of the ' + offerName + '" in the email):',
-        '- Prospect receives a discount on their AWS bill',
-        '- 100% funded by AWS, no cost to the prospect',
-        '- No long-term contracts or commitments',
-        '- Does not change their relationship with AWS',
-        '- Requires no changes to existing infrastructure',
-      ].join('\n');
+        'PROGRAM DETAILS (label as "Benefits:" in the email):',
+        '• A discount applied directly to their AWS bill',
+        '• 100% funded by AWS — zero cost to them (AWS pays us)',
+        '• No long-term contracts or commitments',
+        "\u2022 Doesn't change their AWS relationship",
+        '• Requires no infrastructure changes',
+  ].join('\n');
 
   const subjectExamples = [
         'SUBJECT LINE STYLE GUIDE (pick the best fit, do not copy verbatim):',
