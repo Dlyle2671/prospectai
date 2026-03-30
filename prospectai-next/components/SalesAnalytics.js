@@ -34,6 +34,19 @@ function repCommissionFromDeals(rep, deals){
   const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
   return { ps, fo, ms, tot: ps+fo+ms };
+function croDealComm(d){
+  if(d.cat==='PS') return (d.amount||0) * 0.03;
+  if(d.cat==='FO') return (d.mrr||0) * 0.07 * 0.25;
+  if(d.cat==='MS') return (d.mrr||0) * 0.25;
+  return 0;
+}
+function croCommissionFromDeals(rep, deals){
+  const myDeals = deals.filter(d => d.repId === rep.id);
+  const ps = myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+croDealComm(d),0);
+  const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+croDealComm(d),0);
+  const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+croDealComm(d),0);
+  return { ps, fo, ms, tot: ps+fo+ms };
+}
 }
 export default function SalesAnalytics({onBack}){
   const { user } = useUser();
@@ -790,12 +803,14 @@ function ArrCalcTab(){
 }
 function CommTab({data, filterRep, setFilterRep}){
   const [filterMonth, setFilterMonth] = useState('All');
+  const [croView, setCroView] = useState(false);
   const deals = data.deals || [];
   const allMonths = [...new Set(deals.map(d=>d.month||1))].sort((a,b)=>a-b);
   const filteredDeals = filterMonth==='All' ? deals : deals.filter(d=>(d.month||1)===Number(filterMonth));
   const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
-  const totalComm = repsFor.reduce((s,r)=>s+repCommissionFromDeals(r,filteredDeals).tot,0);
-  const earning = repsFor.filter(r=>repCommissionFromDeals(r,filteredDeals).tot>0).length;
+  const commFn = croView ? croCommissionFromDeals : repCommissionFromDeals;
+  const totalComm = repsFor.reduce((s,r)=>s+commFn(r,filteredDeals).tot,0);
+  const earning = repsFor.filter(r=>commFn(r,filteredDeals).tot>0).length;
 
   // Build summary rows (always by rep)
   let rows = [];
@@ -842,6 +857,11 @@ function CommTab({data, filterRep, setFilterRep}){
         <button
           style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
           onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
+          <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
+            <span style={{fontSize:12,color:'#94a3b8',fontWeight:600}}>VIEW:</span>
+            <button onClick={()=>setCroView(false)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #0e7490',background:croView?'transparent':'#0e7490',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>Rep Commission</button>
+            <button onClick={()=>setCroView(true)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #7c3aed',background:croView?'#7c3aed':'transparent',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>CRO Commission</button>
+          </div>
         >⬇ Export Commission Statement</button>
         <button
           style={{background:'linear-gradient(135deg,#1d4ed8,#3b82f6)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6,marginLeft:8}}
@@ -852,9 +872,9 @@ function CommTab({data, filterRep, setFilterRep}){
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Dept</th>
-          <th>PS Comm (10% of fee)</th>
-          <th>FO Comm (7% of 1st mo MRR)</th>
-          <th>MS Comm (1x MRR)</th>
+          {croView ? <th>PS Comm (3% of fee)</th> : <th>PS Comm (10% of fee)</th>}
+          {croView ? <th>FO Comm (25% of 7% MRR)</th> : <th>FO Comm (7% of 1st mo MRR)</th>}
+          {croView ? <th>MS Comm (25% of MRR)</th> : <th>MS Comm (1x MRR)</th>}
           <th>Total Commission</th>
         </tr></thead>
           <tbody>
@@ -943,7 +963,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     const totA=psA+foA+msA;
     const psQ=getQuota(r,'PS'),foQ=getQuota(r,'FO'),msQ=getQuota(r,'MS');
     const totQ=psQ+foQ+msQ;
-    const comm=repCommissionFromDeals(r,repFilteredDeals);
+    const comm=commFn(r,repFilteredDeals);
     const ytdPct=CM/12;
     const attain=totQ>0?(totA/(totQ*ytdPct)*100).toFixed(1)+'%':'--';
     const status=totQ>0?(totA/(totQ*ytdPct)>=1?'On Track':'Behind Pace'):'--';
