@@ -25,8 +25,14 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.redirect(url);
   }
 
-  // Admin route -- let through (API route handles permission check)
-  if (isAdmin(req)) return NextResponse.next();
+  // Admin route -- only allow the designated admin user
+  if (isAdmin(req)) {
+    const adminId = process.env.ADMIN_USER_ID;
+    if (!adminId || userId !== adminId) {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    return NextResponse.next();
+  }
 
   // Already on /onboarding -- let through
   if (isOnboarding(req)) return NextResponse.next();
