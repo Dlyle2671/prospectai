@@ -1127,7 +1127,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
       const mrr=Number(d.mrr||0);
       const rem=mrem(dealMo(d));
       let arr=0,comm=0;
-      if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;} else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;} else if(cat==='MS'){arr=mrr*12;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}=mrr*CR.MS;}
+      if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;} else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;} else if(cat==='MS'){arr=mrr*12;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}
       totARR+=arr;totComm+=comm;
       if(cat==='PS') totPS+=comm;
       else if(cat==='FO') totFO+=comm;
