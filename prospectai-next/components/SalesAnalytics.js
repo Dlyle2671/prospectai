@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-const SK = 'pai_quotaTracker';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CM = new Date().getMonth() + 1;
 const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
@@ -7,25 +7,7 @@ const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Servi
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
-function ld(){
-  try{
-    const r = localStorage.getItem(SK)
-    if(r){
-      const p = JSON.parse(r);
-    const reps = (Array.isArray(p.reps)?p.reps:[]).map(rep => ({
-        ...rep,
-        actuals: rep.actuals || { 'Professional Services':0, 'FinOps':0, 'Managed Services':0 },
-        quotas: rep.quotas || { 'Professional Services':0, 'FinOps':0, 'Managed Services':0 },
-        psWins: rep.psWins || [],
-        recurringDeals: rep.recurringDeals || { 'FinOps':[], 'Managed Services':[] },
-      }));
-      const companyQuotas = p.companyQuotas || { PS: 0, FO: 0, MS: 0 };
-      return { reps, deals: Array.isArray(p.deals)?p.deals:[], companyQuotas };
-    }
-  }catch(e){}
-  return { reps:[], deals:[], companyQuotas:{ PS:0, FO:0, MS:0 } };
-}
-function sd(d){ try{ localStorage.setItem(SK, JSON.stringify(d)); }catch(e){} }
+
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 // ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining
 function dealARR(d){
@@ -54,10 +36,22 @@ function repCommissionFromDeals(rep, deals){
   return { ps, fo, ms, tot: ps+fo+ms };
 }
 export default function SalesAnalytics({onBack}){
+  const { user } = useUser();
   const [tab, setTab] = useState('dash');
-  const [data, setData] = useState(ld());
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [filterRep, setFilterRep] = useState('All');
-  const save = d => { sd(d); setData(JSON.parse(JSON.stringify(d))); };
+  useEffect(() => {
+    fetch('/api/sales-data').then(r => r.json()).then(d => {
+      setData(d);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+  const save = async d => {
+    await fetch('/api/sales-data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) });
+    setData(JSON.parse(JSON.stringify(d)));
+  };
+  if (loading || !data) return <div style={{color:'#fff',padding:'40px',textAlign:'center'}}>Loading...</div>;
   return(<>
     <style>{`
       .sa{display:flex;flex-direction:column;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff;z-index:1000;overflow:hidden;}
@@ -1206,7 +1200,7 @@ function SettingsTab({data, save}){
   const saveQuotas = () => {
     const d = JSON.parse(JSON.stringify(data));
     d.companyQuotas = { PS: Number(qf.PS)||0, FO: Number(qf.FO)||0, MS: Number(qf.MS)||0 };
-    save(d); setData(ld());
+    save(d);
     setSaved(true);
     setTimeout(()=>setSaved(false), 2000);
   };
