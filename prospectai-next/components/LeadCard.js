@@ -145,7 +145,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
         if (selectedTone === 'standard') {
           const firstName = p.first_name || (p.name ? p.name.split(' ')[0] : 'there');
           const senderName = activeSender ? activeSender.name : '';
-          const body = `Hello ${firstName},\n\nIf you are not working with an AWS Authorized Reseller, then you're likely leaving 18-30% in savings on the table.\n\nWe work closely with AWS to deliver FinOps services to their customers.\n\nBenefits:\n\u2022 A discount applied directly to your AWS bill\n\u2022 100% funded by AWS \u2014 zero cost to you (AWS pays us)\n\u2022 No long-term contracts or commitments\n\u2022 Doesn't change your AWS relationship\n\u2022 Requires no infrastructure changes\n\nWorth 20 minutes to see what we'd find in your first 30 days?\n\nBest,${senderName ? '\n' + senderName : ''}`;
+          const body = `Hello ${firstName},\n\nIf you're NOT working with an AWS Authorized Reseller, you're leaving $$ on the table.\n\nWe work closely with AWS to deliver FinOps services to their customers.\n\nBenefits:\n\u2022 A discount applied directly to your AWS bill\n\u2022 100% funded by AWS \u2014 zero cost to you (AWS pays us)\n\u2022 No long-term contracts or commitments\n\u2022 Doesn't change your AWS relationship\n\u2022 Requires no infrastructure changes\n\nWorth 20 minutes to see what we'd find in your first 30 days?`;
           setTone('standard');
           setDraftResult({ subject: 'AWS Cost Savings Opportunity', body, activeSender });
           setEmailDrafting(false);
