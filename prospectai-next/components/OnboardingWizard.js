@@ -99,8 +99,9 @@ function StepCompanyProfile({ onNext, onSkip }) {
         <label style={lbl}>COMPANY NAME *</label>
         <input style={inp} type="text" placeholder="e.g. Cloudelligent"
           value={profile.company_name}
-          onChange={e => { setCpError(''); setProfile(p => ({ ...p, company_name: e.target.value })); }}         {cpError && <div style={{color:'#f87171',fontSize:12,marginTop:4}}>{cpError}</div>}
+          onChange={e => { setCpError(''); setProfile(p => ({ ...p, company_name: e.target.value })); }}
 />
+        {cpError && <div style={{color:'#f87171',fontSize:12,marginTop:4}}>{cpError}</div>}
         <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>Appears in every outreach email.</div>
       </div>
       <div style={{ marginBottom: 16 }}>
