@@ -815,7 +815,7 @@ function CommTab({data, filterRep, setFilterRep}){
   // Build summary rows (always by rep)
   let rows = [];
   rows = data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
-    const c = repCommissionFromDeals(r, filteredDeals);
+    const c = commFn(r, filteredDeals);
     return { key: r.id, label: r.name, dept: r.dept||r.department||'Sales', ps: c.ps, fo: c.fo, ms: c.ms, tot: c.tot };
   });
     // Deal-level breakdown: show when a specific rep and/or month is chosen
@@ -853,15 +853,15 @@ function CommTab({data, filterRep, setFilterRep}){
           </div>
         )}
       </div>
-            <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
+      <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
+        <span style={{fontSize:12,color:'#94a3b8',fontWeight:600}}>VIEW:</span>
+        <button onClick={()=>setCroView(false)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #0e7490',background:croView?'transparent':'#0e7490',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>Rep Commission</button>
+        <button onClick={()=>setCroView(true)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #7c3aed',background:croView?'#7c3aed':'transparent',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>CRO Commission</button>
+      </div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
         <button
           style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
           onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
-          <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
-            <span style={{fontSize:12,color:'#94a3b8',fontWeight:600}}>VIEW:</span>
-            <button onClick={()=>setCroView(false)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #0e7490',background:croView?'transparent':'#0e7490',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>Rep Commission</button>
-            <button onClick={()=>setCroView(true)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #7c3aed',background:croView?'#7c3aed':'transparent',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>CRO Commission</button>
-          </div>
         >⬇ Export Commission Statement</button>
         <button
           style={{background:'linear-gradient(135deg,#1d4ed8,#3b82f6)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6,marginLeft:8}}
