@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 const TAB_IDS = ['leads','company','bulk','jobchanges','people','lookalike','awsopps','emailqueue','credits','salesanalytics'];
 const TAB_LABELS = { leads:'Find Leads', company:'Company Intel', bulk:'Bulk Prospector', jobchanges:'Job Changes', people:'People Lookup', lookalike:'Lookalike', awsopps:'Lead Scoring', emailqueue:'Email Queue', credits:'Credits', salesanalytics:'Sales Analytics' };
@@ -19,6 +20,10 @@ function timeAgo(ts) {
 
 export default function AdminPortal() {
   const { user, isLoaded } = useUser();
+  const router = useRouter();
+  const isAdmin = isLoaded && user?.id === process.env.NEXT_PUBLIC_ADMIN_USER_ID;
+  useEffect(() => { if (isLoaded && !isAdmin) router.replace('/'); }, [isLoaded, isAdmin]);
+  if (!isLoaded || !isAdmin) return null;
   const [users, setUsers] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
