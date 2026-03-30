@@ -804,18 +804,18 @@ function ArrCalcTab(){
 }
 function CommTab({data, filterRep, setFilterRep}){
   const [filterMonth, setFilterMonth] = useState('All');
-  const [croView, setCroView] = useState(false);
   const deals = data.deals || [];
   const allMonths = [...new Set(deals.map(d=>d.month||1))].sort((a,b)=>a-b);
   const filteredDeals = filterMonth==='All' ? deals : deals.filter(d=>(d.month||1)===Number(filterMonth));
-  const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
-  const commFn = croView ? croCommissionFromDeals : repCommissionFromDeals;
+  const isCRO = filterRep === '__CRO__';
+  const repsFor = filterRep==='All'||isCRO ? data.reps : data.reps.filter(r=>r.id===filterRep);
+  const commFn = isCRO ? croCommissionFromDeals : repCommissionFromDeals;
   const totalComm = repsFor.reduce((s,r)=>s+commFn(r,filteredDeals).tot,0);
   const earning = repsFor.filter(r=>commFn(r,filteredDeals).tot>0).length;
 
   // Build summary rows (always by rep)
   let rows = [];
-  rows = data.reps.filter(r=>filterRep==='All'||r.id===filterRep).map(r=>{
+  rows = data.reps.filter(r=>filterRep==='All'||isCRO||r.id===filterRep).map(r=>{
     const c = commFn(r, filteredDeals);
     return { key: r.id, label: r.name, dept: r.dept||r.department||'Sales', ps: c.ps, fo: c.fo, ms: c.ms, tot: c.tot };
   });
@@ -841,6 +841,7 @@ function CommTab({data, filterRep, setFilterRep}){
           <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep</label>
           <select style={selStyle} value={filterRep} onChange={e=>setFilterRep(e.target.value)}>
             <option value="All">All Reps</option>
+              <option value="__CRO__">CRO View</option>
             {data.reps.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </div>
@@ -853,11 +854,6 @@ function CommTab({data, filterRep, setFilterRep}){
             </select>
           </div>
         )}
-      </div>
-      <div style={{display:'flex',gap:8,marginBottom:12,alignItems:'center'}}>
-        <span style={{fontSize:12,color:'#94a3b8',fontWeight:600}}>VIEW:</span>
-        <button onClick={()=>setCroView(false)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #0e7490',background:croView?'transparent':'#0e7490',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>Rep Commission</button>
-        <button onClick={()=>setCroView(true)} style={{padding:'5px 14px',borderRadius:6,border:'1px solid #7c3aed',background:croView?'#7c3aed':'transparent',color:'#f1f5f9',cursor:'pointer',fontSize:12,fontWeight:600}}>CRO Commission</button>
       </div>
       <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
         <button
@@ -873,9 +869,9 @@ function CommTab({data, filterRep, setFilterRep}){
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Dept</th>
-          {croView ? <th>PS Comm (3% of fee)</th> : <th>PS Comm (10% of fee)</th>}
-          {croView ? <th>FO Comm (25% of 7% MRR)</th> : <th>FO Comm (7% of 1st mo MRR)</th>}
-          {croView ? <th>MS Comm (25% of MRR)</th> : <th>MS Comm (1x MRR)</th>}
+          <th>PS Commission</th>
+          <th>FO Commission</th>
+          <th>MS Commission</th>
           <th>Total Commission</th>
         </tr></thead>
           <tbody>
