@@ -1115,83 +1115,137 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   const dealIsRep = (d,rep) => d.repId===rep.id || d.rep===rep.name;
 
   let sections = '';
-  repList.forEach(rep=>{
-    const repDeals  = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,false));
-    const ytdDeals  = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,true));
-
-    // KPIs - filtered period
-    let totARR=0,totComm=0,totPS=0,totFO=0,totMS=0;
-    repDeals.forEach(d=>{
-      const cat=dealCat(d);
-      const fee=Number(d.amount||d.fee||0);
-      const mrr=Number(d.mrr||0);
-      const rem=mrem(dealMo(d));
+  if(isCROPdf){
+    // ── CRO VIEW: single consolidated section ────────────────────────────────
+    const allDeals = repList.reduce((acc,rep) => acc.concat(filteredDeals.filter(d=>dealIsRep(d,rep))), []);
+    let totARR=0, totComm=0, totPS=0, totFO=0, totMS=0;
+    allDeals.forEach(d=>{
+      const cat=dealCat(d), fee=Number(d.amount||d.fee||0), mrr=Number(d.mrr||0), rem=mrem(dealMo(d));
       let arr=0,comm=0;
-      if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;} else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;} else if(cat==='MS'){arr=mrr*rem;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}
+      if(cat==='PS'){arr=fee;comm=fee*0.03;}
+      else if(cat==='FO'){arr=mrr*rem;comm=mrr*0.07*0.25;}
+      else if(cat==='MS'){arr=mrr*rem;comm=mrr*0.25;}
       totARR+=arr;totComm+=comm;
-      if(cat==='PS') totPS+=comm;
-      else if(cat==='FO') totFO+=comm;
-      else if(cat==='MS') totMS+=comm;
+      if(cat==='PS')totPS+=comm;else if(cat==='FO')totFO+=comm;else if(cat==='MS')totMS+=comm;
     });
-
-    const ytdPct=CM_now/12;
-    let totQ=0;
-    ['PS','FO','MS'].forEach(cat=>{
-      const cDeals=repDeals.filter(d=>dealCat(d)===cat);
-      let cARR=0,cComm=0;
-      cDeals.forEach(d=>{
-        const fee=Number(d.amount||d.fee||0);
-        const mrr=Number(d.mrr||0);
-        const rem=mrem(dealMo(d));
-        if(cat==='PS'){cARR+=fee;cComm+=isCROPdf?fee*0.03:fee*CR.PS;}
-        else if(cat==='FO'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
-        else if(cat==='MS'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.25:mrr*CR.MS;}
-      });
-    });
-
-    // Category breakdown - filtered period
+    // Category breakdown
     const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
     let catRows='';
     cats.forEach(c=>{
-      const cDeals=repDeals.filter(d=>dealCat(d)===c.id);
+      const cDeals=allDeals.filter(d=>dealCat(d)===c.id);
       let cARR=0,cComm=0;
       cDeals.forEach(d=>{
-        const fee=Number(d.amount||d.fee||0);
-        const mrr=Number(d.mrr||0);
-        const rem=mrem(dealMo(d));
-        if(cat==='PS'){cARR+=fee;cComm+=isCROPdf?fee*0.03:fee*CR.PS;}
-        else if(cat==='FO'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
-        else if(cat==='MS'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.25:mrr*CR.MS;}
+        const fee=Number(d.amount||d.fee||0),mrr=Number(d.mrr||0),rem=mrem(dealMo(d));
+        if(c.id==='PS'){cARR+=fee;cComm+=fee*0.03;}
+        else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*0.07*0.25;}
+        else if(c.id==='MS'){cARR+=mrr*rem;cComm+=mrr*0.25;}
       });
-      const cQ=getQ(rep,c.id);
-      const ytdQ=Math.round(cQ*ytdPct);
-      const cAtt=ytdQ>0?Math.round(cARR/ytdQ*100):0;
-      catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${fmt(cQ)}</td><td class="num">${fmt(ytdQ)}</td><td class="num ${cAtt>=100?'good':cAtt>=75?'warn':'bad'}">${cAtt}%</td></tr>`;
+      catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${cDeals.length}</td></tr>`;
     });
-    catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totARR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${fmt(totQ)}</td><td class="num">${fmt(Math.round(totQ*ytdPct))}</td><td class="num ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</td></tr>`;
-
-    // Deal rows - period-filtered
+    catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totARR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${allDeals.length}</td></tr>`;
+    // Deal rows
     let dealRows='';
-    if(repDeals.length===0){
+    if(allDeals.length===0){
       dealRows='<tr><td colspan="6" style="text-align:center;color:#888;font-style:italic;">No deals in selected period</td></tr>';
     } else {
+      const sorted=[...allDeals].sort((a,b)=>{
+        const rA=(repList.find(r=>dealIsRep(a,r))||{name:''}).name;
+        const rB=(repList.find(r=>dealIsRep(b,r))||{name:''}).name;
+        if(rA!==rB) return rA.localeCompare(rB);
+        return (dealMo(a)||1)-(dealMo(b)||1);
+      });
+      sorted.forEach(d=>{
+        const cat=dealCat(d),fee=Number(d.amount||d.fee||0),mrr=Number(d.mrr||0),rem=mrem(dealMo(d));
+        let arr=0,comm=0;
+        if(cat==='PS'){arr=fee;comm=fee*0.03;}
+        else if(cat==='FO'){arr=mrr*rem;comm=mrr*0.07*0.25;}
+        else if(cat==='MS'){arr=mrr*rem;comm=mrr*0.25;}
+        const repName=(repList.find(r=>dealIsRep(d,r))||{name:'Unknown'}).name;
+        const catName=CAT_KEYS[cat]||cat;
+        const moName=MN[dealMo(d)-1]||'';
+        dealRows+=`<tr><td>${d.client||''}</td><td>${repName}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
+      });
+    }
+    sections=`<div class="rep-section">
+<div class="rep-header"><div class="rep-name">CRO Commission Summary</div><div class="rep-meta">All Reps &nbsp;|&nbsp; Period: ${moLabel} &nbsp;|&nbsp; ${allDeals.length} deals</div></div>
+<div class="kpi-grid">
+  <div class="kpi-box"><div class="kpi-label">Total ARR</div><div class="kpi-value">${fmt(totARR)}</div></div>
+  <div class="kpi-box"><div class="kpi-label">Total CRO Commission</div><div class="kpi-value green">${fmt(totComm)}</div></div>
+  <div class="kpi-box"><div class="kpi-label">Deals</div><div class="kpi-value">${allDeals.length}</div></div>
+</div>
+<div class="section-title">Commission Breakdown (${moLabel})</div>
+<div class="comm-pills">
+  <div class="pill"><span class="pill-label">PS Commission (3%)</span><span class="pill-value">${fmt(totPS)}</span></div>
+  <div class="pill"><span class="pill-label">FO Commission (1.75%)</span><span class="pill-value">${fmt(totFO)}</span></div>
+  <div class="pill"><span class="pill-label">MS Commission (25%)</span><span class="pill-value">${fmt(totMS)}</span></div>
+</div>
+<div class="section-title">Category Breakdown (${moLabel})</div>
+<table><thead><tr><th>Category</th><th>ARR Closed</th><th>CRO Commission</th><th>Deals</th></tr></thead><tbody>${catRows}</tbody></table>
+<div class="section-title">Deal Detail${moAll?' (YTD)':' - '+moName+' '+YEAR}</div>
+<table><thead><tr><th>Client</th><th>Rep</th><th>Category</th><th>Amount/MRR</th><th>ARR</th><th>CRO Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table>
+</div>`;
+  } else {
+    // ── INDIVIDUAL REP VIEW ───────────────────────────────────────────────────
+    repList.forEach(rep=>{
+      const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,false));
+      let totARR=0,totComm=0,totPS=0,totFO=0,totMS=0;
       repDeals.forEach(d=>{
         const cat=dealCat(d);
         const fee=Number(d.amount||d.fee||0);
         const mrr=Number(d.mrr||0);
         const rem=mrem(dealMo(d));
         let arr=0,comm=0;
-        if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;}
-        else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
-        else if(cat==='MS'){arr=mrr*rem;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}
-        const catName=CAT_KEYS[cat]||cat;
-        const moName=MN[dealMo(d)-1]||'';
-        dealRows+=`<tr><td>${d.client||''}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
+        if(cat==='PS'){arr=fee;comm=fee*CR.PS;}
+        else if(cat==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
+        else if(cat==='MS'){arr=mrr*rem;comm=mrr*CR.MS;}
+        totARR+=arr;totComm+=comm;
+        if(cat==='PS') totPS+=comm; else if(cat==='FO') totFO+=comm; else if(cat==='MS') totMS+=comm;
       });
-    }
-
-    sections+=`<div class="rep-section"><div class="rep-header"><div class="rep-name">${rep.name}</div><div class="rep-meta">Dept: ${rep.dept||'Sales'} &nbsp;|&nbsp; Period: ${moLabel}</div></div><div class="kpi-grid"><div class="kpi-box"><div class="kpi-label">Total ARR</div><div class="kpi-value">${fmt(totARR)}</div></div><div class="kpi-box"><div class="kpi-label">Total Commission</div><div class="kpi-value green">${fmt(totComm)}</div></div><div class="kpi-box"><div class="kpi-label">Quota Attainment</div><div class="kpi-value ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</div></div><div class="kpi-box"><div class="kpi-label">Status</div><div class="kpi-value ${status==='On Track'?'good':'bad'}">${status}</div></div></div><div class="section-title">Commission Breakdown (${moLabel})</div><div class="comm-pills"><div class="pill"><span class="pill-label">PS Commission</span><span class="pill-value">${fmt(totPS)}</span></div><div class="pill"><span class="pill-label">FO Commission</span><span class="pill-value">${fmt(totFO)}</span></div><div class="pill"><span class="pill-label">MS Commission</span><span class="pill-value">${fmt(totMS)}</span></div></div><div class="section-title">Category Breakdown (${moLabel})</div><table><thead><tr><th>Category</th><th>ARR Closed</th><th>Commission</th><th>Annual Quota</th><th>YTD Quota</th><th>Attainment</th></tr></thead><tbody>${catRows}</tbody></table><div class="section-title">Deal Detail${moAll?' (YTD)':' - '+moName+' '+YEAR}</div><table><thead><tr><th>Client</th><th>Category</th><th>Amount/MRR</th><th>ARR</th><th>Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table></div>`;
-  });
+      const ytdPct=CM_now/12;
+      let totQ=0;
+      ['PS','FO','MS'].forEach(cid=>{ totQ+=getQ(rep,cid); });
+      const attain=totQ>0?Math.round(totARR/(totQ*ytdPct)*100):0;
+      const status=totQ>0&&totARR>=(totQ*ytdPct)?'On Track':'Behind Pace';
+      const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
+      let catRows='';
+      cats.forEach(c=>{
+        const cDeals=repDeals.filter(d=>dealCat(d)===c.id);
+        let cARR=0,cComm=0;
+        cDeals.forEach(d=>{
+          const fee=Number(d.amount||d.fee||0);
+          const mrr=Number(d.mrr||0);
+          const rem=mrem(dealMo(d));
+          if(c.id==='PS'){cARR+=fee;cComm+=fee*CR.PS;}
+          else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*CR.FO;}
+          else if(c.id==='MS'){cARR+=mrr*rem;cComm+=mrr*CR.MS;}
+        });
+        const cQ=getQ(rep,c.id);
+        const ytdQ=Math.round(cQ*ytdPct);
+        const cAtt=ytdQ>0?Math.round(cARR/ytdQ*100):0;
+        catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${fmt(cQ)}</td><td class="num">${fmt(ytdQ)}</td><td class="num ${cAtt>=100?'good':cAtt>=75?'warn':'bad'}">${cAtt}%</td></tr>`;
+      });
+      catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totARR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${fmt(totQ)}</td><td class="num">${fmt(Math.round(totQ*ytdPct))}</td><td class="num ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</td></tr>`;
+      let dealRows='';
+      if(repDeals.length===0){
+        dealRows='<tr><td colspan="6" style="text-align:center;color:#888;font-style:italic;">No deals in selected period</td></tr>';
+      } else {
+        repDeals.forEach(d=>{
+          const cat=dealCat(d);
+          const fee=Number(d.amount||d.fee||0);
+          const mrr=Number(d.mrr||0);
+          const rem=mrem(dealMo(d));
+          let arr=0,comm=0;
+          if(cat==='PS'){arr=fee;comm=fee*CR.PS;}
+          else if(cat==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
+          else if(cat==='MS'){arr=mrr*rem;comm=mrr*CR.MS;}
+          const catName=CAT_KEYS[cat]||cat;
+          const moName=MN[dealMo(d)-1]||'';
+          dealRows+=`<tr><td>${d.client||''}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
+        });
+      }
+      sections+=`<div class="rep-section"><div class="rep-header"><div class="rep-name">${rep.name}</div><div class="rep-meta">Dept: ${rep.dept||'Sales'} &nbsp;|&nbsp; Period: ${moLabel}</div></div><div class="kpi-grid"><div class="kpi-box"><div class="kpi-label">Total ARR</div><div class="kpi-value">${fmt(totARR)}</div></div><div class="kpi-box"><div class="kpi-label">Total Commission</div><div class="kpi-value green">${fmt(totComm)}</div></div><div class="kpi-box"><div class="kpi-label">Quota Attainment</div><div class="kpi-value ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</div></div><div class="kpi-box"><div class="kpi-label">Status</div><div class="kpi-value ${status==='On Track'?'good':'bad'}">${status}</div></div></div><div class="section-title">Commission Breakdown (${moLabel})</div><div class="comm-pills"><div class="pill"><span class="pill-label">PS Commission</span><span class="pill-value">${fmt(totPS)}</span></div><div class="pill"><span class="pill-label">FO Commission</span><span class="pill-value">${fmt(totFO)}</span></div><div class="pill"><span class="pill-label">MS Commission</span><span class="pill-value">${fmt(totMS)}</span></div></div><div class="section-title">Category Breakdown (${moLabel})</div><table><thead><tr><th>Category</th><th>ARR Closed</th><th>Commission</th><th>Annual Quota</th><th>YTD Quota</th><th>Attainment</th></tr></thead><tbody>${catRows}</tbody></table><div class="section-title">Deal Detail${moAll?' (YTD)':' - '+moName+' '+YEAR}</div><table><thead><tr><th>Client</th><th>Category</th><th>Amount/MRR</th><th>ARR</th><th>Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table></div>`;
+    });
+  }
 
   const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Commission Statement</title><style>@page{margin:18mm 15mm;}*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#1a1a2e;background:#fff;}.page-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #059669;padding-bottom:10px;margin-bottom:18px;}.company-name{font-size:20px;font-weight:700;color:#059669;letter-spacing:1px;}.doc-title{font-size:13px;color:#555;margin-top:4px;}.doc-meta{text-align:right;font-size:11px;color:#555;line-height:1.7;}.doc-meta .period{font-size:13px;font-weight:700;color:#1a1a2e;}.rep-section{margin-bottom:28px;page-break-inside:avoid;}.rep-header{background:#f0fdf4;border-left:4px solid #059669;padding:10px 14px;margin-bottom:14px;border-radius:4px;}.rep-name{font-size:16px;font-weight:700;color:#1a1a2e;}.rep-meta{font-size:11px;color:#666;margin-top:3px;}.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}.kpi-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 12px;text-align:center;}.kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#666;margin-bottom:4px;}.kpi-value{font-size:15px;font-weight:700;color:#1a1a2e;}.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#059669;border-bottom:1px solid #d1fae5;padding-bottom:4px;margin-bottom:8px;margin-top:14px;}.comm-pills{display:flex;gap:10px;margin-bottom:14px;}.pill{flex:1;background:#f0fdf4;border:1px solid #a7f3d0;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;}.pill-label{font-size:10px;color:#555;}.pill-value{font-size:13px;font-weight:700;color:#059669;}table{width:100%;border-collapse:collapse;margin-bottom:6px;font-size:10.5px;}thead tr{background:#059669;color:#fff;}thead th{padding:5px 8px;text-align:center;font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.3px;}tbody tr:nth-child(even){background:#f8fafc;}td{padding:5px 8px;border-bottom:1px solid #e2e8f0;text-align:center;}.num{text-align:center;font-variant-numeric:tabular-nums;}.total-row{background:#e6f7f0!important;font-weight:700;}.green{color:#059669;font-weight:600;}.good{color:#059669;}.warn{color:#d97706;}.bad{color:#dc2626;}.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}.badge-ps{background:#dbeafe;color:#1d4ed8;}.badge-fo{background:#fef3c7;color:#92400e;}.badge-ms{background:#d1fae5;color:#065f46;}.footer{margin-top:24px;border-top:1px solid #e2e8f0;padding-top:8px;text-align:center;font-size:9px;color:#aaa;}@media print{.rep-section{page-break-inside:avoid;}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}</style></head><body><div class="page-header"><div><img src="/cloudelligent-logo.png" alt="Cloudelligent" style="height:36px;width:auto;" /><div class="doc-title">Commission Statement</div></div><div class="doc-meta"><div class="period">${moLabel}</div><div>Generated: ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</div><div>Fiscal Year: ${YEAR}</div></div></div>${sections}<div class="footer">Cloudelligent Commission Statement &nbsp;|&nbsp; Confidential &nbsp;|&nbsp; Generated ${new Date().toLocaleString()}</div></body></html>`;
 
