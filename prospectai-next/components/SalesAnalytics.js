@@ -1117,7 +1117,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   let sections = '';
   if(isCROPdf){
     // ── CRO VIEW: single consolidated section ────────────────────────────────
-    const allDeals = repList.reduce((acc,rep) => acc.concat(monthFilteredDeals.filter(d=>dealIsRep(d,rep))), []);
+    const allDeals = deals.filter(d => repList.some(rep => dealIsRep(d,rep)) && dealInPeriod(d,false));
     let totARR=0, totComm=0, totPS=0, totFO=0, totMS=0;
     allDeals.forEach(d=>{
       const cat=dealCat(d), fee=Number(d.amount||d.fee||0), mrr=Number(d.mrr||0), rem=mrem(dealMo(d));
