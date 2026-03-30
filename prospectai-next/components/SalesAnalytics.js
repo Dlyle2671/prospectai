@@ -1147,6 +1147,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         else if(cat==='FO'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
         else if(cat==='MS'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.25:mrr*CR.MS;}
       });
+    });
 
     // Category breakdown - filtered period
     const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
