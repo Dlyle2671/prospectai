@@ -1127,7 +1127,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
       const mrr=Number(d.mrr||0);
       const rem=mrem(dealMo(d));
       let arr=0,comm=0;
-      if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;} else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;} else if(cat==='MS'){arr=mrr*12;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}
+      if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;} else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;} else if(cat==='MS'){arr=mrr*rem;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}
       totARR+=arr;totComm+=comm;
       if(cat==='PS') totPS+=comm;
       else if(cat==='FO') totFO+=comm;
@@ -1136,10 +1136,17 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
 
     const ytdPct=CM_now/12;
     let totQ=0;
-    ['PS','FO','MS'].forEach(cid=>{ totQ+=getQ(rep,cid); });
-    // Attainment: compare filtered period ARR vs YTD quota pace
-    const attain=totQ>0?Math.round(totARR/(totQ*ytdPct)*100):0;
-    const status=totQ>0&&totARR>=(totQ*ytdPct)?'On Track':'Behind Pace';
+    ['PS','FO','MS'].forEach(cat=>{
+      const cDeals=repDeals.filter(d=>dealCat(d)===cat);
+      let cARR=0,cComm=0;
+      cDeals.forEach(d=>{
+        const fee=Number(d.amount||d.fee||0);
+        const mrr=Number(d.mrr||0);
+        const rem=mrem(dealMo(d));
+        if(cat==='PS'){cARR+=fee;cComm+=isCROPdf?fee*0.03:fee*CR.PS;}
+        else if(cat==='FO'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
+        else if(cat==='MS'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.25:mrr*CR.MS;}
+      });
 
     // Category breakdown - filtered period
     const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
@@ -1151,9 +1158,9 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         const fee=Number(d.amount||d.fee||0);
         const mrr=Number(d.mrr||0);
         const rem=mrem(dealMo(d));
-        if(c.id==='PS'){cARR+=fee;cComm+=fee*CR.PS;}
-        else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*CR.FO;}
-        else if(c.id==='MS'){cARR+=mrr*12;cComm+=mrr*CR.MS;}
+        if(cat==='PS'){cARR+=fee;cComm+=isCROPdf?fee*0.03:fee*CR.PS;}
+        else if(cat==='FO'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
+        else if(cat==='MS'){cARR+=mrr*rem;cComm+=isCROPdf?mrr*0.25:mrr*CR.MS;}
       });
       const cQ=getQ(rep,c.id);
       const ytdQ=Math.round(cQ*ytdPct);
@@ -1173,9 +1180,9 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         const mrr=Number(d.mrr||0);
         const rem=mrem(dealMo(d));
         let arr=0,comm=0;
-        if(cat==='PS'){arr=fee;comm=fee*CR.PS;}
-        else if(cat==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
-        else if(cat==='MS'){arr=mrr*12;comm=mrr*CR.MS;}
+        if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;}
+        else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;}
+        else if(cat==='MS'){arr=mrr*rem;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}
         const catName=CAT_KEYS[cat]||cat;
         const moName=MN[dealMo(d)-1]||'';
         dealRows+=`<tr><td>${d.client||''}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
