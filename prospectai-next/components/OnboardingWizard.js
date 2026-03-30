@@ -75,9 +75,11 @@ function StepCompanyProfile({ onNext, onSkip }) {
     offer_name: '',
   });
   const [saving, setSaving] = useState(false);
+  const [cpError, setCpError] = useState('');
 
   async function handleNext() {
-    if (!profile.company_name.trim()) return;
+    if (!profile.company_name.trim()) { setCpError('Please enter your company name.'); return; }
+    setCpError('');
     setSaving(true);
     await save('company_profile', profile);
     setSaving(false);
@@ -97,7 +99,8 @@ function StepCompanyProfile({ onNext, onSkip }) {
         <label style={lbl}>COMPANY NAME *</label>
         <input style={inp} type="text" placeholder="e.g. Cloudelligent"
           value={profile.company_name}
-          onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))} />
+          onChange={e => { setCpError(''); setProfile(p => ({ ...p, company_name: e.target.value })); }}         {cpError && <div style={{color:'#f87171',fontSize:12,marginTop:4}}>{cpError}</div>}
+/>
         <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>Appears in every outreach email.</div>
       </div>
       <div style={{ marginBottom: 16 }}>
