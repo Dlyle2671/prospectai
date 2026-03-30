@@ -35,6 +35,7 @@ function repCommissionFromDeals(rep, deals){
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
   return { ps, fo, ms, tot: ps+fo+ms };
 }
+// CRO commission rates: PS=3%, FO=25% of 7% MRR, MS=25% MRR
 function croDealComm(d){
   if(d.cat==='PS') return (d.amount||0) * 0.03;
   if(d.cat==='FO') return (d.mrr||0) * 0.07 * 0.25;
