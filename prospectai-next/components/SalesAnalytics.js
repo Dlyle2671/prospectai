@@ -939,11 +939,12 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   const CAT_FULL={PS:'Professional Services',FO:'FinOps',MS:'Managed Services'};
   const CAT_RATE={PS:'10% of fee',FO:'7% of 1st mo MRR',MS:'1x MRR (flat)'};
   // repFilteredDeals: ALL deals for selected rep, NO month filter = YTD
-  const repFilteredDeals=filterRep==='All'?deals:deals.filter(d=>d.repId===filterRep);
+  const isCRO=filterRep==='__CRO__'; const repFilteredDeals=(filterRep==='All'||isCRO)?deals:deals.filter(d=>d.repId===filterRep);
   // monthFilteredDeals: rep+month filtered = deal detail section only
   const monthFilteredDeals=repFilteredDeals.filter(d=>filterMonth==='All'||(d.month||1)===Number(filterMonth));
-  const filteredReps=filterRep==='All'?reps:reps.filter(r=>r.id===filterRep);
-  const repLabel=filterRep==='All'?'All Reps':(reps.find(r=>r.id===filterRep)||{name:'Unknown'}).name;
+  const filteredReps=(filterRep==='All'||isCRO)?reps:reps.filter(r=>r.id===filterRep);
+  const commFn=isCRO?croCommissionFromDeals:repCommissionFromDeals;
+  const repLabel=filterRep==='All'?'All Reps':isCRO?'CRO View':(reps.find(r=>r.id===filterRep)||{name:'Unknown'}).name;
   const moLabel=filterMonth==='All'?'All Months':MN[Number(filterMonth)-1];
   const wb=XL.utils.book_new();
   // SHEET 1: REP SCORECARDS (always YTD)
@@ -1086,14 +1087,14 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   const CM_now = new Date().getMonth()+1;
 
   // Normalize filters
-  const repAll = !filterRep || filterRep==='All';
+  const isCROPdf = filterRep==='__CRO__'; const repAll = !filterRep || filterRep==='All' || isCROPdf;
   const moAll = !filterMonth || filterMonth==='All';
   const repList = repAll ? reps : reps.filter(r=>r.id===filterRep||r.name===filterRep);
   // filterMonth is numeric string ('1'-'12') or month name ('Jan') or 'All'/undefined
   const filterMoNum = moAll ? null : (isNaN(Number(filterMonth)) ? MN.indexOf(filterMonth)+1 : Number(filterMonth));
   const moName = moAll ? '' : (isNaN(Number(filterMonth)) ? filterMonth : MN[Number(filterMonth)-1]);
 
-  const repLabel = repAll ? 'All Reps' : (repList[0]?.name||filterRep);
+  const repLabel = isCROPdf ? 'CRO View' : repAll ? 'All Reps' : (repList[0]?.name||filterRep);
   const moLabel  = moAll ? 'YTD (All Months)' : moName+' '+YEAR;
 
   // Quota helper - rep quotas stored by rep.id
@@ -1126,9 +1127,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
       const mrr=Number(d.mrr||0);
       const rem=mrem(dealMo(d));
       let arr=0,comm=0;
-      if(cat==='PS'){arr=fee;comm=fee*CR.PS;}
-      else if(cat==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
-      else if(cat==='MS'){arr=mrr*12;comm=mrr*CR.MS;}
+      if(cat==='PS'){arr=fee;comm=isCROPdf?fee*0.03:fee*CR.PS;} else if(cat==='FO'){arr=mrr*rem;comm=isCROPdf?mrr*0.07*0.25:mrr*CR.FO;} else if(cat==='MS'){arr=mrr*12;comm=isCROPdf?mrr*0.25:mrr*CR.MS;}=mrr*CR.MS;}
       totARR+=arr;totComm+=comm;
       if(cat==='PS') totPS+=comm;
       else if(cat==='FO') totFO+=comm;
