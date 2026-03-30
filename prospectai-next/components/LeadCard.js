@@ -142,6 +142,15 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
 
   async function handleToneSelected(selectedTone) {
         setTonePicking(false);
+        if (selectedTone === 'standard') {
+          const firstName = p.first_name || (p.name ? p.name.split(' ')[0] : 'there');
+          const senderName = activeSender ? activeSender.name : '';
+          const body = `Hello ${firstName},\n\nIf you are not working with an AWS Authorized Reseller, then you're likely leaving 18-30% in savings on the table.\n\nWe work closely with AWS to deliver FinOps services to their customers.\n\nBenefits:\n\u2022 A discount applied directly to your AWS bill\n\u2022 100% funded by AWS \u2014 zero cost to you (AWS pays us)\n\u2022 No long-term contracts or commitments\n\u2022 Doesn't change your AWS relationship\n\u2022 Requires no infrastructure changes\n\nWorth 20 minutes to see what we'd find in your first 30 days?\n\nBest,${senderName ? '\n' + senderName : ''}`;
+          setTone('standard');
+          setDraftResult({ subject: 'AWS Cost Savings Opportunity', body, activeSender });
+          setEmailDrafting(false);
+          return;
+        }
         if (toneAction === 'queue') { handleQueueWithTone(selectedTone); return; }
         setTone(selectedTone);
         setEmailDrafting(true);
@@ -457,11 +466,10 @@ function handleQueueTrigger() {
               {/* Tone picker popover */}
               {tonePicking && (
                 <div style={{ position: 'absolute', bottom: '110%', left: 0, zIndex: 200, background: '#1e293b', border: '1px solid #334155', borderRadius: 10, padding: '10px 12px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', minWidth: 200 }}>
-                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select tone</div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Select style</div>
                   {[
-                    { key: 'formal', label: 'Formal', desc: 'Professional, no contractions' },
-                    { key: 'conversational', label: 'Conversational', desc: 'Human, approachable' },
-                    { key: 'direct', label: 'Direct', desc: 'Blunt, value-first' },
+                    { key: 'personalised', label: 'Personalised', desc: 'AI-crafted, highly personal' },
+                    { key: 'standard', label: 'Standard', desc: 'Proven template, fast send' },
                   ].map(opt => (
                     <button key={opt.key} onClick={() => handleToneSelected(opt.key)}
                       style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: 4, borderRadius: 7, border: '1px solid #334155', background: 'transparent', color: '#f1f5f9', cursor: 'pointer', transition: 'background 0.1s' }}
