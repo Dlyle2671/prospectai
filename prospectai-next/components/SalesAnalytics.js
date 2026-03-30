@@ -34,6 +34,7 @@ function repCommissionFromDeals(rep, deals){
   const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
   return { ps, fo, ms, tot: ps+fo+ms };
+}
 function croDealComm(d){
   if(d.cat==='PS') return (d.amount||0) * 0.03;
   if(d.cat==='FO') return (d.mrr||0) * 0.07 * 0.25;
@@ -46,7 +47,6 @@ function croCommissionFromDeals(rep, deals){
   const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+croDealComm(d),0);
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+croDealComm(d),0);
   return { ps, fo, ms, tot: ps+fo+ms };
-}
 }
 export default function SalesAnalytics({onBack}){
   const { user } = useUser();
