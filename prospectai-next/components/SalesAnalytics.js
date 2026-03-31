@@ -381,12 +381,12 @@ function DealsTab({data, save}){
               <div>
                 <label className="sa-label">Stage</label>
                 <select className="sa-select" value={df.stage} onChange={e=>setDf({...df,stage:e.target.value})}>
-                  <option value="Prospecting">Prospecting</option>
-                  <option value="Discovery">Discovery</option>
-                  <option value="Proposal">Proposal</option>
-                  <option value="Negotiation">Negotiation</option>
+                  <option value="Forecasted">Forecasted</option>
+                  <option value="SOW Sent">SOW Sent</option>
                   <option value="Closed Won">Closed Won</option>
                   <option value="Closed Lost">Closed Lost</option>
+
+
                 </select>
               </div>
               <div>
