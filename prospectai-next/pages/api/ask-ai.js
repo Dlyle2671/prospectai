@@ -68,11 +68,12 @@ export default async function handler(req, res) {
   const closedDeals = deals.filter(d => d.stage === 'Closed Won' || d.status === 'closed');
   const openDeals = deals.filter(d => d.stage !== 'Closed Won' && d.status !== 'closed');
 
+  const repList = salesData.reps || [];
   const dealSummary = deals.slice(0, 200).map(d => ({
     client: d.client || d.name || d.company || '',
-    rep: (salesData.reps||[]).find(r=>r.id===d.repId)?.name || d.rep || d.owner || '',
+    rep: (repList.find(function(r){return r.id===d.repId;})||{}).name || d.rep || '',
     stage: d.stage || '',
-    category: d.cat || d.category || d.type || '',
+    category: d.cat || d.category || '',
     amount: d.amount || 0,
     mrr: d.mrr || 0,
     month: d.month || 0,
@@ -127,8 +128,8 @@ export default async function handler(req, res) {
   messages.push({ role: 'user', content: question });
 
   const systemPrompt = 'You are a sales analytics assistant for ProspectAI. You have access to the user complete sales data below. Answer questions accurately and concisely. When showing numbers, format currency with $ and commas. If data is missing or insufficient, say so clearly.\n\nCURRENT SALES DATA:\n' + dataContext + '\n\nRules:\n- For quota attainment calculations, the YTD quota = annual quota x (current month / 12)\n- PS (Professional Services) deals use the one-time amount field\n- FO (FinOps) and MS (Managed Services) deals use the mrr field (monthly recurring revenue)\n- Rep quotas are stored as annual values (monthly x 12)\n- Be concise but complete. Use bullet points for lists. Format numbers clearly.
-- Deals have: client, rep, stage (Prospecting/Discovery/Proposal/Negotiation/Closed Won/Closed Lost), category (PS/FO/MS), amount (PS one-time fee), mrr (FO/MS monthly), month, source (Outbound/Inbound/Referral/Partner), contractLength (months, FO/MS), notes
-- Pipeline = deals NOT in Closed Won or Closed Lost stage';
+- Deal fields: client, rep, stage (Prospecting/Discovery/Proposal/Negotiation/Closed Won/Closed Lost), category (PS/FO/MS), amount (PS fee), mrr (FO/MS monthly), month, source (Outbound/Inbound/Referral/Partner/Other), contractLength (months), notes
+- Open pipeline = deals NOT in Closed Won or Closed Lost';
 
   try {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
