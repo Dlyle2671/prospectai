@@ -23,7 +23,7 @@ function dealComm(d){
 }
 function getQuota(rep, cat){ return (rep.quotas && rep.quotas[CAT_KEYS[cat]]) || 0; }
 function getActualFromDeals(repId, cat, deals){
-  return deals.filter(d => d.repId === repId && d.cat === cat).reduce((s,d) => s + dealARR(d), 0);
+  return deals.filter(d => d.repId === repId && d.cat === cat).reduce((s,d) => s + (d.cat==='PS' ? (d.amount||0) : (d.mrr||0)), 0);
 }
 function getTotalActualFromDeals(cat, reps, deals){
   return reps.reduce((s,r) => s + getActualFromDeals(r.id, cat, deals), 0);
