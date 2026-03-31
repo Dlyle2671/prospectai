@@ -431,7 +431,7 @@ function DealsTab({data, save}){
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Category</th><th>Client</th><th>Stage</th><th>Source</th><th>Month</th>
-            <th>Fee / MRR</th><th>ARR Value</th><th>Notes</th><th>Commission</th><th>Actions</th>
+            <th>Fee / MRR</th><th>ARR Value</th><th>Notes</th><th>Actions</th>
           </tr></thead>
           <tbody>
             {filtered.length===0&&(
@@ -455,7 +455,7 @@ function DealsTab({data, save}){
                   <td>{d.cat==='PS'?fmt(d.amount)+' fee':fmt(d.mrr)+'/mo MRR'}</td>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(arr)}</td>
                   <td style={{maxWidth:160,fontSize:11,color:'#94a3b8',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={d.notes||''}>{d.notes?d.notes.slice(0,40)+(d.notes.length>40?'…':''):'—'}</td>
-                  <td style={{color:'#34d399'}}>{fmt(com)}</td>
+                  
                   <td style={{display:'flex',gap:6}}>
                     <button className="sa-btn sm" onClick={()=>startEdit(d)}>Edit</button>
                     <button className="sa-btn del sm" onClick={()=>del(d.id)}>Del</button>
@@ -468,7 +468,7 @@ function DealsTab({data, save}){
         {filtered.length>0&&(
           <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.06)',display:'flex',gap:24,fontSize:13}}>
             <span style={{color:'#fff'}}>Total ARR: <strong style={{color:'#34d399'}}>{fmt(filtered.reduce((s,d)=>s+dealARR(d),0))}</strong></span>
-            <span style={{color:'#fff'}}>Total Commission: <strong style={{color:'#34d399'}}>{fmt(filtered.reduce((s,d)=>s+dealComm(d),0))}</strong></span>
+            
           </div>
         )}
       </div>
