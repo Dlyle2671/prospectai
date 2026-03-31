@@ -407,7 +407,7 @@ function DealsTab({data, save}){
               </div>}
 
             <div style={{marginBottom:12}}>
-              <label className="sa-label">Deal Source Details</label>
+              <label className="sa-label">{df.source==='AWS' ? 'AWS Seller' : 'Deal Source Details'}</label>
               <textarea className="sa-input" value={df.notes} onChange={e=>setDf({...df,notes:e.target.value})} placeholder="Deal source details..." rows={2} style={{resize:'vertical',minHeight:56}}/>
             </div>
             <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
