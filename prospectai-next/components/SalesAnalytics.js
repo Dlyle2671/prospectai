@@ -49,12 +49,62 @@ function croCommissionFromDeals(rep, deals){
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+croDealComm(d),0);
   return { ps, fo, ms, tot: ps+fo+ms };
 }
+function AskAITab({messages,setMessages,input,setInput,loading,setLoading}){
+  async function send(){
+    const q = input.trim();
+    if(!q||loading) return;
+    const userMsg = {role:'user',content:q};
+    const newMsgs = [...messages, userMsg];
+    setMessages(newMsgs);
+    setInput('');
+    setLoading(true);
+    try{
+      const resp = await fetch('/api/ask-ai',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({question:q, history:messages.slice(-10)})
+      });
+      const d = await resp.json();
+      const answer = d.answer || d.error || 'No response.';
+      setMessages([...newMsgs, {role:'assistant',content:answer}]);
+    }catch(e){
+      setMessages([...newMsgs, {role:'assistant',content:'Error: '+e.message}]);
+    }finally{
+      setLoading(false);
+    }
+  }
+  return(
+    <div style={{maxWidth:800,margin:'0 auto',padding:'0 0 32px'}}>
+      <h2 style={{color:'#f1f5f9',fontWeight:700,fontSize:20,marginBottom:16}}>Ask AI About Your Data</h2>
+      <div style={{background:'#0f172a',border:'1px solid rgba(255,255,255,.08)',borderRadius:12,padding:24,minHeight:320,maxHeight:480,overflowY:'auto',marginBottom:16,display:'flex',flexDirection:'column',gap:12}}>
+        {messages.length===0&&<div style={{color:'#64748b',fontSize:14,textAlign:'center',marginTop:80}}>Ask anything about your deals, reps, pipeline, quota attainment, or AWS opportunities.</div>}
+        {messages.map((m,i)=>(
+          <div key={i} style={{display:'flex',justifyContent:m.role==='user'?'flex-end':'flex-start'}}>
+            <div style={{maxWidth:'80%',padding:'10px 14px',borderRadius:m.role==='user'?'18px 18px 4px 18px':'18px 18px 18px 4px',background:m.role==='user'?'linear-gradient(135deg,#4f46e5,#6366f1)':'rgba(99,102,241,.1)',border:m.role==='user'?'none':'1px solid rgba(99,102,241,.3)',color:'#f1f5f9',fontSize:13,lineHeight:1.6,whiteSpace:'pre-wrap'}}>
+              {m.content}
+            </div>
+          </div>
+        ))}
+        {loading&&<div style={{display:'flex',justifyContent:'flex-start'}}><div style={{padding:'10px 14px',borderRadius:'18px 18px 18px 4px',background:'rgba(99,102,241,.1)',border:'1px solid rgba(99,102,241,.3)',color:'#818cf8',fontSize:13}}>Thinking...</div></div>}
+      </div>
+      <div style={{display:'flex',gap:8}}>
+        <input className="sa-input" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()} placeholder="Ask about your pipeline, quota, deals, reps..." style={{flex:1,fontSize:14}}/>
+        <button className="sa-btn" onClick={send} disabled={loading||!input.trim()} style={{padding:'10px 20px',minWidth:72}}>{loading?'...':'Send'}</button>
+      </div>
+      {messages.length>0&&<button className="sa-btn sm" onClick={()=>setMessages([])} style={{marginTop:8,opacity:.6}}>Clear chat</button>}
+    </div>
+  );
+}
+
 export default function SalesAnalytics({onBack}){
   const { user } = useUser();
   const [tab, setTab] = useState('dash');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterRep, setFilterRep] = useState('All');
+  const [aiMessages, setAiMessages] = useState([]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   useEffect(() => {
     fetch('/api/sales-data').then(r => r.json()).then(d => {
       setData(d);
@@ -114,7 +164,7 @@ export default function SalesAnalytics({onBack}){
     <div className="sa">
       <div className="sa-hd"><h1>Sales Analytics</h1><button className="sa-x" onClick={()=>onBack&&onBack()}>Back to Home</button></div>
       <div className="sa-tabs">
-        {[['dash','Dashboard'],['deals','Deals'],['reps','Reps'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['settings','Settings']].map(([id,label])=>(
+        {[['dash','Dashboard'],['deals','Deals'],['reps','Reps'],['catperf','Category Performance'],['arrcalc','ARR Calc'],['comm','Commissions'],['settings','Settings'],['ai','Ask AI']].map(([id,label])=>(
           <button key={id} className={`sa-tab${tab===id?' on':''}`} onClick={()=>setTab(id)}>{label}</button>
         ))}
       </div>
@@ -126,6 +176,7 @@ export default function SalesAnalytics({onBack}){
         {tab==='arrcalc'&&<ArrCalcTab/>}
         {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
         {tab==='settings'&&<SettingsTab data={data} save={save}/>}
+        {tab==='ai'&&<AskAITab messages={aiMessages} setMessages={setAiMessages} input={aiInput} setInput={setAiInput} loading={aiLoading} setLoading={setAiLoading}/>}
       </div>
     </div>
   </>);
