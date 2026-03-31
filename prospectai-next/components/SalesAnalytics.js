@@ -748,22 +748,48 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
         const p = quota>0 ? Math.min(1,closed/quota) : 0;
         const remaining = Math.max(0, quota-closed);
         const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
+        const closedMRR = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+(Number(d.mrr)||0),0);
+        const mrrQuota = quota > 0 ? quota/12 : 0;
+        const mrrP = mrrQuota>0 ? Math.min(1,closedMRR/mrrQuota) : 0;
+        const mrrRemaining = Math.max(0, mrrQuota-closedMRR);
         return(
           <div className="sa-card" key={c.id}>
             <h2 style={{color:c.color}}>{c.label}</h2>
             <div style={{fontSize:11,color:'#fff',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.note}</div>
             <div className="sa-g3">
               <div className="sa-stat">
-                <div className="lbl">Closed ARR</div>
-                <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                                <div className="sub">of {fmt(quota)} quota — {pct(p)} attained</div>
-                <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
-                <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
+                {c.id==='PS' ? (
+                  <>
+                    <div className="lbl">Closed ARR</div>
+                    <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
+                    <div className="sub">of {fmt(quota)} quota — {pct(p)} attained</div>
+                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
+                    <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="lbl">Closed MRR</div>
+                    <div className="val" style={{color:'#34d399'}}>{fmt(closedMRR)}</div>
+                    <div className="sub">of {fmt(mrrQuota)}/mo quota — {pct(mrrP)} attained</div>
+                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:mrrP*100+'%',background:'#34d399'}}/></div>
+                    <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
+                  </>
+                )}
               </div>
               <div className="sa-stat">
-                <div className="lbl">Remaining to Quota</div>
-                <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
-                <div className="sub">{pct(quota>0?remaining/quota:0)} left</div>
+                {c.id==='PS' ? (
+                  <>
+                    <div className="lbl">Remaining to Quota</div>
+                    <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
+                    <div className="sub">{pct(quota>0?remaining/quota:0)} left</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="lbl">Remaining MRR</div>
+                    <div className="val" style={{color:'#f87171'}}>{fmt(mrrRemaining)}</div>
+                    <div className="sub">{pct(mrrQuota>0?mrrRemaining/mrrQuota:0)} left</div>
+                  </>
+                )}
               </div>
               {showComm&&<div className="sa-stat">
                 <div className="lbl">Commission Earned</div>
