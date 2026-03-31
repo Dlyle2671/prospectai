@@ -279,7 +279,7 @@ function DashTab({data}){
 function DealsTab({data, save}){
   const [showForm, setShowForm] = useState(false);
   const [editDeal, setEditDeal] = useState(null);
-  const [df, setDf] = useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
+  const [df, setDf] = useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''});
   const [filterCat, setFilterCat] = useState('All');
   const submit = () => {
     if(!df.client.trim() || !df.repId) return;
@@ -290,11 +290,12 @@ function DealsTab({data, save}){
       month: Number(df.month),
       amount: df.cat==='PS' ? Number(df.amount)||0 : 0,
       mrr: df.cat!=='PS' ? Number(df.mrr)||0 : 0,
+      stage: df.stage||'Closed Won', source: df.source||'', contractLength: df.cat!=='PS' ? Number(df.contractLength)||0 : 0, notes: df.notes||'',
     };
     if(editDeal){ d.deals = d.deals.map(x => x.id===editDeal.id ? entry : x); setEditDeal(null); }
     else { d.deals = [...(d.deals||[]), entry]; }
     save(d);
-    setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''});
+    setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''});
     setShowForm(false);
   };
   const del = id => {
@@ -305,7 +306,7 @@ function DealsTab({data, save}){
   };
   const startEdit = deal => {
     setEditDeal(deal);
-    setDf({repId:deal.repId, cat:deal.cat, client:deal.client, month:deal.month, amount:deal.amount||'', mrr:deal.mrr||''});
+    setDf({repId:deal.repId, cat:deal.cat, client:deal.client, month:deal.month, amount:deal.amount||'', mrr:deal.mrr||'', stage:deal.stage||'Closed Won', source:deal.source||'', contractLength:deal.contractLength||'', notes:deal.notes||''});
     setShowForm(true);
   };
   const deals = data.deals || [];
@@ -328,7 +329,7 @@ function DealsTab({data, save}){
             </button>
           ))}
         </div>
-        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:''})}}>+ Add Deal</button>
+        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''})}}>+ Add Deal</button>
       </div>
       {showForm&&(
         <div className="sa-card" style={{marginBottom:16}}>
@@ -376,6 +377,38 @@ function DealsTab({data, save}){
                 </div>
               </div>
             }
+            <div className="sa-frow">
+              <div>
+                <label className="sa-label">Stage</label>
+                <select className="sa-select" value={df.stage} onChange={e=>setDf({...df,stage:e.target.value})}>
+                  <option value="Prospecting">Prospecting</option>
+                  <option value="Discovery">Discovery</option>
+                  <option value="Proposal">Proposal</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Closed Won">Closed Won</option>
+                  <option value="Closed Lost">Closed Lost</option>
+                </select>
+              </div>
+              <div>
+                <label className="sa-label">Deal Source</label>
+                <select className="sa-select" value={df.source} onChange={e=>setDf({...df,source:e.target.value})}>
+                  <option value="">Select source...</option>
+                  <option value="Outbound">Outbound</option>
+                  <option value="Inbound">Inbound</option>
+                  <option value="Referral">Referral</option>
+                  <option value="Partner">Partner</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              {df.cat!=='PS'&&<div>
+                <label className="sa-label">Contract Length (months)</label>
+                <input className="sa-input" type="number" value={df.contractLength} onChange={e=>setDf({...df,contractLength:e.target.value})} placeholder="e.g. 12"/>
+              </div>}
+            </div>
+            <div style={{marginBottom:12}}>
+              <label className="sa-label">Notes</label>
+              <textarea className="sa-input" value={df.notes} onChange={e=>setDf({...df,notes:e.target.value})} placeholder="Deal notes, context, next steps..." rows={2} style={{resize:'vertical',minHeight:56}}/>
+            </div>
             <div style={{display:'flex',alignItems:'flex-end',gap:8}}>
               <button className="sa-btn" onClick={submit}>{editDeal?'Save':'Add Deal'}</button>
               <button className="sa-btn del sm" onClick={()=>{setShowForm(false);setEditDeal(null);}}>Cancel</button>
@@ -397,8 +430,8 @@ function DealsTab({data, save}){
                 <h2>Closed Deals {filterCat!=='All'?'— '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
           <thead><tr>
-            <th>Rep</th><th>Category</th><th>Client</th><th>Month</th>
-            <th>Fee / MRR</th><th>ARR Value</th><th>Commission</th><th>Actions</th>
+            <th>Rep</th><th>Category</th><th>Client</th><th>Stage</th><th>Source</th><th>Month</th>
+            <th>Fee / MRR</th><th>ARR Value</th><th>Notes</th><th>Commission</th><th>Actions</th>
           </tr></thead>
           <tbody>
             {filtered.length===0&&(
@@ -416,9 +449,12 @@ function DealsTab({data, save}){
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{rep?rep.name:'Unknown'}</td>
                   <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
                   <td>{d.client}</td>
+                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'—'}</span></td>
+                  <td style={{fontSize:12,color:'#94a3b8'}}>{d.source||'—'}</td>
                   <td>{MN[(d.month||1)-1]}</td>
                   <td>{d.cat==='PS'?fmt(d.amount)+' fee':fmt(d.mrr)+'/mo MRR'}</td>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(arr)}</td>
+                  <td style={{maxWidth:160,fontSize:11,color:'#94a3b8',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={d.notes||''}>{d.notes?d.notes.slice(0,40)+(d.notes.length>40?'…':''):'—'}</td>
                   <td style={{color:'#34d399'}}>{fmt(com)}</td>
                   <td style={{display:'flex',gap:6}}>
                     <button className="sa-btn sm" onClick={()=>startEdit(d)}>Edit</button>
