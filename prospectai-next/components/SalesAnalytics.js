@@ -105,6 +105,7 @@ export default function SalesAnalytics({onBack}){
   const [aiMessages, setAiMessages] = useState([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [showComm, setShowComm] = useState(function(){ try{ return localStorage.getItem('sa_showComm')!=='false'; }catch(e){ return true; } });
   useEffect(() => {
     fetch('/api/sales-data').then(r => r.json()).then(d => {
       setData(d);
@@ -169,19 +170,19 @@ export default function SalesAnalytics({onBack}){
         ))}
       </div>
       <div className="sa-body">
-        {tab==='dash'&&<DashTab data={data}/>}
+        {tab==='dash'&&<DashTab data={data} showComm={showComm} setShowComm={setShowComm}/>}
         {tab==='deals'&&<DealsTab data={data} save={save}/>}
         {tab==='reps'&&<RepsTab data={data} save={save}/>}
         {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
         {tab==='arrcalc'&&<ArrCalcTab/>}
-        {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
+        {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} showComm={showComm}/>}
         {tab==='settings'&&<SettingsTab data={data} save={save}/>}
         {tab==='ai'&&<AskAITab messages={aiMessages} setMessages={setAiMessages} input={aiInput} setInput={setAiInput} loading={aiLoading} setLoading={setAiLoading}/>}
       </div>
     </div>
   </>);
 }
-function DashTab({data}){
+function DashTab({data, showComm, setShowComm}){
   const reps = data.reps;
   const deals = data.deals || [];
   const cats = [
@@ -195,6 +196,7 @@ function DashTab({data}){
   const totalComm = reps.reduce((s,r) => s + repCommissionFromDeals(r,deals).tot, 0);
   return(
     <div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}><button onClick={function(){ var v=!showComm; setShowComm(v); try{localStorage.setItem('sa_showComm',String(v));}catch(e){} }} style={{background:'transparent',border:'1px solid rgba(99,102,241,.4)',color:showComm?'#a5b4fc':'#64748b',padding:'5px 12px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:6}}>{showComm ? '👁 Hide Commission' : '👁 Show Commission'}</button></div>
       <div className="sa-g3">
         {cats.map(c => {
           const closed = getTotalActualFromDeals(c.id, reps, deals);
@@ -226,11 +228,11 @@ function DashTab({data}){
           <div className="sub">of {fmt(totalAllQuota)} total quota ({pct(totalAllQuota>0?totalAllClosed/totalAllQuota:0)})</div>
           <div className="sa-bar"><div className="sa-bar-fill" style={{width:Math.min(100,totalAllQuota>0?totalAllClosed/totalAllQuota*100:0)+'%',background:'#34d399'}}/></div>
         </div>
-        <div className="sa-stat">
+        {showComm&&<div className="sa-stat">
           <div className="lbl">Total Commissions</div>
           <div className="val" style={{color:'#34d399'}}>{fmt(totalComm)}</div>
           <div className="sub">{reps.length} reps | {deals.length} deals</div>
-        </div>
+        </div>}
         <div className="sa-stat">
           <div className="lbl">Pace Check</div>
           <div className="val">{pct(CM/12)}</div>
@@ -890,7 +892,7 @@ function ArrCalcTab(){
     </div>
   );
 }
-function CommTab({data, filterRep, setFilterRep}){
+function CommTab({data, filterRep, setFilterRep, showComm}){
   const [filterMonth, setFilterMonth] = useState('All');
   const deals = data.deals || [];
   const allMonths = [...new Set(deals.map(d=>d.month||1))].sort((a,b)=>a-b);
@@ -919,11 +921,15 @@ function CommTab({data, filterRep, setFilterRep}){
 
   return(
     <div>
+      {showComm ? (
       <div className="sa-g3">
         <div className="sa-stat"><div className="lbl">Total Commissions</div><div className="val" style={{color:'#34d399'}}>{fmt(totalComm)}</div><div className="sub">based on closed deals</div></div>
         <div className="sa-stat"><div className="lbl">Reps Earning</div><div className="val">{earning} / {data.reps.length}</div><div className="sub">reps with closed deals</div></div>
         <div className="sa-stat"><div className="lbl">Avg Commission/Rep</div><div className="val">{fmt(data.reps.length>0?totalComm/data.reps.length:0)}</div><div className="sub">across all reps</div></div>
       </div>
+      ) : (
+      <div style={{padding:'20px 0',textAlign:'center',color:'#64748b',fontSize:13}}>Commission data is hidden. Use the toggle on the Dashboard to show it.</div>
+      )}
       <div style={{display:'flex',gap:16,alignItems:'center',flexWrap:'wrap',marginBottom:16}}>
         <div style={{display:'flex',gap:8,alignItems:'center'}}>
           <label style={{fontSize:12,color:'#ffffff',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.5px'}}>Rep</label>
@@ -943,6 +949,7 @@ function CommTab({data, filterRep, setFilterRep}){
           </div>
         )}
       </div>
+      {showComm&&<>
       <div style={{display:'flex',justifyContent:'flex-end',marginBottom:12}}>
         <button
           style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
@@ -1014,6 +1021,7 @@ function CommTab({data, filterRep, setFilterRep}){
           )}
         </div>
       )}
+      </>}
     </div>
   );
 }
