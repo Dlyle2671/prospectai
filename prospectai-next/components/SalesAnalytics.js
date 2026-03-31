@@ -173,7 +173,7 @@ export default function SalesAnalytics({onBack}){
         {tab==='dash'&&<DashTab data={data} showComm={showComm} setShowComm={setShowComm}/>}
         {tab==='deals'&&<DealsTab data={data} save={save}/>}
         {tab==='reps'&&<RepsTab data={data} save={save}/>}
-        {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep}/>}
+        {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} showComm={showComm}/>}
         {tab==='arrcalc'&&<ArrCalcTab/>}
         {tab==='comm'&&<CommTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} showComm={showComm}/>}
         {tab==='settings'&&<SettingsTab data={data} save={save}/>}
@@ -726,7 +726,7 @@ function RepsTab({data, save}){
     </div>
   );
 }
-function CatPerfTab({data, filterRep, setFilterRep}){
+function CatPerfTab({data, filterRep, setFilterRep, showComm}){
   const deals = data.deals || [];
   const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
   const dealsFor = filterRep==='All' ? deals : deals.filter(d=>d.repId===filterRep);
@@ -765,15 +765,15 @@ function CatPerfTab({data, filterRep, setFilterRep}){
                 <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
                 <div className="sub">{pct(quota>0?remaining/quota:0)} left</div>
               </div>
-              <div className="sa-stat">
+              {showComm&&<div className="sa-stat">
                 <div className="lbl">Commission Earned</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(comm)}</div>
                 <div className="sub">{commLabel}</div>
-              </div>
+              </div>}
             </div>
             {dealsFor.filter(d=>d.cat===c.id).length>0&&(
               <table className="sa-tbl" style={{marginTop:8}}>
-                <thead><tr><th>Rep</th><th>Client</th><th>Month</th><th>{c.id==='PS'?'Fee':'MRR'}</th><th>ARR</th><th>Commission</th></tr></thead>
+                <thead><tr><th>Rep</th><th>Client</th><th>Month</th><th>{c.id==='PS'?'Fee':'MRR'}</th><th>ARR</th>{showComm&&<th>Commission</th>}</tr></thead>
                 <tbody>
                   {dealsFor.filter(d=>d.cat===c.id).map(d=>{
                     const rep=data.reps.find(r=>r.id===d.repId);
@@ -784,7 +784,7 @@ function CatPerfTab({data, filterRep, setFilterRep}){
                         <td>{MN[(d.month||1)-1]}</td>
                         <td>{c.id==='PS'?fmt(d.amount):fmt(d.mrr)+'/mo'}</td>
                         <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
-                        <td style={{color:'#34d399'}}>{fmt(dealComm(d))}</td>
+                        {showComm&&<td style={{color:'#34d399'}}>{fmt(dealComm(d))}</td>}
                       </tr>
                     );
                   })}
