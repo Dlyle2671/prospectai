@@ -9,7 +9,7 @@ function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleStrin
 function pct(n){ return (n*100).toFixed(1)+'%'; }
 
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
-// ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining
+// ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining 
 function dealARR(d){
   if(d.cat==='PS') return (d.amount||0);
   return (d.mrr||0) * mrem(d.month||CM);
