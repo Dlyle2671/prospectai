@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const CM = new Date().getMonth() + 1;
+const CM = new Date().getMonth() + 1
 const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
 const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Services' };
 function mrem(m){ return Math.max(1, 13 - m); }
-function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
+function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Numbe(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
 
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
@@ -207,14 +207,14 @@ function DashTab({data}){
                               <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
                   <td>{r.dept||r.department||'—'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
-                              <td style={{color:'#fff',fontSize:11}}>{fmt(psQ*(CM/12))}</td>
-                  <td><span className={`sa-badge ${psA>=psQ*(CM/12)?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
+                              <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
+                  <td><span className={`sa-badge ${psA>=psQ?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(foA)}</td>
-                              <td style={{color:'#fff',fontSize:11}}>{fmt(foQ*(CM/12))}</td>
-                  <td><span className={`sa-badge ${foA>=foQ*(CM/12)?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
+                              <td style={{color:'#fff',fontSize:11}}>{fmt(foQ)}</td>
+                  <td><span className={`sa-badge ${foA>=foQ?'ahead':'behind'}`}>{pct(foQ>0?foA/foQ:0)}</span></td>
                   <td style={{color:'#34d399'}}>{fmt(msA)}</td>
-                              <td style={{color:'#fff',fontSize:11}}>{fmt(msQ*(CM/12))}</td>
-                  <td><span className={`sa-badge ${msA>=msQ*(CM/12)?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
+                              <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
+                  <td><span className={`sa-badge ${msA>=msQ?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
                   <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
                 </tr>
               );
