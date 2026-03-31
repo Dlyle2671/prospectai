@@ -308,6 +308,7 @@ function DealsTab({data, save}){
     setEditDeal(deal);
     setDf({repId:deal.repId, cat:deal.cat, client:deal.client, month:deal.month, amount:deal.amount||'', mrr:deal.mrr||'', stage:deal.stage||'Closed Won', source:deal.source||'', contractLength:deal.contractLength||'', notes:deal.notes||''});
     setShowForm(true);
+    window.scrollTo({top:0,behavior:'smooth'});
   };
   const deals = data.deals || [];
   const filtered = filterCat==='All' ? deals : deals.filter(d => d.cat===filterCat);
