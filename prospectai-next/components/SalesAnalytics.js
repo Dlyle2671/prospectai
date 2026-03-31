@@ -393,11 +393,11 @@ function DealsTab({data, save}){
                 <label className="sa-label">Deal Source</label>
                 <select className="sa-select" value={df.source} onChange={e=>setDf({...df,source:e.target.value})}>
                   <option value="">Select source...</option>
-                  <option value="Outbound">Outbound</option>
-                  <option value="Inbound">Inbound</option>
-                  <option value="Referral">Referral</option>
-                  <option value="Partner">Partner</option>
-                  <option value="Other">Other</option>
+                  <option value="AWS">AWS</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Customer Success">Customer Success</option>
+                  <option value="Business Development">Business Development</option>
+
                 </select>
               </div>
               {df.cat!=='PS'&&<div>
