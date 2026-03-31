@@ -191,9 +191,9 @@ function DashTab({data}){
         <div style={{overflowX:'auto'}}><table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Dept</th>
-            <th>Professional Services Closed</th><th>Professional Services Quota</th><th>PS %</th>
-            <th>FinOps Closed</th><th>FinOps Quota</th><th>FO %</th>
-            <th>Managed Services Closed</th><th>Managed Services Quota</th><th>MS %</th>
+            <th>PS Closed (YTD)</th><th>PS Quota (YTD)</th><th>PS %</th>
+            <th>FO Closed (YTD)</th><th>FO Quota (YTD)</th><th>FO %</th>
+            <th>MS Closed (YTD)</th><th>MS Quota (YTD)</th><th>MS %</th>
             <th>Total Closed</th>
           </tr></thead>
           <tbody>
