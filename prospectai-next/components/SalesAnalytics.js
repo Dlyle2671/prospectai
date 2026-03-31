@@ -389,7 +389,7 @@ function DealsTab({data, save}){
                   <option value="Closed Lost">Closed Lost</option>
                 </select>
               </div>
-              <div>
+              <div style={{gridColumn:"span 2"}}>
                 <label className="sa-label">Deal Source</label>
                 <select className="sa-select" value={df.source} onChange={e=>setDf({...df,source:e.target.value})}>
                   <option value="">Select source...</option>
