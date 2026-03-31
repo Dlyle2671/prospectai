@@ -377,7 +377,7 @@ function DealsTab({data, save}){
                 </div>
               </div>
             }
-            <div className="sa-frow">
+
               <div>
                 <label className="sa-label">Stage</label>
                 <select className="sa-select" value={df.stage} onChange={e=>setDf({...df,stage:e.target.value})}>
@@ -389,7 +389,7 @@ function DealsTab({data, save}){
                   <option value="Closed Lost">Closed Lost</option>
                 </select>
               </div>
-              <div style={{gridColumn:"span 2"}}>
+              <div>
                 <label className="sa-label">Deal Source</label>
                 <select className="sa-select" value={df.source} onChange={e=>setDf({...df,source:e.target.value})}>
                   <option value="">Select source...</option>
@@ -404,7 +404,7 @@ function DealsTab({data, save}){
                 <label className="sa-label">Contract Length (months)</label>
                 <input className="sa-input" type="number" value={df.contractLength} onChange={e=>setDf({...df,contractLength:e.target.value})} placeholder="e.g. 12"/>
               </div>}
-            </div>
+
             <div style={{marginBottom:12}}>
               <label className="sa-label">Notes</label>
               <textarea className="sa-input" value={df.notes} onChange={e=>setDf({...df,notes:e.target.value})} placeholder="Deal notes, context, next steps..." rows={2} style={{resize:'vertical',minHeight:56}}/>
