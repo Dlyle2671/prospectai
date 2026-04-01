@@ -727,6 +727,7 @@ function RepsTab({data, save}){
   );
 }
 function CatPerfTab({data, filterRep, setFilterRep, showComm}){
+  const [catArrView,setCatArrView]=useState({FO:false,MS:false});
   const deals = data.deals || [];
   const repsFor = filterRep==='All' ? data.reps : data.reps.filter(r=>r.id===filterRep);
   const dealsFor = filterRep==='All' ? deals : deals.filter(d=>d.repId===filterRep);
@@ -749,6 +750,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
         const remaining = Math.max(0, quota-closed);
         const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
         const closedMRR = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+(Number(d.mrr)||0),0);
+        const closedARR = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+(dealARR(d)||0),0);
         const mrrQuota = quota > 0 ? quota/12 : 0;
         const mrrP = mrrQuota>0 ? Math.min(1,closedMRR/mrrQuota) : 0;
         const mrrRemaining = Math.max(0, mrrQuota-closedMRR);
@@ -756,6 +758,11 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
           <div className="sa-card" key={c.id}>
             <h2 style={{color:c.color}}>{c.label}</h2>
             <div style={{fontSize:11,color:'#fff',marginTop:-10,marginBottom:14,fontStyle:'italic'}}>{c.note}</div>
+            {c.id!=='PS'&&<div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}>
+              <button style={{background:'transparent',border:'1px solid #555',borderRadius:6,padding:'3px 12px',color:'#ccc',fontSize:12,cursor:'pointer'}} onClick={()=>setCatArrView(v=>({...v,[c.id]:!v[c.id]}))}>
+                {(catArrView[c.id]||false)?'View MRR':'View ARR'}
+              </button>
+            </div>}
             <div className="sa-g3">
               <div className="sa-stat">
                 {c.id==='PS' ? (
@@ -763,7 +770,15 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                     <div className="lbl">Closed ARR</div>
                     <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
                     <div className="sub">of {fmt(quota)} quota — {pct(p)} attained</div>
-                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
+                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}></div></div>
+                    <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
+                  </>
+                ) : (catArrView[c.id]||false) ? (
+                  <>
+                    <div className="lbl">Closed ARR</div>
+                    <div className="val" style={{color:'#34d399'}}>{fmt(closedARR)}</div>
+                    <div className="sub">ARR for all {c.label} deals</div>
+                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:'0%',background:'#34d399'}}></div></div>
                     <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
                   </>
                 ) : (
@@ -771,7 +786,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                     <div className="lbl">Closed MRR</div>
                     <div className="val" style={{color:'#34d399'}}>{fmt(closedMRR)}</div>
                     <div className="sub">of {fmt(mrrQuota)}/mo quota — {pct(mrrP)} attained</div>
-                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:mrrP*100+'%',background:'#34d399'}}/></div>
+                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:mrrP*100+'%',background:'#34d399'}}></div></div>
                     <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
                   </>
                 )}
@@ -783,6 +798,12 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                     <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
                     <div className="sub">{pct(quota>0?remaining/quota:0)} left</div>
                   </>
+                ) : (catArrView[c.id]||false) ? (
+                  <>
+                    <div className="lbl">Total ARR</div>
+                    <div className="val" style={{color:'#f87171'}}>{fmt(closedARR)}</div>
+                    <div className="sub">annualized value</div>
+                  </>
                 ) : (
                   <>
                     <div className="lbl">Remaining MRR</div>
@@ -791,6 +812,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                   </>
                 )}
               </div>
+            </div>
               {showComm&&<div className="sa-stat">
                 <div className="lbl">Commission Earned</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(comm)}</div>
