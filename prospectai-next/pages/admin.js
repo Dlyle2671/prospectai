@@ -1,5 +1,5 @@
 // v2
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Head from 'next/head';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
@@ -247,7 +247,7 @@ export default function AdminPortal() {
     loadUsers();
   }, [isLoaded, isAdmin]);
 
-  async function loadUsers() {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const [usersRes, invitesRes] = await Promise.all([
@@ -263,6 +263,7 @@ export default function AdminPortal() {
     }
     setLastRefresh(new Date());
     setLoading(false);
+  }, []);
   }
 
   async function revokeInvite(inviteId) {
