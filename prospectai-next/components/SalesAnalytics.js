@@ -1105,7 +1105,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     const psQ=getQuota(r,'PS'),foQ=getQuota(r,'FO'),msQ=getQuota(r,'MS');
     const totQ=psQ+foQ+msQ;
     const comm=commFn(r,repFilteredDeals);
-    const ytdPct=CM/12;
+    const ytdPct=(filterMonth !== 'All' ? Number(filterMonth) : CM)/12;
     const attain=totQ>0?(totA/(totQ*ytdPct)*100).toFixed(1)+'%':'--';
     const status=totQ>0?(totA/(totQ*ytdPct)>=1?'On Track':'Behind Pace'):'--';
     sc.push(['── '+r.name.toUpperCase()+' ──','','','','','','','']);
@@ -1227,7 +1227,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   const deals = data.deals||[];
   const reps = data.reps||[];
   const YEAR = new Date().getFullYear();
-  const CM_now = new Date().getMonth()+1;
+  const CM_now = (filterMonth && filterMonth !== 'All') ? Number(filterMonth) : new Date().getMonth()+1;
 
   // Normalize filters
   const isCROPdf = filterRep==='__CRO__'; const repAll = !filterRep || filterRep==='All' || isCROPdf;
