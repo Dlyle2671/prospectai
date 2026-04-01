@@ -1118,7 +1118,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     sc.push(['CATEGORY BREAKDOWN — YTD','','','','','','','']);
     sc.push(['Category','ARR Closed (YTD)','Annual Quota','YTD Quota','Attainment %','Commission (YTD)','Commission Rate','Deals (YTD)']);
     ['PS','FO','MS'].forEach(cat=>{
-      const cA=myDeals.filter(d=>d.cat===cat).reduce((s,d)=>s+dealARR(d),0);
+      const cA=myDeals.filter(d=>d.cat===cat).reduce((s,d)=>s+(cat==='PS'?dealARR(d):d.mrr||0),0);
       const cQ=getQuota(r,cat);
       const cComm=cat==='PS'?comm.ps:cat==='FO'?comm.fo:comm.ms;
       sc.push([CAT_FULL[cat],cA,cQ,cQ*(CM/12),cQ>0?(cA/(cQ*(CM/12))*100).toFixed(1)+'%':'--',cComm,CAT_RATE[cat],myDeals.filter(d=>d.cat===cat).length]);
