@@ -264,7 +264,6 @@ export default function AdminPortal() {
     setLastRefresh(new Date());
     setLoading(false);
   }, []);
-  }
 
   async function revokeInvite(inviteId) {
     await fetch('/api/admin/invite?inviteId=' + inviteId, { method: 'DELETE' });
