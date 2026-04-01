@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
@@ -9,10 +9,7 @@ function fmtDate(ts) {
   if (!ts) return '—';
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
-function fmtDateTime(ts) {
-  if (!ts) return '—';
-  return new Date(ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-}
+
 function timeAgo(ts) {
   if (!ts) return '—';
   const diff = Date.now() - new Date(ts).getTime();
@@ -25,7 +22,7 @@ function timeAgo(ts) {
   return d + 'd ago';
 }
 
-const s = {
+const styles = {
   page: { minHeight: '100vh', background: '#020817', color: '#e2e8f0', fontFamily: 'DM Sans, sans-serif' },
   nav: { background: '#0a0f1e', borderBottom: '1px solid #1e293b', padding: '0 32px', height: 56, display: 'flex', alignItems: 'center', gap: 24 },
   logo: { fontSize: 18, fontWeight: 800, color: '#e2e8f0' },
@@ -44,6 +41,9 @@ const s = {
   drawer: { position: 'fixed', top: 0, right: 0, width: 460, height: '100vh', background: '#0a0f1e', borderLeft: '1px solid #1e293b', overflowY: 'auto', zIndex: 100, padding: 28, boxSizing: 'border-box' },
 };
 
+// Alias for backward compat with JSX that uses "s."
+const s = styles;
+
 function UserDrawer({ uid, onClose, onDelete }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ function UserDrawer({ uid, onClose, onDelete }) {
   useEffect(() => {
     setLoading(true);
     setConfirmDelete(false);
-    fetch(`/api/admin?action=user&uid=${uid}`)
+    fetch('/api/admin?action=user&uid=' + uid)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -61,7 +61,7 @@ function UserDrawer({ uid, onClose, onDelete }) {
 
   async function handleDelete() {
     setDeleting(true);
-    const r = await fetch(`/api/admin?action=user&uid=${uid}`, { method: 'DELETE' });
+    const r = await fetch('/api/admin?action=user&uid=' + uid, { method: 'DELETE' });
     if (r.ok) { onDelete(uid); onClose(); }
     else { alert('Delete failed'); setDeleting(false); }
   }
@@ -72,14 +72,12 @@ function UserDrawer({ uid, onClose, onDelete }) {
         <div style={{ fontSize: 16, fontWeight: 700 }}>User Detail</div>
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 20 }}>×</button>
       </div>
-
       {loading ? (
         <div style={{ color: '#475569', fontSize: 14 }}>Loading…</div>
       ) : !data ? (
         <div style={{ color: '#ef4444' }}>Failed to load user</div>
       ) : (
         <>
-          {/* Profile */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
             {data.user.imageUrl ? (
               <img src={data.user.imageUrl} alt="" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover' }} />
@@ -91,16 +89,12 @@ function UserDrawer({ uid, onClose, onDelete }) {
               <div style={{ fontSize: 13, color: '#64748b' }}>{data.user.email}</div>
             </div>
           </div>
-
-          {/* Timestamps */}
           <div style={{ ...s.card, padding: '14px 16px', marginBottom: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div><div style={{ fontSize: 11, color: '#475569' }}>Joined</div><div style={{ fontSize: 13, marginTop: 3 }}>{fmtDate(data.user.createdAt)}</div></div>
               <div><div style={{ fontSize: 11, color: '#475569' }}>Last sign in</div><div style={{ fontSize: 13, marginTop: 3 }}>{timeAgo(data.user.lastSignInAt)}</div></div>
             </div>
           </div>
-
-          {/* Settings summary */}
           <div style={{ ...s.card, padding: '14px 16px', marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: '#475569', fontWeight: 600, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.06em' }}>Settings</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
@@ -110,13 +104,9 @@ function UserDrawer({ uid, onClose, onDelete }) {
               <span style={s.pill(data.integrations?.apollo_key ? '#22c55e' : '#475569')}>{data.integrations?.apollo_key ? '✓ Apollo' : '✗ No Apollo'}</span>
             </div>
             {data.senderEmails?.length > 0 && (
-              <div style={{ fontSize: 12, color: '#64748b' }}>
-                Sends from: {data.senderEmails.map(e => e.email).join(', ')}
-              </div>
+              <div style={{ fontSize: 12, color: '#64748b' }}>Sends from: {data.senderEmails.map(e => e.email).join(', ')}</div>
             )}
           </div>
-
-          {/* Email queue */}
           <div style={{ ...s.card, padding: '14px 16px', marginBottom: 16 }}>
             <div style={{ fontSize: 12, color: '#475569', fontWeight: 600, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.06em' }}>Email Queue ({data.emailQueueTotal} total)</div>
             {data.recentEmails.length === 0 ? (
@@ -133,8 +123,6 @@ function UserDrawer({ uid, onClose, onDelete }) {
               ))
             )}
           </div>
-
-          {/* ICP weights summary */}
           {data.icpWeights && (
             <div style={{ ...s.card, padding: '14px 16px', marginBottom: 20 }}>
               <div style={{ fontSize: 12, color: '#475569', fontWeight: 600, marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.06em' }}>ICP Weights</div>
@@ -144,17 +132,9 @@ function UserDrawer({ uid, onClose, onDelete }) {
                     {k.replace('Weight','').replace('Bonus','')}: <strong style={{ color: '#e2e8f0' }}>{data.icpWeights[k]}pts</strong>
                   </span>
                 ))}
-                <span style={{ fontSize: 11, background: '#1e293b', border: '1px solid #334155', borderRadius: 20, padding: '2px 10px', color: '#94a3b8' }}>
-                  Hot: <strong style={{ color: '#ef4444' }}>{data.icpWeights.hotThreshold}+</strong>
-                </span>
-                <span style={{ fontSize: 11, background: '#1e293b', border: '1px solid #334155', borderRadius: 20, padding: '2px 10px', color: '#94a3b8' }}>
-                  Warm: <strong style={{ color: '#f59e0b' }}>{data.icpWeights.warmThreshold}+</strong>
-                </span>
               </div>
             </div>
           )}
-
-          {/* Delete */}
           <div style={{ borderTop: '1px solid #1e293b', paddingTop: 20 }}>
             {!confirmDelete ? (
               <button style={s.btnDanger} onClick={() => setConfirmDelete(true)}>🗑 Delete User</button>
@@ -214,7 +194,7 @@ function InviteModal({ onClose, onInvited }) {
       <div style={{ background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: 14, padding: 32, width: 420, boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: 17, fontWeight: 700 }}>Invite New User</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 20 }}>x</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 20 }}>×</button>
         </div>
         <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
           Enter the email address. Clerk will send an invitation email with a sign-up link automatically.
@@ -267,14 +247,18 @@ export default function AdminPortal() {
 
   async function loadUsers() {
     setLoading(true);
-    const [usersRes, invitesRes] = await Promise.all([
-      fetch('/api/admin?action=users'),
-      fetch('/api/admin/invite'),
-    ]);
-    const usersData = await usersRes.json();
-    const invitesData = await invitesRes.json().catch(() => ({ invites: [] }));
-    setUsers(usersData.users || []);
-    setInvites(invitesData.invites || []);
+    try {
+      const [usersRes, invitesRes] = await Promise.all([
+        fetch('/api/admin?action=users'),
+        fetch('/api/admin/invite'),
+      ]);
+      const usersData = await usersRes.json();
+      const invitesData = await invitesRes.json().catch(() => ({ invites: [] }));
+      setUsers(usersData.users || []);
+      setInvites(invitesData.invites || []);
+    } catch (err) {
+      console.error('[loadUsers]', err);
+    }
     setLastRefresh(new Date());
     setLoading(false);
   }
@@ -289,16 +273,20 @@ export default function AdminPortal() {
   }
 
   const filtered = users.filter(u =>
-    !search || u.email.toLowerCase().includes(search.toLowerCase()) ||
+    !search ||
+    u.email.toLowerCase().includes(search.toLowerCase()) ||
     (u.firstName + ' ' + u.lastName).toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalEmails = users.reduce((acc, u) => acc + (u.emailQueueCount || 0), 0);
+  const totalSent = users.reduce((acc, u) => acc + (u.emailsSent || 0), 0);
 
   const stats = {
     total: users.length,
     onboarded: users.filter(u => u.onboarded).length,
     activeToday: users.filter(u => u.lastSignInAt && (Date.now() - new Date(u.lastSignInAt)) < 86400000).length,
-    totalEmails: users.reduce((s, u) => s + u.emailQueueCount, 0),
-    emailsSent: users.reduce((s, u) => s + u.emailsSent, 0),
+    totalEmails,
+    emailsSent: totalSent,
   };
 
   if (!isLoaded || !isAdmin) {
@@ -312,10 +300,10 @@ export default function AdminPortal() {
         <div style={s.nav}>
           <div style={s.logo}>ProspectAI <span style={s.badge}>ADMIN</span></div>
           <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>← Back to App</button>
-          <div style={{ marginLeft: 'auto', fontSize: 12, color: '#334155' }}>
+          <div style={{ marginLeft: 'auto', fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 8 }}>
             {lastRefresh && 'Refreshed ' + timeAgo(lastRefresh)}
-            <button onClick={loadUsers} style={{ marginLeft: 12, background: 'none', border: '1px solid #1e293b', borderRadius: 6, color: '#64748b', cursor: 'pointer', fontSize: 12, padding: '3px 10px' }}>↻ Refresh</button>
-            <button onClick={() => setShowInviteModal(true)} style={{ marginLeft: 8, background: '#1d4ed8', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 12, padding: '3px 10px', fontWeight: 600 }}>+ Invite User</button>
+            <button onClick={loadUsers} style={{ background: 'none', border: '1px solid #1e293b', borderRadius: 6, color: '#64748b', cursor: 'pointer', fontSize: 12, padding: '3px 10px' }}>↻ Refresh</button>
+            <button onClick={() => setShowInviteModal(true)} style={{ background: '#1d4ed8', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 12, padding: '3px 10px', fontWeight: 600 }}>+ Invite User</button>
           </div>
         </div>
 
@@ -331,8 +319,8 @@ export default function AdminPortal() {
               { label: 'Total Users', value: stats.total, color: '#3b82f6' },
               { label: 'Onboarded', value: stats.onboarded, color: '#22c55e' },
               { label: 'Active Today', value: stats.activeToday, color: '#f59e0b' },
-              { label: 'Emails Queued', value: stats.totalEmails, color: '#8b5cf6' },
-              { label: 'Emails Sent', value: stats.emailsSent, color: '#0ea5e9' },
+              { label: 'Apollo Connected', value: users.filter(u => u.connectedApps?.includes('apollo_key')).length, color: '#8b5cf6' },
+              { label: 'Email Configured', value: users.filter(u => u.hasSenders).length, color: '#0ea5e9' },
             ].map(({ label, value, color }) => (
               <div key={label} style={s.stat}>
                 <div style={{ ...s.statNum, color }}>{loading ? '—' : value}</div>
@@ -352,7 +340,6 @@ export default function AdminPortal() {
                 style={{ background: '#080c14', border: '1px solid #1e293b', borderRadius: 8, color: '#e2e8f0', fontSize: 13, padding: '7px 12px', width: 260, outline: 'none' }}
               />
             </div>
-
             {loading ? (
               <div style={{ color: '#475569', padding: '32px 0', textAlign: 'center' }}>Loading users…</div>
             ) : (
@@ -363,7 +350,7 @@ export default function AdminPortal() {
                     <th style={s.th}>Joined</th>
                     <th style={s.th}>Last Active</th>
                     <th style={s.th}>Status</th>
-                    <th style={s.th}>Emails</th>
+                    <th style={s.th}>Connected</th>
                     <th style={s.th}></th>
                   </tr>
                 </thead>
@@ -388,19 +375,15 @@ export default function AdminPortal() {
                       <td style={s.td}>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <span style={s.pill(u.onboarded ? '#22c55e' : '#f59e0b')}>{u.onboarded ? '✓ Onboarded' : '⏳ Pending'}</span>
-                          {u.hasSenderEmail && <span style={s.pill('#0ea5e9')}>✉️ Email</span>}
+                          {u.hasSenders && <span style={s.pill('#0ea5e9')}>✉️ Email</span>}
                           {u.hasIcp && <span style={s.pill('#8b5cf6')}>🎯 ICP</span>}
                         </div>
                       </td>
                       <td style={{ ...s.td, color: '#64748b' }}>
-                        {u.emailQueueCount > 0 ? (
-                          <span>{u.emailsSent} sent / {u.emailQueueCount} total</span>
-                        ) : <span style={{ color: '#334155' }}>—</span>}
+                        {u.connectedApps?.length > 0 ? u.connectedApps.join(', ') : <span style={{ color: '#334155' }}>None</span>}
                       </td>
                       <td style={s.td} onClick={e => e.stopPropagation()}>
-                        <button style={s.btnPrimary} onClick={() => setSelectedUid(u.id === selectedUid ? null : u.id)}>
-                          View →
-                        </button>
+                        <button style={s.btnPrimary} onClick={() => setSelectedUid(u.id === selectedUid ? null : u.id)}>View →</button>
                       </td>
                     </tr>
                   ))}
@@ -408,38 +391,39 @@ export default function AdminPortal() {
               </table>
             )}
           </div>
+
+          {/* Pending Invites */}
+          {invites.length > 0 && (
+            <div style={s.card}>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Pending Invites ({invites.length})</div>
+              <table style={s.table}>
+                <thead>
+                  <tr>
+                    <th style={s.th}>Email</th>
+                    <th style={s.th}>Invited</th>
+                    <th style={s.th}>Status</th>
+                    <th style={s.th}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invites.map((inv, i) => (
+                    <tr key={inv.id || i}>
+                      <td style={s.td}>{inv.email}</td>
+                      <td style={{ ...s.td, color: '#64748b' }}>{timeAgo(inv.createdAt)}</td>
+                      <td style={s.td}><span style={s.pill('#f59e0b')}>{inv.status}</span></td>
+                      <td style={s.td}>
+                        <button style={s.btnDanger} onClick={() => revokeInvite(inv.id)}>Revoke</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
         </div>
       </div>
 
-
-        {/* Pending Invites */}
-        {invites.length > 0 && (
-          <div style={s.card}>
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Pending Invites ({invites.length})</div>
-            <table style={s.table}>
-              <thead>
-                <tr>
-                  <th style={s.th}>Email</th>
-                  <th style={s.th}>Invited</th>
-                  <th style={s.th}>Status</th>
-                  <th style={s.th}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {invites.map((inv, i) => (
-                  <tr key={inv.id || i}>
-                    <td style={s.td}>{inv.email}</td>
-                    <td style={{ ...s.td, color: '#64748b' }}>{timeAgo(inv.createdAt)}</td>
-                    <td style={s.td}><span style={s.pill('#f59e0b')}>{inv.status}</span></td>
-                    <td style={s.td}>
-                      <button style={s.btnDanger} onClick={() => revokeInvite(inv.id)}>Revoke</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       {/* User detail drawer */}
       {selectedUid && (
         <>
@@ -447,6 +431,8 @@ export default function AdminPortal() {
           <UserDrawer uid={selectedUid} onClose={() => setSelectedUid(null)} onDelete={handleDelete} />
         </>
       )}
+
+      {/* Invite modal */}
       {showInviteModal && (
         <InviteModal
           onClose={() => setShowInviteModal(false)}
