@@ -1280,8 +1280,8 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
       cDeals.forEach(d=>{
         const fee=Number(d.amount||d.fee||0),mrr=Number(d.mrr||0),rem=mrem(dealMo(d));
         if(c.id==='PS'){cARR+=fee;cComm+=fee*0.03;}
-        else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*0.07*0.25;}
-        else if(c.id==='MS'){cARR+=mrr*rem;cComm+=mrr*0.25;}
+        else if(c.id==='FO'){cARR=mrr;cComm+=mrr*0.07*0.25;}
+        else if(c.id==='cARR=mrrr*rem;cComm+=mrr*0.25;}
       });
       catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${cDeals.length}</td></tr>`;
     });
@@ -1359,8 +1359,8 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
           const mrr=Number(d.mrr||0);
           const rem=mrem(dealMo(d));
           if(c.id==='PS'){cARR+=fee;cComm+=fee*CR.PS;}
-          else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*CR.FO;}
-          else if(c.id==='MS'){cARR+=mrr*rem;cComm+=mrr*CR.MS;}
+          else if(c.id==='FO'){cARR=mrr;cComm+=mrr*CR.FO;}
+          else if(c.id==='cARR=mrrr*rem;cComm+=mrr*CR.MS;}
         });
         const cQ=getQ(rep,c.id);
         const ytdQ=Math.round(cQ*ytdPct);
