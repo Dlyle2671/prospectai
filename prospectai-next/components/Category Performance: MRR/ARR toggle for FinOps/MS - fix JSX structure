@@ -810,7 +810,6 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                   </>
                 )}
               </div>
-            </div>
               {showComm&&<div className="sa-stat">
                 <div className="lbl">Commission Earned</div>
                 <div className="val" style={{color:'#34d399'}}>{fmt(comm)}</div>
