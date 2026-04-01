@@ -1,9 +1,8 @@
 // pages/api/admin/invite.js
 // Admin-only: create a Clerk invitation and store pending invite in Redis
-// POST { email, redirectUrl? } -> returns { ok, invitationId, email }
+// POST { email, redirectUrl?, flags? } -> returns { ok, invitationId, email }
 // GET -> returns list of pending invites from Redis
 // DELETE ?inviteId=xxx -> revokes an invite
-
 import { getAuth, clerkClient } from '@clerk/nextjs/server';
 import { Redis } from '@upstash/redis';
 
@@ -41,7 +40,7 @@ export default async function handler(req, res) {
 
   // POST -- create a new invitation (Clerk sends the invite email automatically)
   if (req.method === 'POST') {
-    const { email, redirectUrl } = req.body || {};
+    const { email, redirectUrl, flags } = req.body || {};
     if (!email || !email.includes('@')) {
       return res.status(400).json({ error: 'Valid email required' });
     }
@@ -54,6 +53,11 @@ export default async function handler(req, res) {
         ignoreExisting: false,
       });
 
+      // Store pre-configured tool permissions keyed to email (applied on first login)
+      if (flags && typeof flags === 'object') {
+        await redis.set(`invite:flags:${email.toLowerCase()}`, JSON.stringify(flags));
+      }
+
       const raw = await redis.get('admin:invites');
       const invites = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
       invites.unshift({
@@ -62,6 +66,7 @@ export default async function handler(req, res) {
         status: 'pending',
         createdAt: new Date().toISOString(),
         invitedBy: userId,
+        hasCustomFlags: !!(flags && typeof flags === 'object'),
       });
       if (invites.length > 200) invites.length = 200;
       await redis.set('admin:invites', JSON.stringify(invites));
@@ -84,6 +89,11 @@ export default async function handler(req, res) {
       try { await client.invitations.revokeInvitation(inviteId); } catch (_) {}
       const raw = await redis.get('admin:invites');
       const invites = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+      // Also clean up any stored flags for this invite
+      const revoked = invites.find(i => i.id === inviteId);
+      if (revoked?.email) {
+        await redis.del(`invite:flags:${revoked.email.toLowerCase()}`);
+      }
       await redis.set('admin:invites', JSON.stringify(invites.filter(i => i.id !== inviteId)));
       return res.status(200).json({ ok: true });
     } catch (err) {
