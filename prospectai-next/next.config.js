@@ -8,6 +8,11 @@ const nextConfig = {
 { protocol: 'https', hostname: '**.apollo.io' },
         ],
     },
+    webpack: (config, { buildId, dev, isServer, defaultLoaders, nextRuntime, webpack }) => {
+        // Disable filesystem cache to force fresh compilation
+        config.cache = false;
+        return config;
+    },
     };
 
 // Clerk auth config
