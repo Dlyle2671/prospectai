@@ -297,8 +297,8 @@ export default function AdminPortal() {
 
   return (
     <>
-      <Head><title>Admin — ProspectAI</title></Head>
-      <div style={s.page}>
+      <Head><title>Admin Portal — ProspectAI</title></Head>
+      <div style={s.page} data-version={_buildVer}>
         <div style={s.nav}>
           <div style={s.logo}>ProspectAI <span style={s.badge}>ADMIN</span></div>
           <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>← Back to App</button>
