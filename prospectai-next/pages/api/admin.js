@@ -66,11 +66,12 @@ export default async function handler(req, res) {
 
     const clerk = await clerkClient();
     const u = await clerk.users.getUser(uid);
-    const [senderEmails, icpWeights, emailQueue, integrations] = await Promise.all([
+    const [senderEmails, icpWeights, emailQueue, integrations, featureFlags] = await Promise.all([
       redis.get(`user:${uid}:sender_emails`),
       redis.get(`user:${uid}:icp_weights`),
       redis.lrange(`user:${uid}:email_queue`, 0, -1),
       redis.get(`user:${uid}:integrations`),
+      redis.get(`user:${uid}:feature_flags`),
     ]);
 
     const queueItems = (Array.isArray(emailQueue) ? emailQueue : [])
@@ -93,6 +94,7 @@ export default async function handler(req, res) {
       integrations: integrations ? (typeof integrations === 'string' ? JSON.parse(integrations) : integrations) : null,
       recentEmails: queueItems,
       emailQueueTotal: Array.isArray(emailQueue) ? emailQueue.length : 0,
+      featureFlags: featureFlags ? (typeof featureFlags === 'string' ? JSON.parse(featureFlags) : featureFlags) : {},
     });
   }
 
@@ -113,5 +115,17 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, deleted: uid, redisKeysRemoved: keys.length });
   }
 
+  // POST /api/admin?action=flags&uid=xxx — set feature flags for a user
+  if (req.method === 'POST' && action === 'flags') {
+    const { uid } = req.query;
+    if (!uid) return res.status(400).json({ error: 'uid required' });
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const { flags } = body;
+    if (!flags || typeof flags !== 'object') return res.status(400).json({ error: 'flags object required' });
+    await redis.set(`user:${uid}:feature_flags`, JSON.stringify(flags));
+    return res.status(200).json({ ok: true, uid, flags });
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
+
