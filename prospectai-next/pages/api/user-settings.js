@@ -1,6 +1,6 @@
 // ProspectAI — /api/user-settings
 // Per-user settings stored in Upstash Redis, keyed by Clerk userId
-import { getAuth } from '@clerk/nextjs/server';
+import { getAuth, clerkClient } from '@clerk/nextjs/server';
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({
@@ -22,7 +22,31 @@ export default async function handler(req, res) {
   const key = userKey(userId, ns);
 
   if (req.method === 'GET') {
-    const data = await redis.get(key);
+    let data = await redis.get(key);
+
+    // On first load of feature_flags: check if admin pre-configured flags for this user's email
+    if (ns === 'feature_flags' && (data === null || data === undefined)) {
+      try {
+        const client = await clerkClient();
+        const user = await client.users.getUser(userId);
+        const email = user.emailAddresses?.[0]?.emailAddress;
+        if (email) {
+          const inviteKey = `invite:flags:${email.toLowerCase()}`;
+          const inviteFlags = await redis.get(inviteKey);
+          if (inviteFlags !== null && inviteFlags !== undefined) {
+            const flagsObj = typeof inviteFlags === 'string' ? JSON.parse(inviteFlags) : inviteFlags;
+            // Promote invite flags to the user's permanent key
+            await redis.set(key, JSON.stringify(flagsObj));
+            // Clean up the email-keyed entry (one-time use)
+            await redis.del(inviteKey);
+            data = flagsObj;
+          }
+        }
+      } catch (e) {
+        console.error('[user-settings flags migration]', e.message);
+      }
+    }
+
     return res.status(200).json({ data: data ?? null });
   }
 
