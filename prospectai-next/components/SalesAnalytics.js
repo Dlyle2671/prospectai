@@ -6,7 +6,7 @@ const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
 const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Services' };
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
-function pct(n){ return (n*100).toFixed(1)+'%'; }
+function pct(n){ return (n*100).toFixed(1)+'%'; 
 // v3
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 // ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining 
@@ -29,7 +29,7 @@ function getTotalActualFromDeals(cat, reps, deals){
   return reps.reduce((s,r) => s + getActualFromDeals(r.id, cat, deals), 0);
 }
 function repCommissionFromDeals(rep, deals){
-  const myDeals = deals.filter(d => d.repId === rep.id);
+  const myDeals = deals.filter(d => d.repId === rep.id && d.stage === 'Closed Won');
   const ps = myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0);
   const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0);
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0);
@@ -43,7 +43,7 @@ function croDealComm(d){
   return 0;
 }
 function croCommissionFromDeals(rep, deals){
-  const myDeals = deals.filter(d => d.repId === rep.id);
+  const myDeals = deals.filter(d => d.repId === rep.id && d.stage === 'Closed Won');
   const ps = myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+croDealComm(d),0);
   const fo = myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+croDealComm(d),0);
   const ms = myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+croDealComm(d),0);
