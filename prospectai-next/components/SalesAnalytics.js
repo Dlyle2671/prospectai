@@ -1099,8 +1099,8 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     if(idx>0){sc.push(['']);sc.push(['']);}
     const myDeals=repFilteredDeals.filter(d=>d.repId===r.id);
     const psA=myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealARR(d),0);
-    const foA=myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealARR(d),0);
-    const msA=myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealARR(d),0);
+    const foA=myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+d.mrr,0);
+    const msA=myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+d.mrr,0);
     const totA=psA+foA+msA;
     const psQ=getQuota(r,'PS'),foQ=getQuota(r,'FO'),msQ=getQuota(r,'MS');
     const totQ=psQ+foQ+msQ;
