@@ -773,13 +773,11 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                     <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}></div></div>
                     <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
                   </>
-                ) : (catArrView[c.id]||false) ? (
+                ) : catArrView[c.id] ? (
                   <>
                     <div className="lbl">Closed ARR</div>
                     <div className="val" style={{color:'#34d399'}}>{fmt(closedARR)}</div>
                     <div className="sub">ARR for all {c.label} deals</div>
-                    <div className="sa-bar"><div className="sa-bar-fill" style={{width:'0%',background:'#34d399'}}></div></div>
-                    <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
                   </>
                 ) : (
                   <>
@@ -798,7 +796,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                     <div className="val" style={{color:'#f87171'}}>{fmt(remaining)}</div>
                     <div className="sub">{pct(quota>0?remaining/quota:0)} left</div>
                   </>
-                ) : (catArrView[c.id]||false) ? (
+                ) : catArrView[c.id] ? (
                   <>
                     <div className="lbl">Total ARR</div>
                     <div className="val" style={{color:'#f87171'}}>{fmt(closedARR)}</div>
