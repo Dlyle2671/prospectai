@@ -283,6 +283,8 @@ function DealsTab({data, save}){
   const [editDeal, setEditDeal] = useState(null);
   const [df, setDf] = useState({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''});
   const [filterCat, setFilterCat] = useState('All');
+  const [filterStage, setFilterStage] = useState('All');
+  const [filterRep, setFilterRep] = useState('All');
   const submit = () => {
     if(!df.client.trim() || !df.repId) return;
     const d = JSON.parse(JSON.stringify(data));
@@ -313,7 +315,10 @@ function DealsTab({data, save}){
     const sb = document.querySelector('.sa-body'); if(sb) sb.scrollTo({top:0,behavior:'smooth'});
   };
   const deals = data.deals || [];
-  const filtered = filterCat==='All' ? deals : deals.filter(d => d.cat===filterCat);
+  const filtered = deals
+    .filter(d => filterCat==='All' || d.cat===filterCat)
+    .filter(d => filterStage==='All' || d.stage===filterStage)
+    .filter(d => filterRep==='All' || (data.reps||[]).find(r=>r.id===d.repId)?.name===filterRep);
   const rem = mrem(Number(df.month));
   const previewARR = df.cat==='PS' ? Number(df.amount)||0 : (Number(df.mrr)||0)*rem;
   const previewMRR = Number(df.mrr)||0;
@@ -324,15 +329,40 @@ function DealsTab({data, save}){
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
                 <strong>Deals</strong> — enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
-      <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center',marginBottom:16}}>
-        <div className="sa-pills" style={{marginBottom:0,flex:1}}>
-          {['All','PS','FO','MS'].map(c=>(
-            <button key={c} className={`sa-pill${filterCat===c?' on':''}`} onClick={()=>setFilterCat(c)}>
-              {c==='All'?'All Deals':c==='PS'?'Professional Services':c==='FO'?'FinOps':'Managed Services'}
-            </button>
-          ))}
+      <div style={{display:'flex',gap:0,alignItems:'flex-start',marginBottom:16}}>
+        <div style={{display:'flex',flexDirection:'column',gap:6,flex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+            <span style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'.8px',minWidth:64}}>Category:</span>
+            <div className="sa-pills" style={{marginBottom:0}}>
+              {['All','PS','FO','MS'].map(c=>(
+                <button key={c} className={`sa-pill${filterCat===c?' on':''}`} onClick={()=>setFilterCat(c)}>
+                  {c==='All'?'All Deals':c==='PS'?'Professional Services':c==='FO'?'FinOps':'Managed Services'}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+            <span style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'.8px',minWidth:64}}>Stage:</span>
+            <div className="sa-pills" style={{marginBottom:0}}>
+              {['All','Closed Won','Closed Lost','Forecasted','SOW Sent'].map(s=>(
+                <button key={s} className={`sa-pill${filterStage===s?' on':''}`} onClick={()=>setFilterStage(s)}>
+                  {s==='All'?'All':s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+            <span style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'.8px',minWidth:64}}>Rep:</span>
+            <div className="sa-pills" style={{marginBottom:0}}>
+              {['All',...(data.reps||[]).map(r=>r.name)].map(r=>(
+                <button key={r} className={`sa-pill${filterRep===r?' on':''}`} onClick={()=>setFilterRep(r)}>
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <button className="sa-btn" onClick={()=>{setShowForm(!showForm);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''})}}>+ Add Deal</button>
+        <button className="sa-btn" style={{marginLeft:12,flexShrink:0,alignSelf:'flex-start'}} onClick={()=>{setShowForm(!showForm);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''})}}>+ Add Deal</button>
       </div>
       {showForm&&(
         <div className="sa-card" style={{marginBottom:16}}>
