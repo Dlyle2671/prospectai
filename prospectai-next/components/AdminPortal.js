@@ -212,11 +212,44 @@ function UserDrawer({ uid, onClose, onDelete }) {
   );
 }
 
+const TOOLS = [
+  { id: 'leads', label: 'Find Leads' },
+  { id: 'company', label: 'Company Intel' },
+  { id: 'bulk', label: 'Bulk Prospector' },
+  { id: 'jobchanges', label: 'Job Changes' },
+  { id: 'peoplelookup', label: 'People Lookup' },
+  { id: 'lookalike', label: 'Lookalike' },
+  { id: 'awsopps', label: 'Lead Scoring' },
+  { id: 'emailqueue', label: 'Email Queue' },
+  { id: 'credits', label: 'Credits' },
+  { id: 'salesanalytics', label: 'Sales Analytics' },
+];
+
+function ToolToggle({ toolId, label, enabled, onChange }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: enabled ? '#f1f5f9' : '#475569' }}>
+      <div
+        onClick={() => onChange(!enabled)}
+        style={{ width: 34, height: 18, borderRadius: 9, flexShrink: 0, background: enabled ? '#6366f1' : '#1e293b', border: '1px solid ' + (enabled ? '#818cf8' : '#334155'), position: 'relative', cursor: 'pointer', transition: 'background .2s' }}
+      >
+        <div style={{ position: 'absolute', top: 2, left: enabled ? 16 : 2, width: 12, height: 12, borderRadius: '50%', background: enabled ? '#fff' : '#475569', transition: 'left .2s' }} />
+      </div>
+      {label}
+    </label>
+  );
+}
+
 function InviteModal({ onClose, onInvited }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const defaultFlags = Object.fromEntries(TOOLS.map(t => [t.id, true]));
+  const [flags, setFlags] = useState(defaultFlags);
+
+  function toggleAll(val) {
+    setFlags(Object.fromEntries(TOOLS.map(t => [t.id, val])));
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -228,7 +261,7 @@ function InviteModal({ onClose, onInvited }) {
       const r = await fetch('/api/admin/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), flags }),
       });
       const d = await r.json();
       if (!r.ok) {
@@ -236,6 +269,7 @@ function InviteModal({ onClose, onInvited }) {
       } else {
         setSuccess('Invitation sent to ' + email + '!');
         setEmail('');
+        setFlags(defaultFlags);
         if (onInvited) onInvited(d);
       }
     } catch (err) {
@@ -245,15 +279,15 @@ function InviteModal({ onClose, onInvited }) {
     }
   }
 
+  const allOn = TOOLS.every(t => flags[t.id] !== false);
+  const allOff = TOOLS.every(t => flags[t.id] === false);
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
-      <div style={{ background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: 14, padding: 32, width: 420, boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: 14, padding: 28, width: 480, maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ fontSize: 17, fontWeight: 700 }}>Invite New User</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 20 }}>×</button>
-        </div>
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
-          Enter the email address. Clerk will send an invitation email with a sign-up link automatically.
         </div>
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
@@ -268,6 +302,26 @@ function InviteModal({ onClose, onInvited }) {
               style={{ width: '100%', background: '#080c14', border: '1px solid #1e293b', borderRadius: 8, color: '#e2e8f0', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
+          <div style={{ borderTop: '1px solid #1e293b', paddingTop: 16, marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.8px' }}>Tool Access</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" onClick={() => toggleAll(true)} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, border: '1px solid #1e293b', background: allOn ? '#1e3a5f' : 'transparent', color: allOn ? '#60a5fa' : '#475569', cursor: 'pointer' }}>All On</button>
+                <button type="button" onClick={() => toggleAll(false)} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 5, border: '1px solid #1e293b', background: allOff ? '#2d1b1b' : 'transparent', color: allOff ? '#f87171' : '#475569', cursor: 'pointer' }}>All Off</button>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 16px' }}>
+              {TOOLS.map(tool => (
+                <ToolToggle
+                  key={tool.id}
+                  toolId={tool.id}
+                  label={tool.label}
+                  enabled={flags[tool.id] !== false}
+                  onChange={val => setFlags(prev => ({ ...prev, [tool.id]: val }))}
+                />
+              ))}
+            </div>
+          </div>
           {error && <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 14, padding: '8px 12px', background: 'rgba(127,29,29,0.13)', border: '1px solid rgba(127,29,29,0.33)', borderRadius: 6 }}>{error}</div>}
           {success && <div style={{ fontSize: 13, color: '#22c55e', marginBottom: 14, padding: '8px 12px', background: 'rgba(20,83,45,0.13)', border: '1px solid rgba(20,83,45,0.33)', borderRadius: 6 }}>{success}</div>}
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -281,7 +335,6 @@ function InviteModal({ onClose, onInvited }) {
     </div>
   );
 }
-
 export default function AdminPortal() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
