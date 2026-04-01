@@ -238,7 +238,7 @@ export default function Home() {
 </button>
             ))}
 {isAdmin && (
-                <Link href="/admin" className="sidebar-btn" style={{ display: 'block', textAlign: 'left', marginTop: 8, borderTop: '1px solid #1e293b', paddingTop: 12, color: '#818cf8', textDecoration: 'none' }}>
+                <Link href="/admin-portal" className="sidebar-btn" style={{ display: 'block', textAlign: 'left', marginTop: 8, borderTop: '1px solid #1e293b', paddingTop: 12, color: '#818cf8', textDecoration: 'none' }}>
                 Admin Portal
                   </Link>
             )}
