@@ -254,7 +254,7 @@ export default function AdminPortal() {
         fetch('/api/admin?action=users'),
         fetch('/api/admin/invite'),
       ]);
-      const usersData = await usersRes.json();
+      const usersData = await usersRes.json().catch(() => ({ users: [] }));
       const invitesData = await invitesRes.json().catch(() => ({ invites: [] }));
       setUsers(usersData.users || []);
       setInvites(invitesData.invites || []);
