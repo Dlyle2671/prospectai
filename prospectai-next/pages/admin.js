@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/router';
 
 const ADMIN_USER_ID = 'user_3BSgI2SWsJ9xBJeTxxN4mOWqGRM';
+const _buildVer = 2;
 
 function fmtDate(ts) {
   if (!ts) return '—';
