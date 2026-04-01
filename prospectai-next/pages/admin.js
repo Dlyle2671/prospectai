@@ -176,6 +176,76 @@ function UserDrawer({ uid, onClose, onDelete }) {
   );
 }
 
+function InviteModal({ onClose, onInvited }) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const r = await fetch('/api/admin/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setError(d.error || 'Invite failed');
+      } else {
+        setSuccess('Invitation sent to ' + email + '!');
+        setEmail('');
+        if (onInvited) onInvited(d);
+      }
+    } catch (err) {
+      setError('Network error: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: '#0a0f1e', border: '1px solid #1e293b', borderRadius: 14, padding: 32, width: 420, boxSizing: 'border-box' }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>Invite New User</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 20 }}>x</button>
+        </div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+          Enter the email address. Clerk will send an invitation email with a sign-up link automatically.
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, color: '#94a3b8', fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.06em' }}>Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setError(''); setSuccess(''); }}
+              placeholder="user@company.com"
+              required
+              autoFocus
+              style={{ width: '100%', background: '#080c14', border: '1px solid #1e293b', borderRadius: 8, color: '#e2e8f0', fontSize: 14, padding: '10px 14px', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          {error && <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 14, padding: '8px 12px', background: 'rgba(127,29,29,0.13)', border: '1px solid rgba(127,29,29,0.33)', borderRadius: 6 }}>{error}</div>}
+          {success && <div style={{ fontSize: 13, color: '#22c55e', marginBottom: 14, padding: '8px 12px', background: 'rgba(20,83,45,0.13)', border: '1px solid rgba(20,83,45,0.33)', borderRadius: 6 }}>{success}</div>}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button type="button" onClick={onClose} style={{ padding: '8px 18px', borderRadius: 7, border: '1px solid #1e293b', background: 'transparent', color: '#94a3b8', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+            <button type="submit" disabled={loading || !email.trim()} style={{ padding: '8px 18px', borderRadius: 7, border: 'none', background: loading || !email.trim() ? '#1e3a5f' : '#1d4ed8', color: '#fff', fontSize: 13, cursor: loading || !email.trim() ? 'not-allowed' : 'pointer', fontWeight: 600 }}>
+              {loading ? 'Sending...' : 'Send Invite'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPortal() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
@@ -184,6 +254,8 @@ export default function AdminPortal() {
   const [selectedUid, setSelectedUid] = useState(null);
   const [search, setSearch] = useState('');
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [invites, setInvites] = useState([]);
 
   const isAdmin = isLoaded && user?.id === ADMIN_USER_ID;
 
@@ -195,11 +267,21 @@ export default function AdminPortal() {
 
   async function loadUsers() {
     setLoading(true);
-    const r = await fetch('/api/admin?action=users');
-    const d = await r.json();
-    setUsers(d.users || []);
+    const [usersRes, invitesRes] = await Promise.all([
+      fetch('/api/admin?action=users'),
+      fetch('/api/admin/invite'),
+    ]);
+    const usersData = await usersRes.json();
+    const invitesData = await invitesRes.json().catch(() => ({ invites: [] }));
+    setUsers(usersData.users || []);
+    setInvites(invitesData.invites || []);
     setLastRefresh(new Date());
     setLoading(false);
+  }
+
+  async function revokeInvite(inviteId) {
+    await fetch('/api/admin/invite?inviteId=' + inviteId, { method: 'DELETE' });
+    setInvites(prev => prev.filter(i => i.id !== inviteId));
   }
 
   function handleDelete(uid) {
@@ -233,6 +315,7 @@ export default function AdminPortal() {
           <div style={{ marginLeft: 'auto', fontSize: 12, color: '#334155' }}>
             {lastRefresh && 'Refreshed ' + timeAgo(lastRefresh)}
             <button onClick={loadUsers} style={{ marginLeft: 12, background: 'none', border: '1px solid #1e293b', borderRadius: 6, color: '#64748b', cursor: 'pointer', fontSize: 12, padding: '3px 10px' }}>↻ Refresh</button>
+            <button onClick={() => setShowInviteModal(true)} style={{ marginLeft: 8, background: '#1d4ed8', border: 'none', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 12, padding: '3px 10px', fontWeight: 600 }}>+ Invite User</button>
           </div>
         </div>
 
@@ -328,12 +411,54 @@ export default function AdminPortal() {
         </div>
       </div>
 
+
+        {/* Pending Invites */}
+        {invites.length > 0 && (
+          <div style={s.card}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Pending Invites ({invites.length})</div>
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>Email</th>
+                  <th style={s.th}>Invited</th>
+                  <th style={s.th}>Status</th>
+                  <th style={s.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {invites.map((inv, i) => (
+                  <tr key={inv.id || i}>
+                    <td style={s.td}>{inv.email}</td>
+                    <td style={{ ...s.td, color: '#64748b' }}>{timeAgo(inv.createdAt)}</td>
+                    <td style={s.td}><span style={s.pill('#f59e0b')}>{inv.status}</span></td>
+                    <td style={s.td}>
+                      <button style={s.btnDanger} onClick={() => revokeInvite(inv.id)}>Revoke</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       {/* User detail drawer */}
       {selectedUid && (
         <>
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 99 }} onClick={() => setSelectedUid(null)} />
           <UserDrawer uid={selectedUid} onClose={() => setSelectedUid(null)} onDelete={handleDelete} />
         </>
+      )}
+      {showInviteModal && (
+        <InviteModal
+          onClose={() => setShowInviteModal(false)}
+          onInvited={(d) => {
+            setInvites(prev => [{
+              id: d.invitationId,
+              email: d.email,
+              status: 'pending',
+              createdAt: new Date().toISOString(),
+            }, ...prev]);
+          }}
+        />
       )}
     </>
   );
