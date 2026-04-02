@@ -102,7 +102,6 @@ export default function SalesAnalytics({onBack}){
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterRep, setFilterRep] = useState('All');
-  const [filterSource, setFilterSource] = useState('All');
   const [aiMessages, setAiMessages] = useState([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -286,6 +285,7 @@ function DealsTab({data, save}){
   const [filterCat, setFilterCat] = useState('All');
   const [filterStage, setFilterStage] = useState('All');
   const [filterRep, setFilterRep] = useState('All');
+  const [filterSource, setFilterSource] = useState('All');
   const submit = () => {
     if(!df.client.trim() || !df.repId) return;
     const d = JSON.parse(JSON.stringify(data));
