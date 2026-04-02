@@ -287,6 +287,53 @@ export default async function handler(req, res) {
     : 'TONE: Conversational and human. Write like a sharp colleague, not a sales robot. Contractions are fine. Approachable but still credible.';
 
 
+  // ── AI SERVICES PROMO ─────────────────────────────────────────────────────
+  if (tone === 'ai_promo') {
+    const aiPromoPrompt = [
+      'You are a B2B sales expert writing a short, personalized outreach email promoting AI services built on AWS.',
+      'The sender works at ' + companyName + '.',
+      '', 'LEAD:', 'Name: ' + (name || ''), contextStr, '',
+      ...(newsSection ? [newsSection, ''] : []),
+      'OFFER: ' + companyName + ' helps companies build AI solutions on AWS — automation, copilots, intelligent workflows. As an AWS Premier Partner with AI competency, they can access special POC funding.',
+      '', 'RULES:',
+      '- Write a short, punchy cold email (max 150 words in the body).',
+      '- Open with "Hi [first_name],".',
+      '- In 1-2 sentences, describe a SPECIFIC AI use case that is directly relevant to this lead based on their actual role, title, tech stack, keywords, or company description. Do NOT write a generic industry statement. Reference something concrete from the LEAD data above. Example: "As VP of Engineering at DeltaMath, AI-powered automated grading and adaptive tutoring could meaningfully reduce your team's manual load." Do NOT use phrases like "companies in your industry" or "teams like yours".',
+      '- Mention the AWS POC funding as a low-risk entry point.',
+      '- Close with a single CTA asking for 30 minutes.',
+      '- No sign-off line. No buzzwords.',
+      '', 'Return ONLY JSON: { "subjects": ["subject1", "subject2", "subject3"], "body": "... use \n for line breaks" }',
+    ].join('\n');
+
+    try {
+      const aiResp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 800, messages: [{ role: 'user', content: aiPromoPrompt }] }),
+      });
+      const aiData = await aiResp.json();
+      if (!aiResp.ok) return res.status(aiResp.status).json({ error: (aiData.error && aiData.error.message) || 'Claude API error' });
+      const aiText = (aiData.content && aiData.content[0] && aiData.content[0].text) || '';
+      let aiParsed;
+      try {
+        const aiCleaned = aiText.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').replace(/^[^{]*/, '').replace(/[^}]*$/, '').trim();
+        aiParsed = JSON.parse(aiCleaned);
+      } catch (e) {
+        aiParsed = null;
+      }
+      if (aiParsed && aiParsed.subjects && aiParsed.body) {
+        return res.status(200).json({ subject: aiParsed.subjects[0], subjects: aiParsed.subjects, body: aiParsed.body });
+      }
+    } catch (_) {}
+    // Fallback: basic template
+    const fn = name ? name.split(' ')[0] : 'there';
+    return res.status(200).json({
+      subjects: ['AI Solutions Built for ' + (body.company_name || companyName)],
+      body: `Hi ${fn},\n\nAt ${companyName}, we build AI solutions on AWS that automate workflows and cut operational overhead.\n\nAs an AWS Premier Partner with AI competency, we can also unlock POC funding — so the first project is low-risk.\n\nWorth 30 minutes to explore what that could look like for ${body.company_name || 'your team'}?`,
+    });
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
 
   const prompt = [
         'You are a B2B sales expert writing a short, personalized cold outreach email for ' + companyName + '. The sender works at ' + companyName + '.',
