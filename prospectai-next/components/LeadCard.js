@@ -154,11 +154,26 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
         if (selectedTone === 'ai_promo') {
           const firstName = p.first_name || (p.name ? p.name.split(' ')[0] : 'there');
           const senderName = activeSender ? activeSender.name : '';
+          const industry = (p.company_industry || '').toLowerCase();
+          const useCaseMap = [
+            { keys: ['software','saas','tech','information technology','computer'], useCase: 'AI-powered code review assistants and automated QA pipelines that cut release cycles in half' },
+            { keys: ['finance','financial','banking','insurance','fintech','accounting'], useCase: 'AI models that automate risk scoring, fraud detection, and financial reporting' },
+            { keys: ['health','healthcare','medical','pharma','biotech','life science'], useCase: 'AI tools that streamline clinical documentation, prior auth, and patient data workflows' },
+            { keys: ['retail','ecommerce','e-commerce','consumer'], useCase: 'AI-driven demand forecasting and personalized recommendation engines' },
+            { keys: ['education','edtech','learning','school','university'], useCase: 'AI tutoring assistants and automated grading tools that free up instructor time' },
+            { keys: ['manufacturing','industrial','logistics','supply chain'], useCase: 'AI-powered predictive maintenance and supply chain optimization' },
+            { keys: ['media','marketing','advertising','agency','creative'], useCase: 'Generative AI tools for content creation, campaign optimization, and audience targeting' },
+            { keys: ['real estate','property','construction'], useCase: 'AI assistants that automate lead qualification, contract review, and market analysis' },
+            { keys: ['legal','law','compliance'], useCase: 'AI document review and contract analysis tools that reduce manual legal work by 70%' },
+            { keys: ['energy','utilities','oil','gas','cleantech'], useCase: 'AI models for energy usage optimization and predictive asset maintenance' },
+          ];
+          const match = useCaseMap.find(m => m.keys.some(k => industry.includes(k)));
+          const useCase = match ? match.useCase : 'AI copilots and automation tools tailored to your team\'s workflows';
           const body = `Hi ${firstName},
 
 I'll keep this short — at Cloudelligent, we help companies like yours cut costs, automate workflows, and make smarter decisions using AI.
 
-Whether it's a custom AI copilot, predictive analytics, or intelligent process automation, we build practical solutions on AWS that deliver real results — fast.
+For companies in ${p.company_industry || 'your industry'}, we're seeing a lot of success with ${useCase} — all built on AWS.
 
 I'd love to set up a quick 30-minute call to share a few ideas specific to ${p.company_name || 'your company'}.
 
