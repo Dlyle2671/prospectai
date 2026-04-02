@@ -6,7 +6,7 @@ const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
 const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Services' };
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
-function pct(n){ return (n*100).toFixed(1)+'%'; }
+function pct(n){ return (n*100).toFixed(1)+'%';
 // v4
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 // ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining 
@@ -1384,8 +1384,8 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
           const mrr=Number(d.mrr||0);
           const rem=mrem(dealMo(d));
           if(c.id==='PS'){cARR+=fee;cComm+=fee*CR.PS;}
-          else if(c.id==='FO'){cARR=mrr;cComm+=mrr*CR.FO;}
-          else if(c.id==='MS'){cARR=mrr;cComm+=mrr*CR.MS;}
+          else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*CR.FO;}
+          else if(c.id==='MS'){cARR+=mrr*rem;cComm+=mrr*CR.MS;}
         });
         const cQ=getQ(rep,c.id);
         const ytdQ=Math.round(cQ*ytdPct);
