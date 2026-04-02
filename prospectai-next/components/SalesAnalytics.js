@@ -786,7 +786,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
       {cats.map(c=>{
         const closed = dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').reduce((s,d)=>s+dealARR(d),0);
         const quota = (filterRep==='All' && data.companyQuotas && data.companyQuotas[c.id]) ? data.companyQuotas[c.id] : repsFor.reduce((s,r)=>s+getQuota(r,c.id),0);
-        const comm = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealComm(d),0);
+        const comm = dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').reduce((s,d)=>s+dealComm(d),0);
         const p = quota>0 ? Math.min(1,closed/quota) : 0;
         const remaining = Math.max(0, quota-closed);
         const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
@@ -841,11 +841,11 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                 <div className="sub">{commLabel}</div>
               </div>}
             </div>
-            {dealsFor.filter(d=>d.cat===c.id).length>0&&(
+            {dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').length>0&&(
               <table className="sa-tbl" style={{marginTop:8}}>
                 <thead><tr><th>Rep</th><th>Client</th><th>Month</th><th>{c.id==='PS'?'Fee':'MRR'}</th><th>ARR</th>{showComm&&<th>Commission</th>}</tr></thead>
                 <tbody>
-                  {dealsFor.filter(d=>d.cat===c.id).map(d=>{
+                  {dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').map(d=>{
                     const rep=data.reps.find(r=>r.id===d.repId);
                     return(
                       <tr key={d.id}>
