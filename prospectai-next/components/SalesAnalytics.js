@@ -1286,14 +1286,14 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   if(isCROPdf){
     // ── CRO VIEW: single consolidated section ────────────────────────────────
     const allDeals = deals.filter(d => repList.some(rep => dealIsRep(d,rep)) && dealInPeriod(d,false));
-    let totARR=0, totComm=0, totPS=0, totFO=0, totMS=0;
+    let totARR=0, totMRR=0, totComm=0, totPS=0, totFO=0, totMS=0;
     allDeals.forEach(d=>{
       const cat=dealCat(d), fee=Number(d.amount||d.fee||0), mrr=Number(d.mrr||0), rem=mrem(dealMo(d));
       let arr=0,comm=0;
       if(cat==='PS'){arr=fee;comm=fee*0.03;}
       else if(cat==='FO'){arr=mrr*rem;comm=mrr*0.07*0.25;}
       else if(cat==='MS'){arr=mrr*rem;comm=mrr*0.25;}
-      totARR+=arr;totComm+=comm;
+      totARR+=arr;totMRR+=(cat==='PS'?fee:mrr);totComm+=comm;
       if(cat==='PS')totPS+=comm;else if(cat==='FO')totFO+=comm;else if(cat==='MS')totMS+=comm;
     });
     // Category breakdown
@@ -1301,16 +1301,16 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
     let catRows='';
     cats.forEach(c=>{
       const cDeals=allDeals.filter(d=>dealCat(d)===c.id);
-      let cARR=0,cComm=0;
+      let cMRR=0,cComm=0;
       cDeals.forEach(d=>{
         const fee=Number(d.amount||d.fee||0),mrr=Number(d.mrr||0),rem=mrem(dealMo(d));
-        if(c.id==='PS'){cARR+=fee;cComm+=fee*0.03;}
-        else if(c.id==='FO'){cARR=mrr;cComm+=mrr*0.07*0.25;}
-        else if(c.id==='MS'){cARR=mrr;cComm+=mrr*0.25;}
+        if(c.id==='PS'){cMRR+=fee;cComm+=fee*0.03;}
+        else if(c.id==='FO'){cMRR=mrr;cComm+=mrr*0.07*0.25;}
+        else if(c.id==='MS'){cMRR=mrr;cComm+=mrr*0.25;}
       });
-      catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${cDeals.length}</td></tr>`;
+      catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cMRR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${cDeals.length}</td></tr>`;
     });
-    catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totARR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${allDeals.length}</td></tr>`;
+    catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totMRR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${allDeals.length}</td></tr>`;
     // Deal rows
     let dealRows='';
     if(allDeals.length===0){
@@ -1331,13 +1331,13 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         const repName=(repList.find(r=>dealIsRep(d,r))||{name:'Unknown'}).name;
         const catName=CAT_KEYS[cat]||cat;
         const moName=MN[dealMo(d)-1]||'';
-        dealRows+=`<tr><td>${d.client||''}</td><td>${repName}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
+        dealRows+=`<tr><td>${d.client||''}</td><td>${repName}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
       });
     }
     sections=`<div class="rep-section">
 <div class="rep-header"><div class="rep-name">CRO Commission Summary</div><div class="rep-meta">All Reps &nbsp;|&nbsp; Period: ${moLabel} &nbsp;|&nbsp; ${allDeals.length} deals</div></div>
 <div class="kpi-grid">
-  <div class="kpi-box"><div class="kpi-label">Total ARR</div><div class="kpi-value">${fmt(totARR)}</div></div>
+  <div class="kpi-box"><div class="kpi-label">Total MRR</div><div class="kpi-value">${fmt(totMRR)}</div></div>
   <div class="kpi-box"><div class="kpi-label">Total CRO Commission</div><div class="kpi-value green">${fmt(totComm)}</div></div>
   <div class="kpi-box"><div class="kpi-label">Deals</div><div class="kpi-value">${allDeals.length}</div></div>
 </div>
@@ -1348,15 +1348,15 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   <div class="pill"><span class="pill-label">MS Commission (25%)</span><span class="pill-value">${fmt(totMS)}</span></div>
 </div>
 <div class="section-title">Category Breakdown (${moLabel})</div>
-<table><thead><tr><th>Category</th><th>ARR Closed</th><th>CRO Commission</th><th>Deals</th></tr></thead><tbody>${catRows}</tbody></table>
+<table><thead><tr><th>Category</th><th>MRR Closed</th><th>CRO Commission</th><th>Deals</th></tr></thead><tbody>${catRows}</tbody></table>
 <div class="section-title">Deal Detail${moAll?' (YTD)':' - '+moName+' '+YEAR}</div>
-<table><thead><tr><th>Client</th><th>Rep</th><th>Category</th><th>Amount/MRR</th><th>ARR</th><th>CRO Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table>
+<table><thead><tr><th>Client</th><th>Rep</th><th>Category</th><th>Amount/MRR</th><th>CRO Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table>
 </div>`;
   } else {
     // ── INDIVIDUAL REP VIEW ───────────────────────────────────────────────────
     repList.forEach(rep=>{
       const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,false));
-      let totARR=0,totComm=0,totPS=0,totFO=0,totMS=0;
+      let totARR=0,totMRR=0,totComm=0,totPS=0,totFO=0,totMS=0;
       repDeals.forEach(d=>{
         const cat=dealCat(d);
         const fee=Number(d.amount||d.fee||0);
@@ -1366,7 +1366,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         if(cat==='PS'){arr=fee;comm=fee*CR.PS;}
         else if(cat==='FO'){arr=mrr*rem;comm=mrr*CR.FO;}
         else if(cat==='MS'){arr=mrr*rem;comm=mrr*CR.MS;}
-        totARR+=arr;totComm+=comm;
+        totARR+=arr;totMRR+=(cat==='PS'?fee:mrr);totComm+=comm;
         if(cat==='PS') totPS+=comm; else if(cat==='FO') totFO+=comm; else if(cat==='MS') totMS+=comm;
       });
       const ytdPct=CM_now/12;
@@ -1378,21 +1378,21 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
       let catRows='';
       cats.forEach(c=>{
         const cDeals=repDeals.filter(d=>dealCat(d)===c.id);
-        let cARR=0,cComm=0;
+        let cMRR=0,cComm=0;
         cDeals.forEach(d=>{
           const fee=Number(d.amount||d.fee||0);
           const mrr=Number(d.mrr||0);
           const rem=mrem(dealMo(d));
-          if(c.id==='PS'){cARR+=fee;cComm+=fee*CR.PS;}
-          else if(c.id==='FO'){cARR+=mrr*rem;cComm+=mrr*CR.FO;}
-          else if(c.id==='MS'){cARR+=mrr*rem;cComm+=mrr*CR.MS;}
+          if(c.id==='PS'){cMRR+=fee;cComm+=fee*CR.PS;}
+          else if(c.id==='FO'){cMRR+=mrr;cComm+=mrr*CR.FO;}
+          else if(c.id==='MS'){cMRR+=mrr;cComm+=mrr*CR.MS;}
         });
         const cQ=getQ(rep,c.id);
         const ytdQ=Math.round(cQ*ytdPct);
         const cAtt=ytdQ>0?Math.round(cARR/ytdQ*100):0;
-        catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cARR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${fmt(cQ)}</td><td class="num">${fmt(ytdQ)}</td><td class="num ${cAtt>=100?'good':cAtt>=75?'warn':'bad'}">${cAtt}%</td></tr>`;
+        catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cMRR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${fmt(cQ)}</td><td class="num">${fmt(ytdQ)}</td><td class="num ${cAtt>=100?'good':cAtt>=75?'warn':'bad'}">${cAtt}%</td></tr>`;
       });
-      catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totARR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${fmt(totQ)}</td><td class="num">${fmt(Math.round(totQ*ytdPct))}</td><td class="num ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</td></tr>`;
+      catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totMRR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${fmt(totQ)}</td><td class="num">${fmt(Math.round(totQ*ytdPct))}</td><td class="num ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</td></tr>`;
       let dealRows='';
       if(repDeals.length===0){
         dealRows='<tr><td colspan="6" style="text-align:center;color:#888;font-style:italic;">No deals in selected period</td></tr>';
@@ -1408,10 +1408,10 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
           else if(cat==='MS'){arr=mrr*rem;comm=mrr*CR.MS;}
           const catName=CAT_KEYS[cat]||cat;
           const moName=MN[dealMo(d)-1]||'';
-          dealRows+=`<tr><td>${d.client||''}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num">${fmt(arr)}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
+          dealRows+=`<tr><td>${d.client||''}</td><td><span class="badge badge-${cat.toLowerCase()}">${catName}</span></td><td class="num">${cat==='PS'?fmt(fee):fmt(mrr)+'/mo'}</td><td class="num green">${fmt(comm)}</td><td>${moName} ${YEAR}</td></tr>`;
         });
       }
-      sections+=`<div class="rep-section"><div class="rep-header"><div class="rep-name">${rep.name}</div><div class="rep-meta">Dept: ${rep.dept||'Sales'} &nbsp;|&nbsp; Period: ${moLabel}</div></div><div class="kpi-grid"><div class="kpi-box"><div class="kpi-label">Total ARR</div><div class="kpi-value">${fmt(totARR)}</div></div><div class="kpi-box"><div class="kpi-label">Total Commission</div><div class="kpi-value green">${fmt(totComm)}</div></div><div class="kpi-box"><div class="kpi-label">Quota Attainment</div><div class="kpi-value ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</div></div><div class="kpi-box"><div class="kpi-label">Status</div><div class="kpi-value ${status==='On Track'?'good':'bad'}">${status}</div></div></div><div class="section-title">Commission Breakdown (${moLabel})</div><div class="comm-pills"><div class="pill"><span class="pill-label">PS Commission</span><span class="pill-value">${fmt(totPS)}</span></div><div class="pill"><span class="pill-label">FO Commission</span><span class="pill-value">${fmt(totFO)}</span></div><div class="pill"><span class="pill-label">MS Commission</span><span class="pill-value">${fmt(totMS)}</span></div></div><div class="section-title">Category Breakdown (${moLabel})</div><table><thead><tr><th>Category</th><th>ARR Closed</th><th>Commission</th><th>Annual Quota</th><th>YTD Quota</th><th>Attainment</th></tr></thead><tbody>${catRows}</tbody></table><div class="section-title">Deal Detail${moAll?' (YTD)':' - '+moName+' '+YEAR}</div><table><thead><tr><th>Client</th><th>Category</th><th>Amount/MRR</th><th>ARR</th><th>Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table></div>`;
+      sections+=`<div class="rep-section"><div class="rep-header"><div class="rep-name">${rep.name}</div><div class="rep-meta">Dept: ${rep.dept||'Sales'} &nbsp;|&nbsp; Period: ${moLabel}</div></div><div class="kpi-grid"><div class="kpi-box"><div class="kpi-label">Total MRR</div><div class="kpi-value">${fmt(totMRR)}</div></div><div class="kpi-box"><div class="kpi-label">Total Commission</div><div class="kpi-value green">${fmt(totComm)}</div></div><div class="kpi-box"><div class="kpi-label">Quota Attainment</div><div class="kpi-value ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</div></div><div class="kpi-box"><div class="kpi-label">Status</div><div class="kpi-value ${status==='On Track'?'good':'bad'}">${status}</div></div></div><div class="section-title">Commission Breakdown (${moLabel})</div><div class="comm-pills"><div class="pill"><span class="pill-label">PS Commission</span><span class="pill-value">${fmt(totPS)}</span></div><div class="pill"><span class="pill-label">FO Commission</span><span class="pill-value">${fmt(totFO)}</span></div><div class="pill"><span class="pill-label">MS Commission</span><span class="pill-value">${fmt(totMS)}</span></div></div><div class="section-title">Category Breakdown (${moLabel})</div><table><thead><tr><th>Category</th><th>MRR Closed</th><th>Commission</th><th>Annual Quota</th><th>YTD Quota</th><th>Attainment</th></tr></thead><tbody>${catRows}</tbody></table><div class="section-title">Deal Detail${moAll?' (YTD)':' - '+moName+' '+YEAR}</div><table><thead><tr><th>Client</th><th>Category</th><th>Amount/MRR</th><th>Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table></div>`;
     });
   }
 
