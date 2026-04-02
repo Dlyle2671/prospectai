@@ -173,7 +173,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
 
 I'll keep this short — at Cloudelligent, we help companies like yours cut costs, automate workflows, and make smarter decisions using AI.
 
-For companies in ${p.company_industry || 'your industry'}, we're seeing a lot of success with ${useCase}, all built on AWS. In addition, since we are an AWS Premier Partner with AI competency we get access to funding to support POCs.
+For companies in your industry, we're seeing a lot of success with ${useCase}, all built on AWS. In addition, since we are an AWS Premier Partner with the AI competency we get access to special funding programs to support POCs.
 
 I'd love to set up a quick 30-minute call to share a few ideas specific to ${p.company_name || 'your company'}.
 
