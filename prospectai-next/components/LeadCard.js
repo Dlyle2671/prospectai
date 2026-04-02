@@ -180,7 +180,7 @@ I'd love to set up a quick 30-minute call to share a few ideas specific to ${p.c
 Best,
 ${senderName}`;
           setTone('ai_promo');
-          setDraftResult({ subject: 'AI Solutions Built for ' + (p.company_name || 'Your Company'), body, activeSender });
+          setDraftResult({ subjects: ['AI Solutions Built for ' + (p.company_name || 'Your Company')], body, activeSender });
           setEmailDrafting(false);
           return;
         }
