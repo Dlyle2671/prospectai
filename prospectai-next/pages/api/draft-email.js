@@ -294,7 +294,7 @@ export default async function handler(req, res) {
       'The sender works at ' + companyName + '.',
       '', 'LEAD:', 'Name: ' + (name || ''), contextStr, '',
       ...(newsSection ? [newsSection, ''] : []),
-      'OFFER: ' + companyName + ' helps companies build AI solutions on AWS — automation, copilots, intelligent workflows. As an AWS Premier Partner with AI competency, they can access special POC funding.',
+      'OFFER: ' + companyName + ' helps companies build AI solutions on AWS -- automation, copilots, intelligent workflows. As an AWS Premier Partner with AI competency, they can access special POC funding.',
       '', 'RULES:',
       '- Write a short, punchy cold email (max 150 words in the body).',
       '- Open with "Hi [first_name],".',
@@ -329,10 +329,10 @@ export default async function handler(req, res) {
     const fn = name ? name.split(' ')[0] : 'there';
     return res.status(200).json({
       subjects: ['AI Solutions Built for ' + (body.company_name || companyName)],
-      body: `Hi ${fn},\n\nAt ${companyName}, we build AI solutions on AWS that automate workflows and cut operational overhead.\n\nAs an AWS Premier Partner with AI competency, we can also unlock POC funding — so the first project is low-risk.\n\nWorth 30 minutes to explore what that could look like for ${body.company_name || 'your team'}?`,
+      body: `Hi ${fn},\n\nAt ${companyName}, we build AI solutions on AWS that automate workflows and cut operational overhead.\n\nAs an AWS Premier Partner with AI competency, we can also unlock POC funding -- so the first project is low-risk.\n\nWorth 30 minutes to explore what that could look like for ${body.company_name || 'your team'}?`,
     });
   }
-  // ─────────────────────────────────────────────────────────────────────────
+  // -------------------------------------------------------------------------
 
 
   const prompt = [
