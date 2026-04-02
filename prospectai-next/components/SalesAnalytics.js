@@ -778,7 +778,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
         const p = quota>0 ? Math.min(1,closed/quota) : 0;
         const remaining = Math.max(0, quota-closed);
         const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
-        const closedMRR = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+(Number(d.mrr)||0),0);
+        const closedMRR = dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').reduce((s,d)=>s+(Number(d.mrr)||0),0);
       const closedARR = dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').reduce((s,d)=>s+(dealARR(d)||0),0);
         const mrrQuota = quota > 0 ? quota/12 : 0;
         const mrrP = mrrQuota>0 ? Math.min(1,closedMRR/mrrQuota) : 0;
