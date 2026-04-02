@@ -158,7 +158,7 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
 
 I'll keep this short — at Cloudelligent, we help companies like yours cut costs, automate workflows, and make smarter decisions using AI.
 
-Whether it's a custom AI copilot, predictive analytics, or intelligent process automation, we build practical solutions on AWS, Azure, or Google Cloud that deliver real results — fast.
+Whether it's a custom AI copilot, predictive analytics, or intelligent process automation, we build practical solutions on AWS that deliver real results — fast.
 
 I'd love to set up a quick 30-minute call to share a few ideas specific to ${p.company_name || 'your company'}.
 
