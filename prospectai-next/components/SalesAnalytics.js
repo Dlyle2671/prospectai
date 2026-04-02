@@ -494,7 +494,7 @@ function DealsTab({data, save}){
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{rep?rep.name:'Unknown'}</td>
                   <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
                   <td>{d.client}</td>
-                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':d.stage==='SOW Sent'?'rgba(234,179,8,.2)':d.stage==='Forecasted'?'rgba(245,158,11,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':d.stage==='SOW Sent'?'#eab308':d.stage==='Forecasted'?'#fbbf24':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'—'}</span></td>
+                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':d.stage==='SOW Sent'?'rgba(59,130,246,.2)':d.stage==='Forecasted'?'rgba(245,158,11,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':d.stage==='SOW Sent'?'#60a5fa':d.stage==='Forecasted'?'#fbbf24':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'—'}</span></td>
                   <td style={{fontSize:12,color:'#94a3b8'}}>{d.source||'—'}</td>
                   <td>{MN[(d.month||1)-1]}</td>
                   <td>{d.cat==='PS'?fmt(d.amount)+' fee':fmt(d.mrr)+'/mo MRR'}</td>
@@ -1082,7 +1082,7 @@ function CommTab({data, filterRep, setFilterRep, showComm}){
                     {filterRep==='All'&&<td style={{color:'#f1f5f9',fontWeight:500}}>{repById[d.repId]||d.repId}</td>}
                     <td style={{color:'#f1f5f9',fontWeight:500}}>{d.client}</td>
                     <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.cat==='PS'?'rgba(139,92,246,.2)':d.cat==='FO'?'rgba(59,130,246,.2)':'rgba(16,185,129,.2)',color:d.cat==='PS'?'#a78bfa':d.cat==='FO'?'#60a5fa':'#34d399'}}>{CAT_LABEL[d.cat]||d.cat}</span></td>
-                    <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.stage==='Closed Won'?'rgba(16,185,129,.15)':d.stage==='Forecasted'?'rgba(245,158,11,.15)':d.stage==='SOW Sent'?'rgba(234,179,8,.15)':'rgba(100,116,139,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Forecasted'?'#fbbf24':d.stage==='SOW Sent'?'#eab308':'#94a3b8'}}>{d.stage||'—'}</span></td>
+                    <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.stage==='Closed Won'?'rgba(16,185,129,.15)':d.stage==='Forecasted'?'rgba(245,158,11,.15)':d.stage==='SOW Sent'?'rgba(59,130,246,.2)':'rgba(100,116,139,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Forecasted'?'#fbbf24':d.stage==='SOW Sent'?'#60a5fa':'#94a3b8'}}>{d.stage||'—'}</span></td>
                     {filterMonth==='All'&&<td>{MN[(d.month||1)-1]}</td>}
                     <td>{d.cat==='PS'?fmt(d.amount):fmt(d.mrr)+'/mo'}</td>
                     <td style={{fontWeight:700,color:'#34d399'}}>{fmt(dealComm(d))}</td>
