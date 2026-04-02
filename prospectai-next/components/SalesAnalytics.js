@@ -1372,8 +1372,8 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
       const ytdPct=CM_now/12;
       let totQ=0;
       ['PS','FO','MS'].forEach(cid=>{ totQ+=getQ(rep,cid); });
-      const attain=totQ>0?Math.round(totARR/(totQ*ytdPct)*100):0;
-      const status=totQ>0&&totARR>=(totQ*ytdPct)?'On Track':'Behind Pace';
+      const attain=totQ>0?Math.round(totMRR/(totQ*ytdPct)*100):0;
+      const status=totQ>0&&totMRR>=(totQ*ytdPct)?'On Track':'Behind Pace';
       const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
       let catRows='';
       cats.forEach(c=>{
