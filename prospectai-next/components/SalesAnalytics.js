@@ -494,7 +494,7 @@ function DealsTab({data, save}){
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{rep?rep.name:'Unknown'}</td>
                   <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
                   <td>{d.client}</td>
-                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'—'}</span></td>
+                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':d.stage==='SOW Sent'?'rgba(234,179,8,.2)':d.stage==='Forecasted'?'rgba(245,158,11,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':d.stage==='SOW Sent'?'#eab308':d.stage==='Forecasted'?'#fbbf24':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'—'}</span></td>
                   <td style={{fontSize:12,color:'#94a3b8'}}>{d.source||'—'}</td>
                   <td>{MN[(d.month||1)-1]}</td>
                   <td>{d.cat==='PS'?fmt(d.amount)+' fee':fmt(d.mrr)+'/mo MRR'}</td>
