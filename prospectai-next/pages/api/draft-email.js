@@ -299,11 +299,12 @@ export default async function handler(req, res) {
         '', 'RULES:',
         toneInstruction,
         '- Subjects: write exactly 3 subject line options, each max 8 words. Write them in this order: 1) curiosity-driven (intrigue, open question), 2) direct value prop (savings/%, company name), 3) personal hook (name or role). No bracket labels. Personalize each to this lead.',
-        '- Email body MUST start with "Hello [first_name]," on line 1, blank line 2, then "If you\'re NOT working with an AWS Authorized Reseller, you\'re leaving $$ on the table." on line 3, blank line 4, then "We work closely with AWS to deliver FinOps services to their customers." on line 5. Do NOT open with the hook, news, or any other line.',
+        '- Email body MUST start with "Hello [first_name]," on line 1, blank line 2, then "If you\'re NOT working with an AWS Authorized Reseller, you\'re leaving $ on the table." on line 3, blank line 4, then "We work closely with AWS to deliver FinOps services to their customers." on line 5. Do NOT open with the hook, news, or any other line.',
+        '- On line 7 (with a blank line 6 before it), write exactly 1 sentence that is a specific, observed use case for THIS lead. Use their actual role, title, tech stack, keywords, or company focus to explain concretely why AWS savings are relevant to them specifically. Do NOT write a generic industry statement. Reference something real from the LEAD data above. Example: "As a VP of Engineering running EC2 and RDS at DeltaMath, reducing over-provisioned reserved instances is usually the fastest win." Do NOT use phrases like "companies in your industry" or "teams like yours".',
         '- Section header must be exactly "Benefits:" (not "Benefits of the..." or any variant). Then list all 5 program details as bullet points using \u2022 characters',
         '- CTA must be exactly: "Worth 20 minutes to see what we\'d find in your first 30 days?"',
         '- Savings: always say 18-30%, timeframe always 30 days',
-        '- No sign-off. No buzzwords. Max 180 words in body.',
+        '- No sign-off. No buzzwords. Max 220 words in body.',
         '', 'Return ONLY JSON: { "subjects": ["curiosity subject here", "value subject here", "personal subject here"], "body": "... use \\n for line breaks" }',
       ].join('\n');
 
