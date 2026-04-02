@@ -247,14 +247,14 @@ function DashTab({data, showComm, setShowComm}){
             <th>PS Closed (YTD)</th><th>PS Quota (YTD)</th><th>PS %</th>
             <th>FO Closed (YTD)</th><th>FO Quota (YTD)</th><th>FO %</th>
             <th>MS Closed (YTD)</th><th>MS Quota (YTD)</th><th>MS %</th>
-            <th>Total Closed</th>
+          <th>Total Closed</th><th>Overall Quota %</th>
           </tr></thead>
           <tbody>
             {reps.map(r => {
               const psA=getActualFromDeals(r.id,'PS',deals), psQ=getQuota(r,'PS')*(CM/12);
               const foA=getActualFromDeals(r.id,'FO',deals), foQ=getQuota(r,'FO')*(CM/12);
               const msA=getActualFromDeals(r.id,'MS',deals), msQ=getQuota(r,'MS')*(CM/12);
-              const tot=psA+foA+msA;
+                const tot=psA+foA+msA; const totQ=psQ+foQ+msQ;
               return(
                 <tr key={r.id}>
                               <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
@@ -268,7 +268,7 @@ function DashTab({data, showComm, setShowComm}){
                   <td style={{color:'#34d399'}}>{fmt(msA)}</td>
                               <td style={{color:'#fff',fontSize:11}}>{fmt(msQ)}</td>
                   <td><span className={`sa-badge ${msA>=msQ?'ahead':'behind'}`}>{pct(msQ>0?msA/msQ:0)}</span></td>
-                  <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td>
+                <td style={{fontWeight:700,color:'#34d399'}}>{fmt(tot)}</td><td><span className={`sa-badge ${tot>=totQ?'ahead':'behind'}`}>{pct(totQ>0?tot/totQ:0)}</span></td>
                 </tr>
               );
             })}
