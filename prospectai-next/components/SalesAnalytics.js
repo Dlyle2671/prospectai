@@ -102,6 +102,7 @@ export default function SalesAnalytics({onBack}){
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filterRep, setFilterRep] = useState('All');
+  const [filterSource, setFilterSource] = useState('All');
   const [aiMessages, setAiMessages] = useState([]);
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -318,7 +319,8 @@ function DealsTab({data, save}){
   const filtered = deals
     .filter(d => filterCat==='All' || d.cat===filterCat)
     .filter(d => filterStage==='All' || d.stage===filterStage)
-    .filter(d => filterRep==='All' || (data.reps||[]).find(r=>r.id===d.repId)?.name===filterRep);
+    .filter(d => filterRep==='All' || (data.reps||[]).find(r=>r.id===d.repId)?.name===filterRep)
+    .filter(d => filterSource==='All' || d.source===filterSource);
   const rem = mrem(Number(df.month));
   const previewARR = df.cat==='PS' ? Number(df.amount)||0 : (Number(df.mrr)||0)*rem;
   const previewMRR = Number(df.mrr)||0;
@@ -357,6 +359,16 @@ function DealsTab({data, save}){
               {['All',...(data.reps||[]).map(r=>r.name)].map(r=>(
                 <button key={r} className={`sa-pill${filterRep===r?' on':''}`} onClick={()=>setFilterRep(r)}>
                   {r}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+            <span style={{fontSize:10,fontWeight:700,color:'#64748b',textTransform:'uppercase',letterSpacing:'.8px',minWidth:64}}>Source:</span>
+            <div className="sa-pills" style={{marginBottom:0}}>
+              {['All',...Array.from(new Set((data.deals||[]).map(d=>d.source).filter(Boolean)))].map(s=>(
+                <button key={s} className={`sa-pill${filterSource===s?' on':''}`} onClick={()=>setFilterSource(s)}>
+                  {s}
                 </button>
               ))}
             </div>
