@@ -500,7 +500,7 @@ function DealsTab({data, save}){
         </table>
         {filtered.length>0&&(
           <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.06)',display:'flex',gap:24,fontSize:13}}>
-            <span style={{color:'#fff'}}>Total ARR: <strong style={{color:'#34d399'}}>{fmt(filtered.reduce((s,d)=>s+dealARR(d),0))}</strong></span>
+            <span style={{color:'#fff'}}>Total ARR: <strong style={{color:'#34d399'}}>{fmt(filtered.filter(d=>d.stage==='Closed Won').reduce((s,d)=>s+dealARR(d),0))}</strong></span>
             
           </div>
         )}
@@ -773,14 +773,14 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
         {data.reps.map(r=><button key={r.id} className={`sa-pill${filterRep===r.id?' on':''}`} onClick={()=>setFilterRep(r.id)}>{r.name}</button>)}
       </div>
       {cats.map(c=>{
-        const closed = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealARR(d),0);
+        const closed = dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').reduce((s,d)=>s+dealARR(d),0);
         const quota = (filterRep==='All' && data.companyQuotas && data.companyQuotas[c.id]) ? data.companyQuotas[c.id] : repsFor.reduce((s,r)=>s+getQuota(r,c.id),0);
         const comm = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+dealComm(d),0);
         const p = quota>0 ? Math.min(1,closed/quota) : 0;
         const remaining = Math.max(0, quota-closed);
         const commLabel = c.id==='PS' ? '10% of fee' : c.id==='FO' ? '7% of 1st month MRR' : '1x MRR';
         const closedMRR = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+(Number(d.mrr)||0),0);
-      const closedARR = dealsFor.filter(d=>d.cat===c.id).reduce((s,d)=>s+(dealARR(d)||0),0);
+      const closedARR = dealsFor.filter(d=>d.cat===c.id&&d.stage==='Closed Won').reduce((s,d)=>s+(dealARR(d)||0),0);
         const mrrQuota = quota > 0 ? quota/12 : 0;
         const mrrP = mrrQuota>0 ? Math.min(1,closedMRR/mrrQuota) : 0;
         const mrrRemaining = Math.max(0, mrrQuota-closedMRR);
@@ -1128,9 +1128,9 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   filteredReps.forEach((r,idx)=>{
     if(idx>0){sc.push(['']);sc.push(['']);}
     const myDeals=repFilteredDeals.filter(d=>d.repId===r.id);
-    const psA=myDeals.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealARR(d),0);
-    const foA=myDeals.filter(d=>d.cat==='FO').reduce((s,d)=>s+d.mrr,0);
-    const msA=myDeals.filter(d=>d.cat==='MS').reduce((s,d)=>s+d.mrr,0);
+    const psA=myDeals.filter(d=>d.cat==='PS'&&d.stage==='Closed Won').reduce((s,d)=>s+dealARR(d),0);
+    const foA=myDeals.filter(d=>d.cat==='FO'&&d.stage==='Closed Won').reduce((s,d)=>s+d.mrr,0);
+    const msA=myDeals.filter(d=>d.cat==='MS'&&d.stage==='Closed Won').reduce((s,d)=>s+d.mrr,0);
     const totA=psA+foA+msA;
     const psQ=getQuota(r,'PS'),foQ=getQuota(r,'FO'),msQ=getQuota(r,'MS');
     const totQ=psQ+foQ+msQ;
@@ -1148,7 +1148,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     sc.push(['CATEGORY BREAKDOWN — YTD','','','','','','','']);
     sc.push(['Category','ARR Closed (YTD)','Annual Quota','YTD Quota','Attainment %','Commission (YTD)','Commission Rate','Deals (YTD)']);
     ['PS','FO','MS'].forEach(cat=>{
-      const cA=myDeals.filter(d=>d.cat===cat).reduce((s,d)=>s+(cat==='PS'?dealARR(d):d.mrr||0),0);
+      const cA=myDeals.filter(d=>d.cat===cat&&d.stage==='Closed Won').reduce((s,d)=>s+(cat==='PS'?dealARR(d):d.mrr||0),0);
       const cQ=getQuota(r,cat);
       const cComm=cat==='PS'?comm.ps:cat==='FO'?comm.fo:comm.ms;
       sc.push([CAT_FULL[cat],cA,cQ,cQ*(CM/12),cQ>0?(cA/(cQ*(CM/12))*100).toFixed(1)+'%':'--',cComm,CAT_RATE[cat],myDeals.filter(d=>d.cat===cat).length]);
