@@ -575,10 +575,10 @@ function handleQueueTrigger() {
         );
       })}
     </div>
-    <textarea readOnly value={(() => { let b = draftResult.body || ''; b = b + '\n\nBest,\nDwayne Lyle\nChief Revenue Officer | Cloudelligent\nM: 925.809.5498\nwww.cloudelligent.com'; return b; })()} style={{ width: '100%', minHeight: 140, background: '#020617', border: '1px solid #1e293b', borderRadius: 7, padding: '8px 10px', fontSize: 11, color: '#cbd5e1', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.5 }} onClick={e => e.target.select()} />
+    <textarea readOnly value={(() => { let b = draftResult.body || ''; b = b.replace(/\n\n(Best|Thanks|Regards|Sincerely|Cheers|Warm regards|Kind regards|Best regards|Talk soon|Looking forward)[\s\S]*$/i, '').replace(/\s+$/, '') + '\n\nBest,\nDwayne Lyle\nChief Revenue Officer | Cloudelligent\nM: 925.809.5498\nwww.cloudelligent.com'; return b; })()} style={{ width: '100%', minHeight: 140, background: '#020617', border: '1px solid #1e293b', borderRadius: 7, padding: '8px 10px', fontSize: 11, color: '#cbd5e1', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', lineHeight: 1.5 }} onClick={e => e.target.select()} />
     <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
       <button onClick={() => {
-        const b = (() => { let b = draftResult.body || ''; b = b + '\n\nBest,\nDwayne Lyle\nChief Revenue Officer | Cloudelligent\nM: 925.809.5498\nwww.cloudelligent.com'; return b; })();
+        const b = (() => { let b = draftResult.body || ''; b = b.replace(/\n\n(Best|Thanks|Regards|Sincerely|Cheers|Warm regards|Kind regards|Best regards|Talk soon|Looking forward)[\s\S]*$/i, '').replace(/\s+$/, '') + '\n\nBest,\nDwayne Lyle\nChief Revenue Officer | Cloudelligent\nM: 925.809.5498\nwww.cloudelligent.com'; return b; })();
         navigator.clipboard.writeText(b).catch(() => {});
         setEmailCopied(true); setTimeout(() => setEmailCopied(false), 2000);
       }} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #334155', background: emailCopied ? '#0e7490' : '#1e293b', color: emailCopied ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>
@@ -586,7 +586,7 @@ function handleQueueTrigger() {
       </button>
       <button onClick={() => {
         const subj = (draftResult.subjects && draftResult.subjects[0] || '').replace(/^[(CURIOSITY|VALUE|PERSONAL)]s*/, '');
-        const b = (() => { let b = draftResult.body || ''; b = b + '\n\nBest,\nDwayne Lyle\nChief Revenue Officer | Cloudelligent\nM: 925.809.5498\nwww.cloudelligent.com'; return b; })();
+        const b = (() => { let b = draftResult.body || ''; b = b.replace(/\n\n(Best|Thanks|Regards|Sincerely|Cheers|Warm regards|Kind regards|Best regards|Talk soon|Looking forward)[\s\S]*$/i, '').replace(/\s+$/, '') + '\n\nBest,\nDwayne Lyle\nChief Revenue Officer | Cloudelligent\nM: 925.809.5498\nwww.cloudelligent.com'; return b; })();
         const a = document.createElement('a');
         a.href = 'mailto:' + draftResult.to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(b);
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
