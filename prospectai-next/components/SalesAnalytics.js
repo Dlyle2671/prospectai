@@ -7,7 +7,7 @@ const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Servi
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; 
-// v3
+// v4
 function nid(){ return Date.now()+'_'+Math.random().toString(36).slice(2); }
 // ARR calc per deal: PS = one-time fee (not annualized), FO/MS = MRR x months remaining 
 function dealARR(d){
