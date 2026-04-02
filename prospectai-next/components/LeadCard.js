@@ -151,6 +151,24 @@ export default function LeadCard({ p, index, onHubspotPush, sequences = [], send
           setEmailDrafting(false);
           return;
         }
+        if (selectedTone === 'ai_promo') {
+          const firstName = p.first_name || (p.name ? p.name.split(' ')[0] : 'there');
+          const senderName = activeSender ? activeSender.name : '';
+          const body = `Hi ${firstName},
+
+I'll keep this short — at Cloudelligent, we help companies like yours cut costs, automate workflows, and make smarter decisions using AI.
+
+Whether it's a custom AI copilot, predictive analytics, or intelligent process automation, we build practical solutions on AWS, Azure, or Google Cloud that deliver real results — fast.
+
+I'd love to set up a quick 30-minute call to share a few ideas specific to ${p.company_name || 'your company'}.
+
+Best,
+${senderName}`;
+          setTone('ai_promo');
+          setDraftResult({ subject: 'AI Solutions Built for ' + (p.company_name || 'Your Company'), body, activeSender });
+          setEmailDrafting(false);
+          return;
+        }
         if (toneAction === 'queue') { handleQueueWithTone(selectedTone); return; }
         setTone(selectedTone);
         setEmailDrafting(true);
@@ -470,6 +488,7 @@ function handleQueueTrigger() {
                   {[
                     { key: 'personalised', label: 'Personalised', desc: 'AI-crafted, highly personal' },
                     { key: 'standard', label: 'Standard', desc: 'Proven template, fast send' },
+                    { key: 'ai_promo', label: 'AI Services Promo', desc: 'Promote Cloudelligent AI services' },
                   ].map(opt => (
                     <button key={opt.key} onClick={() => handleToneSelected(opt.key)}
                       style={{ display: 'block', width: '100%', textAlign: 'left', padding: '7px 10px', marginBottom: 4, borderRadius: 7, border: '1px solid #334155', background: 'transparent', color: '#f1f5f9', cursor: 'pointer', transition: 'background 0.1s' }}
