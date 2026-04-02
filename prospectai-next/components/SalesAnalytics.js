@@ -500,7 +500,7 @@ function DealsTab({data, save}){
         </table>
         {filtered.length>0&&(
           <div style={{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.06)',display:'flex',gap:24,fontSize:13}}>
-            <span style={{color:'#fff'}}>Total MRR: <strong style={{color:'#34d399'}}>{fmt(filtered.filter(d=>d.stage==='Closed Won'&&d.cat!=='PS').reduce((s,d)=>s+(d.mrr||0),0))}/mo</strong></span><span style={{color:'#fff'}}>Total ARR: <strong style={{color:'#34d399'}}>{fmt(filtered.filter(d=>d.stage==='Closed Won').reduce((s,d)=>s+dealARR(d),0))}</strong></span>
+            <span style={{color:'#fff'}}>Total MRR: <strong style={{color:'#34d399'}}>{fmt(filtered.filter(d=>d.cat!=='PS').reduce((s,d)=>s+(d.mrr||0),0))}/mo</strong></span><span style={{color:'#fff'}}>Total ARR: <strong style={{color:'#34d399'}}>{fmt(filtered.reduce((s,d)=>s+dealARR(d),0))}</strong></span>
             
           </div>
         )}
