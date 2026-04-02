@@ -287,7 +287,7 @@ export default async function handler(req, res) {
     : 'TONE: Conversational and human. Write like a sharp colleague, not a sales robot. Contractions are fine. Approachable but still credible.';
 
 
-  // ── AI SERVICES PROMO ─────────────────────────────────────────────────────
+  // -- AI SERVICES PROMO --------------------------------------------------------------------
   if (tone === 'ai_promo') {
     const aiPromoPrompt = [
       'You are a B2B sales expert writing a short, personalized outreach email promoting AI services built on AWS.',
@@ -298,7 +298,7 @@ export default async function handler(req, res) {
       '', 'RULES:',
       '- Write a short, punchy cold email (max 150 words in the body).',
       '- Open with "Hi [first_name],".',
-      '- In 1-2 sentences, describe a SPECIFIC AI use case that is directly relevant to this lead based on their actual role, title, tech stack, keywords, or company description. Do NOT write a generic industry statement. Reference something concrete from the LEAD data above. Example: "As VP of Engineering at DeltaMath, AI-powered automated grading and adaptive tutoring could meaningfully reduce your team's manual load." Do NOT use phrases like "companies in your industry" or "teams like yours".',
+      '- In 1-2 sentences, describe a SPECIFIC AI use case that is directly relevant to this lead based on their actual role, title, tech stack, keywords, or company description. Do NOT write a generic industry statement. Reference something concrete from the LEAD data above. Example: "As VP of Engineering at DeltaMath, AI-powered automated grading and adaptive tutoring could meaningfully reduce your team\'s manual load." Do NOT use phrases like "companies in your industry" or "teams like yours".',
       '- Mention the AWS POC funding as a low-risk entry point.',
       '- Close with a single CTA asking for 30 minutes.',
       '- No sign-off line. No buzzwords.',
