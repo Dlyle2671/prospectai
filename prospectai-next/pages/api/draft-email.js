@@ -329,7 +329,7 @@ export default async function handler(req, res) {
     const fn = name ? name.split(' ')[0] : 'there';
     return res.status(200).json({
       subjects: ['AI Solutions Built for ' + (body.company_name || companyName)],
-      body: 'Hi ' + fn + ',\n\nAt ' + companyName + ', we build AI solutions on AWS -- automation, copilots, intelligent workflows.\n\nAs an AWS Premier Partner with AI competency, we can also unlock POC funding -- so the first project is low-risk.\n\nWorth 30 minutes to explore what that could look like for ' + (body.company_name || 'your team') + '?'Hi ${fn},\n\nAt ${companyName}, we build AI solutions on AWS that automate workflows and cut operational overhead.\n\nAs an AWS Premier Partner with AI competency, we can also unlock POC funding -- so the first project is low-risk.\n\nWorth 30 minutes to explore what that could look like for ${body.company_name || 'your team'}?`,
+      body: 'Hi ' + fn + ',\n\nAt ' + companyName + ', we build AI solutions on AWS -- automation, copilots, intelligent workflows.\n\nAs an AWS Premier Partner with AI competency, we can also unlock POC funding -- so the first project is low-risk.\n\nWorth 30 minutes to explore what that could look like for ' + (body.company_name || 'your team') + '?',
     });
   }
   // -------------------------------------------------------------------------
