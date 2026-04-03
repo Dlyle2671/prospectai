@@ -1,4 +1,4 @@
-// ProspectAI — /api/admin
+——————// ProspectAI — /api/admin
 // Admin-only API: list users, get user activity, delete user
 // Gated to ADMIN_USER_ID only
 import { getAuth, clerkClient } from '@clerk/nextjs/server';
