@@ -261,13 +261,13 @@ function IntentDashboard() {
   async function deleteDomain(domain) {
     setDeletingDomain(domain);
     await fetch('/api/admin/intent?domain=' + encodeURIComponent(domain), { method: 'DELETE' });
-    setData(prev => ({ ...prev, domains: prev.domains.filter(d => d.domain !== domain), today: { ...prev.today, count: Math.max(0, (prev.today?.count || 1) - 1) } }));
+    setData(prev => ({ ...prev, domains: prev.domains.filter(d => d.domain !== domain), today: { ...prev.today, count: Math.max(0, (prev.daily?.count || 1) - 1) } }));
     setDeletingDomain(null);
   }
   async function clearAll() {
     setClearing(true);
-    if (data?.domains) {
-      await Promise.all(data.domains.map(d => fetch('/api/admin/intent?domain=' + encodeURIComponent(d.domain), { method: 'DELETE' })));
+    if (data?.entries) {
+      await Promise.all(data.entries.map(d => fetch('/api/admin/intent?domain=' + encodeURIComponent(d.domain), { method: 'DELETE' })));
     }
     setConfirmClear(false); setClearing(false);
     load();
@@ -287,8 +287,8 @@ function IntentDashboard() {
     } catch (e) { setSeedMsg('❌ ' + e.message); }
     setSeeding(false);
   }
-  const limit = data?.limit || 25;
-  const todayCount = data?.today?.count || 0;
+  const limit = data?.daily?.limit || 25;
+  const todayCount = data?.daily?.count || 0;
   const pct = Math.min(100, Math.round((todayCount / limit) * 100));
   const history = data?.history || [];
   const maxHistCount = Math.max(1, ...history.map(h => h.count || 0));
@@ -306,7 +306,7 @@ function IntentDashboard() {
             <button onClick={() => setConfirmClear(true)} style={{ ...s.btnDanger, padding: '5px 14px' }}>Clear All</button>
           ) : (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: 12, color: '#ef4444' }}>Delete all {data?.domains?.length || 0} domains?</span>
+              <span style={{ fontSize: 12, color: '#ef4444' }}>Delete all {data?.entries?.length || 0} domains?</span>
               <button onClick={clearAll} disabled={clearing} style={{ ...s.btnDanger, background: '#7f1d1d', color: '#fca5a5' }}>{clearing ? 'Clearing…' : 'Yes, clear all'}</button>
               <button onClick={() => setConfirmClear(false)} style={{ ...s.btnPrimary, background: 'transparent', border: '1px solid #334155', color: '#94a3b8' }}>Cancel</button>
             </div>
@@ -358,9 +358,9 @@ function IntentDashboard() {
           </div>
           <div style={s.card}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>Active Intent Domains ({data?.domains?.length || 0})</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>Active Intent Domains ({data?.entries?.length || 0})</div>
             </div>
-            {!data?.domains?.length ? <div style={{ color: '#334155', fontStyle: 'italic', fontSize: 13 }}>No intent domains in Redis yet. Waiting for Apollo signals.</div> : (
+            {!data?.entries?.length ? <div style={{ color: '#334155', fontStyle: 'italic', fontSize: 13 }}>No intent domains in Redis yet. Waiting for Apollo signals.</div> : (
               <table style={s.table}>
                 <thead>
                   <tr>
@@ -374,17 +374,17 @@ function IntentDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.domains.map((d, i) => (
+                  {data.entries.map((d, i) => (
                     <tr key={d.domain} style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,.01)' }}>
                       <td style={s.td}>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{d.org || d.domain}</div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>{d.org_name || d.domain}</div>
                         <div style={{ fontSize: 11, color: '#475569' }}>{d.domain}</div>
                       </td>
-                      <td style={s.td}><span style={s.pill(strengthColor[d.strength] || '#64748b')}>{d.strength || '?'}</span></td>
-                      <td style={{ ...s.td, color: '#94a3b8' }}>{Array.isArray(d.signals) ? d.signals.join(', ') : (d.signals || '—')}</td>
+                      <td style={s.td}><span style={s.pill(strengthColor[(d.intent_strength || '').toUpperCase()] || '#64748b')}>{(d.intent_strength || '').toUpperCase() || '?'}</span></td>
+                      <td style={{ ...s.td, color: '#94a3b8' }}>{Array.isArray(d.intent_signals) ? d.intent_signals.join(', ') : (d.intent_signals || '—')}</td>
                       <td style={{ ...s.td, color: '#64748b', fontSize: 11 }}>{d.source || 'apollo'}</td>
                       <td style={{ ...s.td, color: '#64748b', fontSize: 11 }}>{timeAgo(d.updatedAt)}</td>
-                      <td style={{ ...s.td, fontSize: 11, color: d.ttl < 86400 ? '#f59e0b' : '#64748b' }}>{fmtTTL(d.ttl)}</td>
+                      <td style={{ ...s.td, fontSize: 11, color: d.ttl_seconds < 86400 ? '#f59e0b' : '#64748b' }}>{fmtTTL(d.ttl_seconds)}</td>
                       <td style={s.td}>
                         <button style={s.btnDanger} onClick={() => deleteDomain(d.domain)} disabled={deletingDomain === d.domain}>{deletingDomain === d.domain ? '…' : 'Del'}</button>
                       </td>
