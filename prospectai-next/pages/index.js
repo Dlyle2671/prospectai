@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -29,7 +29,7 @@ const TABS = [
   { id: 'credits', label: 'Credits' },
   { id: 'salesanalytics', label: 'Sales Analytics' },
   { id: 'settings', label: 'Settings' },
-];
+  ];
 const FEATURES = [
   { id: 'leads', icon: '🔍', title: 'Find Leads', desc: 'Discover enriched contacts scored by priority. Filter by job title, industry, company size, and geography.', accent: 'linear-gradient(90deg,#6366f1,#818cf8)', iconBg: 'rgba(99,102,241,0.12)' },
   { id: 'company', icon: '🏢', title: 'Company Intel', desc: 'Deep-dive into company profiles, tech stacks, AWS footprint, and firmographics for your target accounts.', accent: 'linear-gradient(90deg,#0ea5e9,#38bdf8)', iconBg: 'rgba(14,165,233,0.12)' },
@@ -41,17 +41,29 @@ const FEATURES = [
   { id: 'emailqueue', icon: '📧', title: 'Email Queue', desc: 'Review, edit, and send drafted emails to your prospects. Manage your full outreach pipeline here.', accent: 'linear-gradient(90deg,#a855f7,#c084fc)', iconBg: 'rgba(168,85,247,0.12)' },
   { id: 'intent', icon: '🔥', title: 'Buying Intent', desc: 'Companies actively researching Cloud, AWS & Managed Services right now. Auto-populates daily from Apollo intent signals.', accent: 'linear-gradient(90deg,#ef4444,#f97316)', iconBg: 'rgba(239,68,68,0.12)' },
   { id: 'salesanalytics', icon: '📊', title: 'Sales Analytics', desc: 'Track quota attainment, commissions, and rep performance across PS, FinOps, and Managed Services.', accent: 'linear-gradient(90deg,#6366f1,#34d399)', iconBg: 'rgba(99,102,241,0.12)' },
-];
+  ];
 const HOME_STYLES = `
 .pai-home{min-height:100vh;background:#0d1117;display:flex;flex-direction:column;font-family:'DM Sans',-apple-system,sans-serif;color:#fff;animation:paiIn 0.4s ease;}
 @keyframes paiIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .pai-home-topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;}
 .pai-home-logo{font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.3px;}
 .pai-home-logo span{color:#818cf8;}
-.pai-home-user{display:flex;align-items:center;gap:10px;color:#64748b;font-size:13px;}
+.pai-home-user{display:flex;align-items:center;gap:10px;color:#64748b;font-size:13px;position:relative;cursor:pointer;border-radius:8px;padding:6px 10px;transition:background 0.15s ease;}
+.pai-home-user:hover{background:rgba(129,140,248,0.08);}
 .pai-home-avatar{width:34px;height:34px;border-radius:50%;border:2px solid rgba(129,140,248,0.35);object-fit:cover;}
 .pai-home-username{color:#e2e8f0;font-weight:500;}
-.pai-home-dot{color:#1e293b;font-size:8px;}
+.pai-home-chevron{color:#64748b;font-size:10px;transition:transform 0.2s ease;line-height:1;}
+.pai-home-user.open .pai-home-chevron{transform:rotate(180deg);}
+.pai-user-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;min-width:200px;background:#131c2e;border:1px solid rgba(255,255,255,0.08);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.45);z-index:9999;overflow:hidden;animation:dropIn 0.15s ease;}
+@keyframes dropIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.pai-home-user.open .pai-user-dropdown{display:block;}
+.pai-user-dropdown-header{padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.06);}
+.pai-user-dropdown-name{font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:2px;}
+.pai-user-dropdown-email{font-size:11px;color:#64748b;}
+.pai-user-dropdown-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:#94a3b8;cursor:pointer;transition:background 0.12s ease,color 0.12s ease;border:none;background:none;width:100%;text-align:left;font-family:inherit;}
+.pai-user-dropdown-item:hover{background:rgba(129,140,248,0.1);color:#e2e8f0;}
+.pai-user-dropdown-divider{height:1px;background:rgba(255,255,255,0.06);}
+.pai-user-dropdown-item.danger:hover{background:rgba(239,68,68,0.1);color:#f87171;}
 .pai-home-hero{padding:52px 40px 40px;text-align:center;flex-shrink:0;}
 .pai-home-greeting{font-size:12px;font-weight:600;color:#818cf8;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:14px;}
 .pai-home-headline{font-size:40px;font-weight:700;color:#f1f5f9;letter-spacing:-1.2px;line-height:1.15;margin-bottom:16px;}
@@ -96,148 +108,182 @@ const APP_STYLES = `
 .search-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(79,70,229,0.6);}
 `;
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('leads');
-  const [showHome, setShowHome] = useState(true);
-  const [loadedSnapshot, setLoadedSnapshot] = useState(null);
-  const [checkingOnboard, setCheckingOnboard] = useState(true);
-  const [featureFlags, setFeatureFlags] = useState(null);
-  const { user, isLoaded } = useUser();
-  const { signOut } = useClerk();
-  const router = useRouter();
-  const hour = typeof window !== 'undefined' ? new Date().getHours() : 12;
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const firstName = user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'there';
-  const today = typeof window !== 'undefined' ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (!user) { setCheckingOnboard(false); return; }
-    Promise.all([
-      fetch('/api/user-settings?ns=onboarding_complete').then(r => r.json()),
-      fetch('/api/user-settings?ns=icp_weights').then(r => r.json()),
-      fetch('/api/user-settings?ns=sender_emails').then(r => r.json()),
-      fetch('/api/user-settings?ns=feature_flags').then(r => r.json()),
-    ])
-    .then(([done, icp, senders, flagsRes]) => {
-      const isComplete = done.data || icp.data || senders.data;
-      if (!isComplete) { router.replace('/onboarding'); }
-      else { setCheckingOnboard(false); const ff = flagsRes?.data || null; setFeatureFlags(ff); }
-    })
-    .catch(() => setCheckingOnboard(false));
-  }, [isLoaded, user]);
-  const handleLoadSnapshot = (snapshotData) => { setLoadedSnapshot(snapshotData); setActiveTab('awsopps'); };
-  const handleCardClick = (featureId) => { setShowHome(false); setActiveTab(featureId); };
-  const isAdmin = user?.id === ADMIN_USER_ID;
-  const visibleTabs = featureFlags ? TABS.filter(t => featureFlags[t.id] !== false) : TABS;
-  if (checkingOnboard) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#020817', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: '#475569', fontSize: 14 }}>Loading...</div>
-      </div>
+    const [activeTab, setActiveTab] = useState('leads');
+    const [showHome, setShowHome] = useState(true);
+    const [loadedSnapshot, setLoadedSnapshot] = useState(null);
+    const [checkingOnboard, setCheckingOnboard] = useState(true);
+    const [featureFlags, setFeatureFlags] = useState(null);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const userMenuRef = useRef(null);
+    const { user, isLoaded } = useUser();
+    const { signOut, openUserProfile } = useClerk();
+    const router = useRouter();
+    const hour = typeof window !== 'undefined' ? new Date().getHours() : 12;
+    const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    const firstName = user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'there';
+    const today = typeof window !== 'undefined' ? new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    useEffect(() => {
+          if (!isLoaded) return;
+          if (!user) { setCheckingOnboard(false); return; }
+          Promise.all([
+                  fetch('/api/user-settings?ns=onboarding_complete').then(r => r.json()),
+                  fetch('/api/user-settings?ns=icp_weights').then(r => r.json()),
+                  fetch('/api/user-settings?ns=sender_emails').then(r => r.json()),
+                  fetch('/api/user-settings?ns=feature_flags').then(r => r.json()),
+                ])
+          .then(([done, icp, senders, flagsRes]) => {
+                  const isComplete = done.data || icp.data || senders.data;
+                  if (!isComplete) { router.replace('/onboarding'); }
+                  else { setCheckingOnboard(false); const ff = flagsRes?.data || null; setFeatureFlags(ff); }
+          })
+          .catch(() => setCheckingOnboard(false));
+    }, [isLoaded, user]);
+    useEffect(() => {
+          function handleClickOutside(e) {
+                  if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+                            setShowUserMenu(false);
+                  }
+          }
+          document.addEventListener('mousedown', handleClickOutside);
+          return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+    const handleLoadSnapshot = (snapshotData) => { setLoadedSnapshot(snapshotData); setActiveTab('awsopps'); };
+    const handleCardClick = (featureId) => { setShowHome(false); setActiveTab(featureId); };
+    const isAdmin = user?.id === ADMIN_USER_ID;
+    const visibleTabs = featureFlags ? TABS.filter(t => featureFlags[t.id] !== false) : TABS;
+    if (checkingOnboard) {
+          return (
+                  <div style={{ minHeight: '100vh', background: '#020817', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ color: '#475569', fontSize: 14 }}>Loading...</div>
+  </div>
     );
-  }
-  if (showHome) {
-    return (
-      <>
-        <Head>
-          <title><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></title>
-          <meta name="description" content="AI-powered prospecting platform" />
-          <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <link rel="icon" href="/favicon.ico" />
-          <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-          <style>{HOME_STYLES}</style>
-        </Head>
-        <div className="pai-home">
-          <div className="pai-home-topbar">
-            <div className="pai-home-logo"><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></div>
-            <div className="pai-home-user">
-              {user?.imageUrl && <img src={user.imageUrl} alt="avatar" className="pai-home-avatar" />}
-              <span className="pai-home-username">{user?.fullName || firstName}</span>
-              <span className="pai-home-dot">●</span>
-              <span className="pai-home-email">{user?.primaryEmailAddress?.emailAddress}</span>
+}
+  const UserMenu = () => (
+        <div
+      ref={userMenuRef}
+      className={`pai-home-user${showUserMenu ? ' open' : ''}`}
+      onClick={() => setShowUserMenu(v => !v)}
+    >
+{user?.imageUrl && <img src={user.imageUrl} alt="avatar" className="pai-home-avatar" />}
+      <span className="pai-home-username">{user?.fullName || firstName}</span>
+      <svg className="pai-home-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+      <div className="pai-user-dropdown" onClick={e => e.stopPropagation()}>
+          <div className="pai-user-dropdown-header">
+            <div className="pai-user-dropdown-name">{user?.fullName || firstName}</div>
+          <div className="pai-user-dropdown-email">{user?.primaryEmailAddress?.emailAddress}</div>
+  </div>
+        <button className="pai-user-dropdown-item" onClick={() => { setShowUserMenu(false); openUserProfile(); }}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 7.5C9.157 7.5 10.5 6.157 10.5 4.5C10.5 2.843 9.157 1.5 7.5 1.5C5.843 1.5 4.5 2.843 4.5 4.5C4.5 6.157 5.843 7.5 7.5 7.5Z" stroke="currentColor" strokeWidth="1.3"/><path d="M2 13C2 11.067 4.462 9.5 7.5 9.5C10.538 9.5 13 11.067 13 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          Manage Profile
+            </button>
+        <div className="pai-user-dropdown-divider" />
+                    <button className="pai-user-dropdown-item danger" onClick={() => { setShowUserMenu(false); signOut(); }}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M10 1H13C13.552 1 14 1.448 14 2V13C14 13.552 13.552 14 13 14H10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M7 10L10 7.5L7 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 7.5H1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          Sign Out
+            </button>
             </div>
-          </div>
+            </div>
+  );
+  if (showHome) {
+        return (
+                <>
+                  <Head>
+                    <title><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></title>
+              <meta name="description" content="AI-powered prospecting platform" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <link rel="icon" href="/favicon.ico" />
+              <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+              <style>{HOME_STYLES}</style>
+    </Head>
+        <div className="pai-home">
+              <div className="pai-home-topbar">
+                <div className="pai-home-logo"><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></div>
+                <UserMenu />
+    </div>
           <div className="pai-home-hero">
-            <div className="pai-home-greeting">{greeting}, {firstName} 👋</div>
+                <div className="pai-home-greeting">{greeting}, {firstName} 👋</div>
             <div className="pai-home-headline">What would you like to<br /><span>work on today?</span></div>
-            <div className="pai-home-sub">Select a tool below to jump right in. Everything you need to find, enrich, and engage your best prospects.</div>
+                <div className="pai-home-sub">Select a tool below to jump right in. Everything you need to find, enrich, and engage your best prospects.</div>
             <div className="pai-home-tools-label">Available tools</div>
-          </div>
+    </div>
           <div className="pai-home-grid">
-            {FEATURES.map(f => (
-              <div key={f.id} className="pai-home-card"
-                style={{ '--card-accent': f.accent, '--card-icon-bg': f.iconBg }}
+  {FEATURES.map(f => (
+                  <div key={f.id} className="pai-home-card"
+                                style={{ '--card-accent': f.accent, '--card-icon-bg': f.iconBg }}
                 onClick={() => handleCardClick(f.id)}
               >
                 <div className="pai-home-card-icon">{f.icon}</div>
                 <div className="pai-home-card-title">{f.title}</div>
                 <div className="pai-home-card-desc">{f.desc}</div>
                 <div className="pai-home-card-footer"><span className="pai-home-card-arrow">→</span></div>
-              </div>
+                </div>
             ))}
-          </div>
+              </div>
           <div className="pai-home-stats">
-            <div className="pai-home-stat"><div className="pai-home-stat-val">11</div><div className="pai-home-stat-label">Tools Available</div></div>
+                          <div className="pai-home-stat"><div className="pai-home-stat-val">11</div><div className="pai-home-stat-label">Tools Available</div></div>
             <div className="pai-home-stat-divider" />
-            <div className="pai-home-stat"><div className="pai-home-stat-val">AWS</div><div className="pai-home-stat-label">Always Included</div></div>
+                          <div className="pai-home-stat"><div className="pai-home-stat-val">AWS</div><div className="pai-home-stat-label">Always Included</div></div>
             <div className="pai-home-stat-divider" />
-            <div className="pai-home-stat"><div className="pai-home-stat-val">Live</div><div className="pai-home-stat-label">Data Status</div></div>
+                          <div className="pai-home-stat"><div className="pai-home-stat-val">Live</div><div className="pai-home-stat-label">Data Status</div></div>
             <div className="pai-home-stat-divider" />
-            <div className="pai-home-stat"><div className="pai-home-stat-val">{today}</div><div className="pai-home-stat-label">Today</div></div>
-          </div>
-        </div>
-      </>
-    );
-  }
-  return (
-    <>
-      <Head>
-        <title><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></title>
-        <meta name="description" content="AI-powered prospecting platform" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-        <style>{APP_STYLES}</style>
-      </Head>
-      <div className="app-layout">
-        <aside className="sidebar">
-          <div className="sidebar-logo" onClick={() => setShowHome(true)} style={{ cursor: 'pointer' }}><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></div>
-          <nav className="sidebar-nav">
-            {visibleTabs.map(tab => (
-              <button key={tab.id} className={`sidebar-btn${activeTab === tab.id ? ' active' : ''}`} onClick={() => setActiveTab(tab.id)}>
-                {tab.label}
-              </button>
-            ))}
-            {isAdmin && (
-              <Link href="/admin-portal" className="sidebar-btn" style={{ display: 'block', textAlign: 'left', marginTop: 8, borderTop: '1px solid #1e293b', paddingTop: 12, color: '#818cf8', textDecoration: 'none' }}>
-                Admin Portal
-              </Link>
-            )}
-          </nav>
-          <div className="sidebar-footer" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-            {user && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <UserButton afterSignOutUrl="/sign-in" />
-                <span className="sidebar-email" style={{ flex: 1 }}>{user.primaryEmailAddress?.emailAddress}</span>
+                          <div className="pai-home-stat"><div className="pai-home-stat-val">{today}</div><div className="pai-home-stat-label">Today</div></div>
               </div>
+              </div>
+              </>
+    );
+}
+  return (
+        <>
+          <Head>
+            <title><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></title>
+            <meta name="description" content="AI-powered prospecting platform" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <link rel="icon" href="/favicon.ico" />
+            <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+            <style>{APP_STYLES}</style>
+    </Head>
+      <div className="app-layout">
+            <aside className="sidebar">
+              <div className="sidebar-logo" onClick={() => setShowHome(true)} style={{ cursor: 'pointer' }}><img src="/cloudelligent-logo.png" alt="Cloudelligent" style={{height:'28px',width:'auto',filter:'brightness(0) invert(1)'}} /></div>
+              <nav className="sidebar-nav">
+  {visibleTabs.map(tab => (
+                  <button key={tab.id} className={`sidebar-btn${activeTab === tab.id ? ' active' : ''}`} onClick={() => setActiveTab(tab.id)}>
+{tab.label}
+</button>
+            ))}
+{isAdmin && (
+                <Link href="/admin-portal" className="sidebar-btn" style={{ display: 'block', textAlign: 'left', marginTop: 8, borderTop: '1px solid #1e293b', paddingTop: 12, color: '#818cf8', textDecoration: 'none' }}>
+                Admin Portal
+                  </Link>
+            )}
+</nav>
+          <div className="sidebar-footer" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+{user && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <UserButton afterSignOutUrl="/sign-in" />
+                  <span className="sidebar-email" style={{ flex: 1 }}>{user.primaryEmailAddress?.emailAddress}</span>
+  </div>
             )}
             <button onClick={() => signOut()} style={{ width: '100%', padding: '7px 0', borderRadius: 8, border: '1px solid rgba(239,68,68,0.4)', background: 'transparent', color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer', letterSpacing: '.03em' }}>Sign Out</button>
-          </div>
-        </aside>
+              </div>
+              </aside>
         <main className="app-main">
-          {activeTab === 'leads' && <FindLeads />}
-          {activeTab === 'company' && <CompanyIntel />}
-          {activeTab === 'bulk' && <BulkProspector />}
-          {activeTab === 'jobchanges' && <JobChanges />}
-          {activeTab === 'people' && <PeopleLookup />}
-          {activeTab === 'credits' && <Credits />}
-          {activeTab === 'lookalike' && <LookalikSearch />}
-          {activeTab === 'awsopps' && <LeadScoring initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
-          {activeTab === 'settings' && <Settings />}
-          {activeTab === 'emailqueue' && <EmailQueue />}
-          {activeTab === 'salesanalytics' && <SalesAnalytics onBack={() => setShowHome(true)} />}
-          {activeTab === 'intent' && <BuyingIntent />}
-        </main>
-      </div>
-    </>
+            {activeTab === 'leads' && <FindLeads />}
+            {activeTab === 'company' && <CompanyIntel />}
+{activeTab === 'bulk' && <BulkProspector />}
+{activeTab === 'jobchanges' && <JobChanges />}
+{activeTab === 'people' && <PeopleLookup />}
+{activeTab === 'credits' && <Credits />}
+{activeTab === 'lookalike' && <LookalikSearch />}
+{activeTab === 'awsopps' && <LeadScoring initialSnapshot={loadedSnapshot} onSnapshotConsumed={() => setLoadedSnapshot(null)} />}
+{activeTab === 'settings' && <Settings />}
+{activeTab === 'emailqueue' && <EmailQueue />}
+{activeTab === 'salesanalytics' && <SalesAnalytics onBack={() => setShowHome(true)} />}
+{activeTab === 'intent' && <BuyingIntent />}
+</main>
+  </div>
+  </>
   );
 }
