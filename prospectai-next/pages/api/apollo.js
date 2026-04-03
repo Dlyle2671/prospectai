@@ -46,7 +46,6 @@ function buildLead(p, org, icp) {
   const intent_signals=[];
   if(recently_funded&&funding_stage) intent_signals.push({type:'funding',label:funding_stage+(funding_round_amount?(funding_round_amount>=1e9?' $'+(funding_round_amount/1e9).toFixed(1)+'B':funding_round_amount>=1e6?' $'+(funding_round_amount/1e6).toFixed(0)+'M':''):'')}); else if(recently_funded) intent_signals.push({type:'funding',label:'Recently Funded'});
   if(hiring_surge) intent_signals.push({type:'hiring',label:job_postings_count?job_postings_count+' open roles':'Hiring Surge'});
-  // Merge Apollo native intent signals (requires Professional plan)
   const apolloIntentTopics = org.intent_signals || [];
   apolloIntentTopics.forEach(s => { const label = typeof s === 'string' ? s : (s.topic || s.label || s.name || ''); if (label) intent_signals.push({ type: 'intent', label }); });
   const orgIntentStrength = org.intent_strength || p.intent_strength || null;
@@ -103,26 +102,27 @@ async function getOrgIdByDomain(domain, apiKey) {
     return d.organization?.id||null;
   } catch(e){return null;}
 }
-// Batch fetch intent_strength from mixed_companies/search using company domains
+// Fetch top companies with active intent signals, match by domain to our leads
 async function batchFetchIntentStrength(domains, apiKey) {
   if (!domains || domains.length === 0) return {};
+  const INTENT_TOPIC_IDS = [
+    '943ca3782b28d89aff2f86a50b332b3c',
+    'b35d7d705a252b20fb24eb7891a215d5',
+    '1eb01c0da669b165a05294c5450c7130',
+    '3de3a4a550829dc4376329c29771bf78',
+    '3ba90f7ae36582c7bce8300d29951e83',
+    '6728cdb588531d3ead251f446efea13e'
+  ];
   try {
+    // Fetch companies with active intent — no domain filter so we get real intent data
     const r = await fetch('https://api.apollo.io/api/v1/mixed_companies/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
       body: JSON.stringify({
-        q_organization_domains_list: domains,
+        intent_ids: INTENT_TOPIC_IDS,
         per_page: 100,
         page: 1,
-        display_mode: 'explorer_mode',
-        intent_ids: [
-          '943ca3782b28d89aff2f86a50b332b3c',
-          'b35d7d705a252b20fb24eb7891a215d5',
-          '1eb01c0da669b165a05294c5450c7130',
-          '3de3a4a550829dc4376329c29771bf78',
-          '3ba90f7ae36582c7bce8300d29951e83',
-          '6728cdb588531d3ead251f446efea13e'
-        ]
+        display_mode: 'explorer_mode'
       })
     });
     if (!r.ok) {
@@ -130,24 +130,25 @@ async function batchFetchIntentStrength(domains, apiKey) {
       return {};
     }
     const data = await r.json();
-    const intentMap = {};
     const orgs = data.organizations || data.accounts || [];
-    console.log('[intent] mixed_companies returned', orgs.length, 'orgs');
+    console.log('[intent] mixed_companies returned', orgs.length, 'intent orgs');
+    // Match by domain to our lead domains
+    const domainSet = new Set(domains);
+    const intentMap = {};
     orgs.forEach(org => {
       const domain = org.primary_domain || org.domain;
-      if (domain) {
+      if (domain && domainSet.has(domain)) {
         intentMap[domain] = {
           intent_strength: org.intent_strength || null,
           intent_signals: org.intent_signals || []
         };
-        if (org.intent_strength) {
-          console.log('[intent] domain:', domain, '| strength:', org.intent_strength);
-        }
+        console.log('[intent] MATCH:', domain, '| strength:', org.intent_strength);
       }
     });
+    console.log('[intent] matched', Object.keys(intentMap).length, 'of', domains.length, 'lead domains');
     return intentMap;
   } catch (e) {
-    console.log('[intent] batchFetchIntentStrength error:', e.message);
+    console.log('[intent] error:', e.message);
     return {};
   }
 }
@@ -197,7 +198,7 @@ export default async function handler(req, res) {
     if(!candidates.length) return res.status(200).json([]);
     const results=[];
     for(let i=0;i<candidates.length;i+=5){const batch=candidates.slice(i,i+5); const enriched=await Promise.all(batch.map(p=>enrichPerson(p,apiKey,isDomainSearch?organization_domains[0]:null,icp))); results.push(...enriched); if(i+5<candidates.length) await new Promise(r=>setTimeout(r,300));}
-    // Batch fetch intent_strength from mixed_companies/search using unique company domains
+    // Enrich with intent signals — fetch top companies with active intent, match by domain
     const domains = [...new Set(results.map(r => r.company_domain).filter(Boolean))];
     if (domains.length > 0) {
       console.log('[intent] fetching intent for', domains.length, 'domains');
@@ -205,12 +206,9 @@ export default async function handler(req, res) {
       results.forEach(lead => {
         const intentData = intentMap[lead.company_domain];
         if (intentData) {
-          // Only override if not already set from enrichment
           if (!lead.intent_strength && intentData.intent_strength) {
             lead.intent_strength = intentData.intent_strength;
-            console.log('[intent] applied strength', intentData.intent_strength, 'to', lead.company_name);
           }
-          // Merge any new intent topic signals not already in the array
           const existingLabels = new Set(lead.intent_signals.map(s => s.label));
           (intentData.intent_signals || []).forEach(s => {
             const label = typeof s === 'string' ? s : (s.topic || s.label || s.name || '');
