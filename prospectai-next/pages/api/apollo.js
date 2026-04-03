@@ -113,7 +113,15 @@ async function batchFetchIntentStrength(domains, apiKey) {
       body: JSON.stringify({
         q_organization_domains_list: domains,
         per_page: 100,
-        page: 1
+        page: 1,
+        intentIds: [
+          '943ca3782b28d89aff2f86a50b332b3c',
+          'b35d7d705a252b20fb24eb7891a215d5',
+          '1eb01c0da669b165a05294c5450c7130',
+          '3de3a4a550829dc4376329c29771bf78',
+          '3ba90f7ae36582c7bce8300d29951e83',
+          '6728cdb588531d3ead251f446efea13e'
+        ]
       })
     });
     if (!r.ok) {
