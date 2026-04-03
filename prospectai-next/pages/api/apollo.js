@@ -102,56 +102,44 @@ async function getOrgIdByDomain(domain, apiKey) {
     return d.organization?.id||null;
   } catch(e){return null;}
 }
-// Fetch top companies with active intent signals, match by domain to our leads
+// Fetch intent data from Redis (populated by /api/intent-webhook from Apollo Workflows)
+// Falls back to empty map if no data — intent is supplemental, never blocks results
 async function batchFetchIntentStrength(domains, apiKey) {
   if (!domains || domains.length === 0) return {};
-  const INTENT_TOPIC_IDS = [
-    '943ca3782b28d89aff2f86a50b332b3c',
-    'b35d7d705a252b20fb24eb7891a215d5',
-    '1eb01c0da669b165a05294c5450c7130',
-    '3de3a4a550829dc4376329c29771bf78',
-    '3ba90f7ae36582c7bce8300d29951e83',
-    '6728cdb588531d3ead251f446efea13e'
-  ];
+  const intentMap = {};
   try {
-    // Fetch companies with active intent — no domain filter so we get real intent data
-    const r = await fetch('https://api.apollo.io/api/v1/mixed_companies/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Api-Key': apiKey },
-      body: JSON.stringify({
-        intent_ids: INTENT_TOPIC_IDS,
-        per_page: 100,
-        page: 1,
-        display_mode: 'explorer_mode'
+    // Batch fetch all domain keys from Redis in parallel
+    const results = await Promise.all(
+      domains.map(async domain => {
+        try {
+          const raw = await redis.get(`intent:${domain}`);
+          if (!raw) return null;
+          const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          return { domain, data };
+        } catch {
+          return null;
+        }
       })
-    });
-    if (!r.ok) {
-      console.log('[intent] mixed_companies/search status:', r.status);
-      return {};
-    }
-    const data = await r.json();
-    const orgs = data.organizations || data.accounts || [];
-    console.log('[intent] mixed_companies returned', orgs.length, 'intent orgs');
-    // Match by domain to our lead domains
-    const domainSet = new Set(domains);
-    const intentMap = {};
-    orgs.forEach(org => {
-      const domain = org.primary_domain || org.domain;
-      if (domain && domainSet.has(domain)) {
-        intentMap[domain] = {
-          intent_strength: org.intent_strength || null,
-          intent_signals: org.intent_signals || []
+    );
+    let hits = 0;
+    results.forEach(item => {
+      if (item && item.data) {
+        intentMap[item.domain] = {
+          intent_strength: item.data.intent_strength || null,
+          intent_signals: item.data.intent_signals || [],
         };
-        console.log('[intent] MATCH:', domain, '| strength:', org.intent_strength);
+        hits++;
+        console.log(`[intent] Redis hit: ${item.domain} | strength=${item.data.intent_strength}`);
       }
     });
-    console.log('[intent] matched', Object.keys(intentMap).length, 'of', domains.length, 'lead domains');
-    return intentMap;
+    console.log(`[intent] Redis lookup: ${hits}/${domains.length} domains had intent data`);
   } catch (e) {
-    console.log('[intent] error:', e.message);
-    return {};
+    console.log('[intent] Redis error:', e.message);
   }
+  return intentMap;
 }
+
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin','*');
   res.setHeader('Access-Control-Allow-Methods','POST, OPTIONS');
