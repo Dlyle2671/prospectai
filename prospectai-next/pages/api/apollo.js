@@ -114,7 +114,7 @@ async function batchFetchIntentStrength(domains, apiKey) {
         q_organization_domains_list: domains,
         per_page: 100,
         page: 1,
-        intentIds: [
+        intent_ids: [
           '943ca3782b28d89aff2f86a50b332b3c',
           'b35d7d705a252b20fb24eb7891a215d5',
           '1eb01c0da669b165a05294c5450c7130',
