@@ -278,8 +278,8 @@ function IntentDashboard() {
     try {
       const r = await fetch('/api/intent-webhook', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-apollo-secret': 'apollo-intent-2026' },
-        body: JSON.stringify({ signals: [{ organization: { name: seedDomain.trim(), primary_domain: seedDomain.trim() }, intent_strength: 'HIGH', signals: ['Manual seed'], source: 'manual' }] }),
+        headers: { 'Content-Type': 'application/json', 'x-webhook-secret': 'apollo-intent-2026' },
+        body: JSON.stringify([{ organization: { name: seedDomain.trim(), primary_domain: seedDomain.trim() }, intent_strength: 'HIGH', signals: ['Manual seed'], source: 'manual' }]),
       });
       const d = await r.json();
       setSeedMsg(d.error ? '❌ ' + d.error : '✓ Seeded ' + seedDomain.trim());
