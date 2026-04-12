@@ -38,7 +38,7 @@ function loadConfig() {
 function scoreOpportunity(opp, allOpps, cfg) {
   let score = 0;
   const breakdown = [];
-  const mrr = parseFloat(opp['Estimated AWS Monthly Recurring Revenue']) || 0;
+  const mrr = parseMRR(opp['Estimated AWS Monthly Recurring Revenue']) || 0;
   if (mrr >= 5000 && cfg.mrrHigh.points > 0) { score += cfg.mrrHigh.points; breakdown.push({ label: 'MRR ≥ $5k/mo', points: cfg.mrrHigh.points, tier: 'hot' }); }
   else if (mrr >= 2000 && cfg.mrrMid.points > 0) { score += cfg.mrrMid.points; breakdown.push({ label: 'MRR $2k–$5k/mo', points: cfg.mrrMid.points, tier: 'warm' }); }
   else if (mrr >= 500 && cfg.mrrLow.points > 0) { score += cfg.mrrLow.points; breakdown.push({ label: 'MRR $500–$2k/mo', points: cfg.mrrLow.points, tier: 'cold' }); }
@@ -94,6 +94,11 @@ function parseTSV(text) {
     }
     return fields;
   }
+function parseMRR(val) {
+  if (!val) return 0;
+  return parseFloat(String(val).replace(/[$,]/g, '')) || 0;
+}
+
 
   function parseLines(raw) {
     const normalized = raw.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -205,7 +210,7 @@ function OppCard({ opp, scored, index, onDelete }) {
   const [emailDrafting, setEmailDrafting] = useState(false);
   const [emailError, setEmailError] = useState(null);
   const productList = (opp['AWS Products'] || '').split(';').map(s => s.trim()).filter(Boolean);
-  const mrr = parseFloat(opp['Estimated AWS Monthly Recurring Revenue']) || 0;
+  const mrr = parseMRR(opp['Estimated AWS Monthly Recurring Revenue']) || 0;
   const annualARR = mrr * 12;
   const tierColor = scored.label === 'hot' ? '#ef4444' : scored.label === 'warm' ? '#f59e0b' : '#4f8ef7';
 
@@ -368,7 +373,7 @@ export default function LeadScoring() {
 
   const scoredOpps = useMemo(() => opps.map(opp => ({ opp, scored: scoreOpportunity(opp, opps, config) })), [opps, config]);
   const sorted = useMemo(() => [...scoredOpps].sort((a, b) => {
-    if (sortBy === 'mrr') return (parseFloat(b.opp['Estimated AWS Monthly Recurring Revenue']) || 0) - (parseFloat(a.opp['Estimated AWS Monthly Recurring Revenue']) || 0);
+    if (sortBy === 'mrr') return (parseMRR(b.opp['Estimated AWS Monthly Recurring Revenue']) || 0) - (parseMRR(a.opp['Estimated AWS Monthly Recurring Revenue']) || 0);
     if (sortBy === 'date') return new Date(b.opp['Date Created']) - new Date(a.opp['Date Created']);
     return b.scored.score - a.scored.score;
   }), [scoredOpps, sortBy]);
@@ -393,7 +398,7 @@ export default function LeadScoring() {
   const hot = scoredOpps.filter(s => s.scored.label === 'hot').length;
   const warm = scoredOpps.filter(s => s.scored.label === 'warm').length;
   const cold = scoredOpps.filter(s => s.scored.label === 'cold').length;
-  const totalMRR = scoredOpps.reduce((sum, s) => sum + (parseFloat(s.opp['Estimated AWS Monthly Recurring Revenue']) || 0), 0);
+  const totalMRR = scoredOpps.reduce((sum, s) => sum + (parseMRR(s.opp['Estimated AWS Monthly Recurring Revenue']) || 0), 0);
 
   if (stage === 'results') return (
     <div className="fade-up">
