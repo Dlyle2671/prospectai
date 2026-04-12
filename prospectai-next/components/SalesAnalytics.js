@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
-import CSVImport from './CSVImport';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CM = new Date().getMonth() + 1;
 const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
@@ -375,10 +374,7 @@ function DealsTab({data, save}){
             </div>
           </div>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <CSVImport data={data} onImport={d=>save(d)} />
           <button className="sa-btn" style={{marginLeft:12,flexShrink:0,alignSelf:'flex-start'}} onClick={()=>{setShowForm(!showForm);setEditDeal(null);setDf({repId:'',cat:'PS',client:'',month:CM,amount:'',mrr:'',stage:'Closed Won',source:'',contractLength:'',notes:''})}}>+ Add Deal</button>
-        </div>
       </div>
       {showForm&&(
         <div className="sa-card" style={{marginBottom:16}}>
