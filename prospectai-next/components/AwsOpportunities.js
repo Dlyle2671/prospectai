@@ -292,6 +292,8 @@ function OppCard({ opp, scored, index, onDelete }) {
               ['Date Approved', opp['Date Approved/Rejected']],
               ['Annual ARR', annualARR > 0 ? '$' + annualARR.toLocaleString() : '—'],
               ['Opportunity ID', opp['Opportunity id']],
+              ['AWS Seller', opp['AWS Sales Rep Name']],
+              ['AWS Seller Email', opp['AWS Sales Rep Email']],
             ].map(([label, val]) => val ? (
               <div key={label} style={{ background: '#0a0f1a', borderRadius: 8, padding: '8px 12px' }}>
                 <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 2 }}>{label}</div>
