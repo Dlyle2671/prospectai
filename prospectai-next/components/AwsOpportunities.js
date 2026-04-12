@@ -63,14 +63,62 @@ function scoreOpportunity(opp, allOpps, cfg) {
 
 // ─── CSV/TSV Parser ──────────────────────────────────────────────────────────
 function parseTSV(text) {
-  const lines = text.trim().split('\n').filter(l => l.trim());
+  function parseCSVRow(line, delim) {
+    const fields = [];
+    let i = 0;
+    while (i < line.length) {
+      if (line[i] === '"') {
+        let field = '';
+        i++;
+        while (i < line.length) {
+          if (line[i] === '"' && line[i+1] === '"') {
+            field += '"'; i += 2;
+          } else if (line[i] === '"') {
+            i++; break;
+          } else {
+            field += line[i++];
+          }
+        }
+        fields.push(field);
+        if (line[i] === delim) i++;
+      } else {
+        const end = line.indexOf(delim, i);
+        if (end === -1) {
+          fields.push(line.slice(i).trim());
+          break;
+        } else {
+          fields.push(line.slice(i, end).trim());
+          i = end + 1;
+        }
+      }
+    }
+    return fields;
+  }
+
+  function parseLines(raw) {
+    const normalized = raw.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = [];
+    let current = '';
+    let inQuote = false;
+    for (let i = 0; i < normalized.length; i++) {
+      const ch = normalized[i];
+      if (ch === '"') { inQuote = !inQuote; current += ch; }
+      else if (ch === '\n' && !inQuote) { lines.push(current); current = ''; }
+      else { current += ch; }
+    }
+    if (current) lines.push(current);
+    return lines.filter(l => l.trim());
+  }
+
+  const lines = parseLines(text);
   if (lines.length < 2) return [];
-  const delimiter = lines[0].includes('\t') ? '\t' : ',';
-  const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+  const header = lines[0];
+  const delim = header.includes('\t') ? '\t' : ',';
+  const headers = parseCSVRow(header, delim);
   return lines.slice(1).map(line => {
-    const vals = line.split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+    const vals = parseCSVRow(line, delim);
     const obj = {};
-    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+    headers.forEach((h, idx) => { obj[h] = vals[idx] !== undefined ? vals[idx] : ''; });
     return obj;
   });
 }
