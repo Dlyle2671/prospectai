@@ -36,6 +36,11 @@ function loadConfig() {
 }
 
 // ─── Scoring Engine ──────────────────────────────────────────────────────────
+function parseMRR(val) {
+  if (!val) return 0;
+  return parseFloat(String(val).replace(/[$,]/g, '')) || 0;
+}
+
 function scoreOpportunity(opp, allOpps, cfg) {
   let score = 0;
   const breakdown = [];
@@ -96,12 +101,6 @@ function parseTSV(text) {
     }
     return fields;
   }
-function parseMRR(val) {
-  if (!val) return 0;
-  return parseFloat(String(val).replace(/[$,]/g, '')) || 0;
-}
-
-
   function parseLines(raw) {
     const normalized = raw.trim().replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const lines = [];
