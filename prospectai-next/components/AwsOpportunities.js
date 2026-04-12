@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { paiSave, paiLoad } from '../lib/utils';
 
 // ─── Default Scoring Config ────────────────────────────────────────────────────
@@ -273,6 +273,19 @@ const SAMPLE_DATA = 'Opportunity id\tStage\tCustomer Company Name\tCustomer Emai
 
 export default function LeadScoring() {
   const [rawInput, setRawInput] = useState('');
+  const csvFileRef = useRef(null);
+
+  const handleCSVUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      setRawInput(evt.target.result);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   const [opps, setOpps] = useState(() => paiLoad('aws_opps') || []);
   const [stage, setStage] = useState(() => (paiLoad('aws_opps') || []).length > 0 ? 'results' : 'input');
   const [activeFilters, setActiveFilters] = useState([]);
@@ -414,6 +427,27 @@ export default function LeadScoring() {
           }}
         />
         <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="file"
+            ref={csvFileRef}
+            accept=".csv,.tsv,.txt"
+            style={{ display: 'none' }}
+            onChange={handleCSVUpload}
+          />
+          <button
+            onClick={() => csvFileRef.current.click()}
+            style={{
+              background: '#1a2235',
+              color: '#90caf9',
+              border: '1px solid #90caf9',
+              padding: '10px 20px',
+              borderRadius: 10,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            📂 Upload CSV
+          </button>
           <button
             onClick={handleParse}
             style={{
