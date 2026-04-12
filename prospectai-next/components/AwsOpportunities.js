@@ -3,9 +3,10 @@ import { paiSave, paiLoad } from '../lib/utils';
 
 // ─── Default Scoring Config ────────────────────────────────────────────────────
 const DEFAULT_CONFIG = {
-  mrrHigh:       { label: 'MRR ≥ $5,000/mo',                              points: 30, tier: 'hot'  },
-  mrrMid:        { label: 'MRR $2,000–$4,999/mo',                         points: 20, tier: 'warm' },
-  mrrLow:        { label: 'MRR $500–$1,999/mo',                           points: 10, tier: 'cold' },
+  mrrVeryHigh:   { label: 'MRR ≥ $10,000/mo',                             points: 40, tier: 'hot'  },
+  mrrHigh:       { label: 'MRR $5,000–$9,999/mo',                          points: 30, tier: 'hot'  },
+  mrrMid:        { label: 'MRR $2,000–$4,999/mo',                          points: 20, tier: 'warm' },
+  mrrLow:        { label: 'MRR $500–$1,999/mo',                            points: 10, tier: 'cold' },
   stageQualified:{ label: 'Stage = Qualified',                             points: 20, tier: 'hot'  },
   stageProspect: { label: 'Stage = Prospect',                              points: 10, tier: 'warm' },
   aiMl:          { label: 'AI/ML Services (Bedrock, SageMaker…)',          points: 15, tier: 'warm' },
@@ -39,7 +40,8 @@ function scoreOpportunity(opp, allOpps, cfg) {
   let score = 0;
   const breakdown = [];
   const mrr = parseMRR(opp['Estimated AWS Monthly Recurring Revenue']) || 0;
-  if (mrr >= 5000 && cfg.mrrHigh.points > 0) { score += cfg.mrrHigh.points; breakdown.push({ label: 'MRR ≥ $5k/mo', points: cfg.mrrHigh.points, tier: 'hot' }); }
+  if (mrr >= 10000 && cfg.mrrVeryHigh && cfg.mrrVeryHigh.points > 0) { score += cfg.mrrVeryHigh.points; breakdown.push({ label: 'MRR ≥ $10k/mo', points: cfg.mrrVeryHigh.points, tier: 'hot' }); }
+  else if (mrr >= 5000 && cfg.mrrHigh.points > 0) { score += cfg.mrrHigh.points; breakdown.push({ label: 'MRR $5k–$10k/mo', points: cfg.mrrHigh.points, tier: 'hot' }); }
   else if (mrr >= 2000 && cfg.mrrMid.points > 0) { score += cfg.mrrMid.points; breakdown.push({ label: 'MRR $2k–$5k/mo', points: cfg.mrrMid.points, tier: 'warm' }); }
   else if (mrr >= 500 && cfg.mrrLow.points > 0) { score += cfg.mrrLow.points; breakdown.push({ label: 'MRR $500–$2k/mo', points: cfg.mrrLow.points, tier: 'cold' }); }
   const stage = (opp['Stage'] || '').toLowerCase();
