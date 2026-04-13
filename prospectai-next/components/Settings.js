@@ -122,6 +122,7 @@ function ScoringConfigEditor({ config, onChange, onReset }) {
   );
 }
 
+{/\* Sender Emails \*/}
 const BUDGET_KEYS = ['companySizeWeight','industryWeight','fundingWeight','verifiedEmailBonus','linkedinBonus','phoneBonus','hiringSurgeBonus','awsBonus'];
 const POINT_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
 const THRESHOLD_OPTIONS = Array.from({ length: 19 }, (_, i) => (i + 1) * 5);
