@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { paiSave, paiLoad } from '../lib/utils';
 
 const EMAIL_PROVIDERS = [
   { id: 'office365', name: 'Office 365 / Outlook', host: 'smtp.office365.com', port: 587 },
@@ -17,6 +18,109 @@ export const DEFAULT_ICP = {
     targetSizeRanges: ['51-100','101-250'],
     targetIndustries: ['technology','software','saas','cloud computing','cybersecurity','fintech','financial services','healthcare','biotech'],
 };
+
+// ─── Lead Scoring Configuration ────────────────────────────────────────────
+const DEFAULT_SCORING_CONFIG = {
+    mrrVeryHigh: { label: 'MRR ≥ $10,000/mo', points: 40, tier: 'hot' },
+    mrrHigh: { label: 'MRR $5,000–$9,999/mo', points: 30, tier: 'hot' },
+    mrrMid: { label: 'MRR $2,000–$4,999/mo', points: 20, tier: 'warm' },
+    mrrLow: { label: 'MRR $500–$1,999/mo', points: 10, tier: 'cold' },
+    stageQualified: { label: 'Stage = Qualified', points: 20, tier: 'hot' },
+    stageProspect: { label: 'Stage = Prospect', points: 10, tier: 'warm' },
+    aiMl: { label: 'AI/ML Services (Bedrock, SageMaker…)', points: 15, tier: 'warm' },
+    security: { label: 'Security Services (GuardDuty, Shield…)', points: 10, tier: 'warm' },
+    manyProducts: { label: '5+ AWS Products in scope', points: 10, tier: 'warm' },
+    highVertical: { label: 'High-value vertical (Healthcare, Fintech…)', points: 5, tier: 'warm' },
+    fastVertical: { label: 'Fast-moving vertical (SaaS, Software…)', points: 5, tier: 'warm' },
+    sameDayApproval: { label: 'Same-day approval', points: 5, tier: 'warm' },
+    multiOpp: { label: 'Multiple opps from same customer', points: 5, tier: 'warm' },
+    hotThreshold: { label: 'Hot threshold (score ≥)', points: 70, tier: 'hot' },
+    warmThreshold: { label: 'Warm threshold (score ≥)', points: 40, tier: 'warm' },
+};
+
+const SCORING_CRITERIA_KEYS = ['mrrVeryHigh','mrrHigh','mrrMid','mrrLow','stageQualified','stageProspect','aiMl','security','manyProducts','highVertical','fastVertical','sameDayApproval','multiOpp'];
+const SCORING_THRESHOLD_KEYS = ['hotThreshold','warmThreshold'];
+
+function loadScoringConfig() {
+    const saved = paiLoad('aws_scoring_config');
+    if (!saved) return DEFAULT_SCORING_CONFIG;
+    const merged = {};
+    Object.keys(DEFAULT_SCORING_CONFIG).forEach(k => {
+          merged[k] = { ...DEFAULT_SCORING_CONFIG[k], points: saved[k] !== undefined ? saved[k] : DEFAULT_SCORING_CONFIG[k].points };
+    });
+    return merged;
+}
+
+// ─── Lead Scoring Config Editor ─────────────────────────────────────────────
+function ScoringConfigEditor({ config, onChange, onReset }) {
+    const inputStyle = {
+          width: 60, padding: '4px 6px', borderRadius: 6, border: '1px solid #334155',
+          background: '#0a0f1a', color: '#e2e8f0', fontSize: 13, fontWeight: 700,
+          textAlign: 'center', outline: 'none',
+    };
+    const rowStyle = {
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '7px 10px', borderRadius: 6, background: '#0a0f1a', gap: 10,
+    };
+    function handleChange(key, val) {
+          const num = Math.max(0, Math.min(100, parseInt(val, 10) || 0));
+          onChange({ ...config, [key]: { ...config[key], points: num } });
+    }
+    return (
+          <div style={{ marginTop: 24, background: '#0f172a', border: '1px solid #1e293b', borderRadius: 12, padding: '18px 20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <div className="lc-label" style={{ margin: 0 }}>⚙ Lead Scoring Criteria</div>
+        <button onClick={onReset} style={{ fontSize: 11, color: '#64748b', background: 'none', border: '1px solid #334155', borderRadius: 6, padding: '3px 10px', cursor: 'pointer' }}>
+          Reset to defaults
+            </button>
+            </div>
+      <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8, paddingLeft: 10 }}>Point Values (0–100)</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
+{SCORING_CRITERIA_KEYS.map(key => {
+            const item = config[key];
+            const tierColor = item.tier === 'hot' ? '#ef4444' : item.tier === 'warm' ? '#f59e0b' : '#4f8ef7';
+            return (
+                          <div key={key} style={rowStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: tierColor, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{item.label}</span>
+  </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="number" min={0} max={100} value={item.points}
+                  onChange={e => handleChange(key, e.target.value)}
+                                      style={{ ...inputStyle, color: item.points === 0 ? '#475569' : tierColor }}
+                />
+                <span style={{ fontSize: 11, color: '#475569', width: 20 }}>pts</span>
+                  </div>
+                  </div>
+          );
+})}
+</div>
+      <div style={{ fontSize: 10, color: '#475569', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 8, paddingLeft: 10 }}>Tier Thresholds</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+{SCORING_THRESHOLD_KEYS.map(key => {
+            const item = config[key];
+            const tierColor = item.tier === 'hot' ? '#ef4444' : '#f59e0b';
+            return (
+                          <div key={key} style={rowStyle}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: tierColor, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>{item.label}</span>
+  </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input type="number" min={0} max={100} value={item.points}
+                  onChange={e => handleChange(key, e.target.value)}
+                                      style={{ ...inputStyle, color: tierColor }}
+                />
+                <span style={{ fontSize: 11, color: '#475569', width: 20 }}>pts</span>
+                  </div>
+                  </div>
+          );
+})}
+</div>
+  </div>
+  );
+}
 
 const BUDGET_KEYS = ['companySizeWeight','industryWeight','fundingWeight','verifiedEmailBonus','linkedinBonus','phoneBonus','hiringSurgeBonus','awsBonus'];
 const POINT_OPTIONS = Array.from({ length: 101 }, (_, i) => i);
@@ -316,6 +420,7 @@ export default function Settings() {
     const [newSenderEmail, setNewSenderEmail] = useState('');
     const [newSenderName, setNewSenderName] = useState('');
     const [senderSaved, setSenderSaved] = useState(false);
+    const [scoringConfig, setScoringConfig] = useState(() => loadScoringConfig());
 
   useEffect(() => {
         async function loadAll() {
@@ -332,6 +437,17 @@ export default function Settings() {
         }
         loadAll();
   }, []);
+
+    function handleScoringConfigChange(newCfg) {
+          setScoringConfig(newCfg);
+          const toSave = {};
+          Object.keys(newCfg).forEach(k => { toSave[k] = newCfg[k].points; });
+          paiSave('aws_scoring_config', toSave);
+    }
+    function handleScoringConfigReset() { 
+          setScoringConfig(DEFAULT_SCORING_CONFIG); 
+          paiSave('aws_scoring_config', null); 
+    }
 
   const total = useMemo(() => BUDGET_KEYS.reduce((sum, k) => sum + (Number(icp[k]) || 0), 0), [icp]);
     const remaining = 100 - total;
@@ -548,6 +664,12 @@ export default function Settings() {
 {overBudget && <span style={{ fontSize: 12, color: '#ef4444', fontWeight: 600 }}>Reduce points to save</span>}
   </div>
   </div>
+
+          <ScoringConfigEditor 
+          config={scoringConfig} 
+          onChange={handleScoringConfigChange} 
+          onReset={handleScoringConfigReset} 
+        />
 
 {/* Sender Emails */}
       <div className="settings-card">
