@@ -580,6 +580,7 @@ export default function Settings() {
                                                       onReset={() => {
                                                                         setScoringConfig(loadScoringConfig);
                                                       }}
+                                                        
                                                                     />/div>
         <div style={{ background: '#080c14', border: `1px solid ${totalColor}44`, borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
