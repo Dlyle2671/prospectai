@@ -290,6 +290,7 @@ function OppCard({ opp, scored, index, onDelete }) {
               ['Customer Website', opp['Customer Website']],
               ['Date Created', opp['Date Created']],
               ['Date Approved', opp['Date Approved/Rejected']],
+              ['Projected MRR', opp['Estimated AWS Monthly Recurring Revenue']],
               ['Annual ARR', annualARR > 0 ? '$' + annualARR.toLocaleString() : '—'],
               ['Opportunity ID', opp['Opportunity id']],
               ['AWS Seller', opp['AWS Sales Rep Name']],
