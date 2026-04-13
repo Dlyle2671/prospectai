@@ -130,7 +130,7 @@ function parseTSV(text) {
 }
 
 // ─── Scoring Config Editor ───────────────────────────────────────────────────
-const CRITERIA_KEYS = ['mrrHigh','mrrMid','mrrLow','stageQualified','stageProspect','aiMl','security','manyProducts','highVertical','fastVertical','sameDayApproval','multiOpp'];
+'mrrVeryHigh',const CRITERIA_KEYS = ['mrrHigh','mrrMid','mrrLow','stageQualified','stageProspect','aiMl','security','manyProducts','highVertical','fastVertical','sameDayApproval','multiOpp'];
 const THRESHOLD_KEYS = ['hotThreshold','warmThreshold'];
 
 function ScoringConfigEditor({ config, onChange, onReset }) {
@@ -532,3 +532,4 @@ export default function LeadScoring() {
     </div>
   );
 }
+Page_DownPage_DownPage_Down
