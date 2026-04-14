@@ -130,7 +130,7 @@ function parseTSV(text) {
 }
 
 // ─── Scoring Config Editor ───────────────────────────────────────────────────
-'mrrVeryHigh','mrrVeryHigh',const CRITERIA_KEYS = ['mrrHigh','mrrMid','mrrLow','stageQualified','stageProspect','aiMl','security','manyProducts','highVertical','fastVertical','sameDayApproval','multiOpp'];
+const CRITERIA_KEYS = ['mrrVeryHigh','mrrHigh','mrrMid','mrrLow','stageQualified','stageProspect','aiMl','security','manyProducts','highVertical','fastVertical','sameDayApproval','multiOpp'];
 const THRESHOLD_KEYS = ['hotThreshold','warmThreshold'];
 
 function ScoringConfigEditor({ config, onChange, onReset }) {
