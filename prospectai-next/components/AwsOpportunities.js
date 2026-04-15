@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
   mrrLow:        { label: 'MRR $500–$1,999/mo',                            points: 10, tier: 'cold' },
   stageQualified:{ label: 'Stage = Qualified',                             points: 20, tier: 'hot'  },
   stageProspect: { label: 'Stage = Prospect',                              points: 10, tier: 'warm' },
-  aiMl:          { label: 'AI/ML Services (Bedrock, SageMaker…)',          points: 15, tier: 'warm' },
+  aiMl:          { label: 'AI/L Services (edrock, SageMaker…)',          points: 15, tier: 'warm' },
   security:      { label: 'Security Services (GuardDuty, Shield…)',        points: 10, tier: 'warm' },
   manyProducts:  { label: '5+ AWS Products in scope',                     points: 10, tier: 'warm' },
   highVertical:  { label: 'High-value vertical (Healthcare, Fintech…)',   points:  5, tier: 'warm' },
@@ -532,4 +532,3 @@ export default function LeadScoring() {
     </div>
   );
 }
-Page_DownPage_DownPage_Down
