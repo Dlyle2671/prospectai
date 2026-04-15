@@ -573,16 +573,7 @@ export default function Settings() {
 {/* ICP Lead Scoring */}
       <div className="settings-card">
                 <div className="settings-title">🎯 ICP Lead Scoring</div>
-        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>Assign point values to each category. All points must total 100 or less.<
-        
-                    <ScoringConfigEditor 
-                      config={scoringConfig}
-                                      onChange={handleScoringConfigChange}
-                                                      onReset={() => {
-                                                                        setScoringConfig(loadScoringConfig);
-                                                      }}
-                                                        
-                                                                    />/div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 16 }}>Assign point values to each category. All points must total 100 or less.</div>
         <div style={{ background: '#080c14', border: `1px solid ${totalColor}44`, borderRadius: 10, padding: '14px 18px', marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Points budget</span>
