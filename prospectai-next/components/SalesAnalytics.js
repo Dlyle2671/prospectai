@@ -1369,11 +1369,11 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         totARR+=arr;totMRR+=(cat==='PS'?fee:mrr);totComm+=comm;
         if(cat==='PS') totPS+=comm; else if(cat==='FO') totFO+=comm; else if(cat==='MS') totMS+=comm;
       });
-      const ytdDeals=deals.filter(d=>dealIsRep(d,rep)&&dealInPeriod(d,true)&&d.stage==='Closed Won');let ytdMRR=0;ytdDeals.forEach(d=>{const c=dealCat(d),f=Number(d.amount||d.fee||0),m=Number(d.mrr||0),r=mrem(dealMo(d));ytdMRR+=(c==='PS'?f:m*r);});const ytdPct=CM_now/12;
+      const ytdDeals=deals.filter(d=>dealIsRep(d,rep)&&dealInPeriod(d,true)&&d.stage==='Closed Won');let ytdMRR=0;ytdDeals.forEach(d=>{const c=dealCat(d),f=Number(d.amount||d.fee||0),m=Number(d.mrr||0);ytdMRR+=(c==='PS'?f:m);});const ytdPct=CM_now/12;
       let totQ=0;
       ['PS','FO','MS'].forEach(cid=>{ totQ+=getQ(rep,cid); });
       const attain=totQ>0?Math.round(ytdMRR/(totQ*ytdPct)*100):0;
-      const status=totQ>0&&totMRR>=(totQ*ytdPct)?'On Track':'Behind Pace';
+      const status=totQ>0&&ytdMRR>=(totQ*ytdPct)?'On Track':'Behind Pace';
       const cats=[{id:'PS',name:'Professional Services'},{id:'FO',name:'FinOps'},{id:'MS',name:'Managed Services'}];
       let catRows='';
       cats.forEach(c=>{
