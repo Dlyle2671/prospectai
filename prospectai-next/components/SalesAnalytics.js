@@ -1024,11 +1024,11 @@ function CommTab({data, filterRep, setFilterRep, showComm}){
         <button
           style={{background:'linear-gradient(135deg,#059669,#10b981)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6}}
           onClick={()=>exportCommissionXLSX({data,filterRep,filterMonth})}
-        >â¬ Export Commission Statement</button>
+        >⬇ Export Commission Statement</button>
         <button
           style={{background:'linear-gradient(135deg,#1d4ed8,#3b82f6)',border:'none',color:'#fff',padding:'8px 20px',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:600,display:'flex',alignItems:'center',gap:6,marginLeft:8}}
           onClick={()=>exportCommissionPDF({data,filterRep,filterMonth})}
-        >ð Export PDF</button>
+        >📄 Export PDF</button>
       </div>
       <div className="sa-card">
         <table className="sa-tbl">
