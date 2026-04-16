@@ -196,7 +196,7 @@ function DashTab({data, showComm, setShowComm}){
   const totalComm = reps.reduce((s,r) => s + repCommissionFromDeals(r,deals).tot, 0);
   return(
     <div>
-      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}><button onClick={function(){ var v=!showComm; setShowComm(v); try{localStorage.setItem('sa_showComm',String(v));}catch(e){} }} style={{background:'transparent',border:'1px solid rgba(99,102,241,.4)',color:showComm?'#a5b4fc':'#64748b',padding:'5px 12px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:6}}>{showComm ? 'ð Hide Commission' : 'ð Show Commission'}</button></div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}><button onClick={function(){ var v=!showComm; setShowComm(v); try{localStorage.setItem('sa_showComm',String(v));}catch(e){} }} style={{background:'transparent',border:'1px solid rgba(99,102,241,.4)',color:showComm?'#a5b4fc':'#64748b',padding:'5px 12px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:6}}>{showComm ? '👁 Hide Commission' : '👁 Show Commission'}</button></div>
       <div className="sa-g3">
         {cats.map(c => {
           const closed = getTotalActualFromDeals(c.id, reps, deals);
@@ -258,7 +258,7 @@ function DashTab({data, showComm, setShowComm}){
               return(
                 <tr key={r.id}>
                               <td style={{fontWeight:600,color:'#f1f5f9'}}>{r.name}</td>
-                  <td>{r.dept||r.department||'â'}</td>
+                  <td>{r.dept||r.department||'—'}</td>
                   <td style={{color:'#34d399'}}>{fmt(psA)}</td>
                               <td style={{color:'#fff',fontSize:11}}>{fmt(psQ)}</td>
                   <td><span className={`sa-badge ${psA>=psQ?'ahead':'behind'}`}>{pct(psQ>0?psA/psQ:0)}</span></td>
@@ -329,7 +329,7 @@ function DealsTab({data, save}){
   return(
     <div>
       <div style={{background:'rgba(99,102,241,.08)',border:'1px solid rgba(99,102,241,.2)',borderRadius:10,padding:'12px 16px',marginBottom:16,fontSize:13,color:'#a5b4fc',lineHeight:1.6}}>
-                <strong>Deals</strong> â enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
+                <strong>Deals</strong> — enter each closed deal by client. PS = one-time fee (not annualized). FO/MS = MRR x months remaining = ARR. Commission: PS=10% of fee | FO=7% of 1st month MRR | MS=1x MRR. All deals feed directly into the Dashboard and Commissions.
       </div>
       <div style={{display:'flex',gap:0,alignItems:'flex-start',marginBottom:16}}>
         <div style={{display:'flex',flexDirection:'column',gap:6,flex:1}}>
@@ -472,7 +472,7 @@ function DealsTab({data, save}){
         </div>
       )}
       <div className="sa-card">
-                <h2>Closed Deals {filterCat!=='All'?'â '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
+                <h2>Closed Deals {filterCat!=='All'?'— '+(filterCat==='PS'?'Professional Services':filterCat==='FO'?'FinOps':'Managed Services'):''} ({filtered.length})</h2>
         <table className="sa-tbl">
           <thead><tr>
             <th>Rep</th><th>Category</th><th>Client</th><th>Stage</th><th>Source</th><th>Month</th>
@@ -481,7 +481,7 @@ function DealsTab({data, save}){
           <tbody>
             {filtered.length===0&&(
               <tr><td colSpan={8} style={{textAlign:'center',color:'#fff',padding:24}}>
-                                No deals yet â click "+ Add Deal" to log a closed deal.
+                                No deals yet — click "+ Add Deal" to log a closed deal.
               </td></tr>
             )}
             {filtered.map(d=>{
@@ -494,8 +494,8 @@ function DealsTab({data, save}){
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{rep?rep.name:'Unknown'}</td>
                   <td><span style={{background:catBg,color:catColor,padding:'2px 8px',borderRadius:12,fontSize:11,fontWeight:600}}>{d.cat}</span></td>
                   <td>{d.client}</td>
-                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':d.stage==='SOW Sent'?'rgba(239,68,68,.2)':d.stage==='Forecasted'?'rgba(245,158,11,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':d.stage==='SOW Sent'?'#f87171':d.stage==='Forecasted'?'#fbbf24':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'â'}</span></td>
-                  <td style={{fontSize:12,color:'#94a3b8'}}>{d.source||'â'}</td>
+                  <td><span style={{background:d.stage==='Closed Won'?'rgba(16,185,129,.2)':d.stage==='Closed Lost'?'rgba(239,68,68,.2)':d.stage==='SOW Sent'?'rgba(239,68,68,.2)':d.stage==='Forecasted'?'rgba(245,158,11,.2)':'rgba(99,102,241,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Closed Lost'?'#f87171':d.stage==='SOW Sent'?'#f87171':d.stage==='Forecasted'?'#fbbf24':'#a5b4fc',padding:'2px 8px',borderRadius:12,fontSize:11,whiteSpace:'nowrap'}}>{d.stage||'—'}</span></td>
+                  <td style={{fontSize:12,color:'#94a3b8'}}>{d.source||'—'}</td>
                   <td>{MN[(d.month||1)-1]}</td>
                   <td>{d.cat==='PS'?fmt(d.amount)+' fee':fmt(d.mrr)+'/mo MRR'}</td>
                   <td style={{fontWeight:600,color:'#f1f5f9'}}>{fmt(arr)}</td>
@@ -585,10 +585,10 @@ function RepDetailModal({rep, deals, onClose}){
       <div className="rdm-box">
         <div className="rdm-hd">
           <div>
-                        <div className="rdm-hd-title">ð {rep.name}</div>
-                        <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} Â· {totalDeals} deal{totalDeals!==1?'s':''} won Â· {new Date().getFullYear()} Performance</div>
+                        <div className="rdm-hd-title">🏆 {rep.name}</div>
+                        <div className="rdm-hd-sub">{rep.dept||rep.department||'Sales'} · {totalDeals} deal{totalDeals!==1?'s':''} won · {new Date().getFullYear()} Performance</div>
           </div>
-                    <button className="rdm-hd-close" onClick={onClose}>â</button>
+                    <button className="rdm-hd-close" onClick={onClose}>✕</button>
         </div>
         <div className="rdm-body">
           <div className="rdm-kpi">
@@ -604,12 +604,12 @@ function RepDetailModal({rep, deals, onClose}){
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Quota Attainment</div>
-                            <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'â'}</div>
+                            <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{totalQuota>0?pct(overallAttain):'—'}</div>
               <div className="rdm-kpi-sub">vs. {fmt(totalQuota)} annual quota</div>
             </div>
             <div className="rdm-kpi-card">
               <div className="rdm-kpi-lbl">Pace vs. Attainment</div>
-                            <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'â On Track':'â  Behind'}</div>
+                            <div className="rdm-kpi-val" style={{color:overallAttain>=CM/12?'#34d399':'#f87171'}}>{overallAttain>=CM/12?'✓ On Track':'⚠ Behind'}</div>
               <div className="rdm-kpi-sub">Expected pace: {pct(CM/12)}</div>
             </div>
           </div>
@@ -622,7 +622,7 @@ function RepDetailModal({rep, deals, onClose}){
                 <div className="rdm-qcard-quota">of {fmt(c.quota)} annual quota</div>
                 <div className="rdm-bar"><div className="rdm-bar-fill" style={{width:(c.quota>0?Math.min(100,c.arr/c.quota*100):0)+'%',background:c.color}}/></div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                                    <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'â'}</span>
+                                    <span className={'rdm-badge '+(c.arr>=c.quota*(CM/12)?'ahead':'behind')}>{c.quota>0?pct(c.arr/c.quota):'—'}</span>
                   <span style={{fontSize:10,color:'#ffffff'}}>{fmt(c.comm)} comm</span>
                 </div>
               </div>
@@ -658,7 +658,7 @@ function RepDetailModal({rep, deals, onClose}){
                           ?<span>{fmt(d.amount)} <span style={{color:'#64748b',fontSize:11}}>one-time</span></span>
                           :<span>{fmt(d.mrr)} <span style={{color:'#64748b',fontSize:11}}>/mo MRR</span></span>
                         }</td>
-                                                <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'â':mrem(d.month)}</td>
+                                                <td style={{color:'#64748b',textAlign:'center'}}>{c.id==='PS'?'—':mrem(d.month)}</td>
                         <td style={{fontWeight:700,color:'#f1f5f9'}}>{fmt(dealARR(d))}</td>
                         <td style={{color:'#34d399',fontWeight:600}}>{fmt(dealComm(d))}</td>
                       </tr>
@@ -750,7 +750,7 @@ function RepsTab({data, save}){
             {data.reps.map(r=>(
               <tr key={r.id} className="rep-row-link" title={`Click to view ${r.name}'s deal breakdown`} onClick={()=>setSelectedRep(r)}>
                 <td style={{fontWeight:600,color:'#818cf8',textDecoration:'underline',textDecorationColor:'rgba(129,140,248,.35)',cursor:'pointer'}}>{r.name}</td>
-                                <td>{r.dept||r.department||'â'}</td>
+                                <td>{r.dept||r.department||'—'}</td>
                 <td style={{color:'#34d399'}}>{fmt(getActualFromDeals(r.id,'PS',deals))}</td>
                 <td>{fmt(getQuota(r,'PS')*(CM/12))}</td>
                 <td><span className={`sa-badge ${getActualFromDeals(r.id,'PS',deals)>=getQuota(r,'PS')*(CM/12)?'ahead':'behind'}`}>{pct(getQuota(r,'PS')>0?getActualFromDeals(r.id,'PS',deals)/(getQuota(r,'PS')*(CM/12)):0)}</span></td>
@@ -806,7 +806,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                   <>
                     <div className="lbl">Closed ARR</div>
                     <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
-                    <div className="sub">of {fmt(quota)} quota â {pct(p)} attained</div>
+                    <div className="sub">of {fmt(quota)} quota — {pct(p)} attained</div>
                     <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
                     <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
                   </>
@@ -814,7 +814,7 @@ function CatPerfTab({data, filterRep, setFilterRep, showComm}){
                   <>
                     <div className="lbl">Closed MRR</div>
                     <div className="val" style={{color:'#34d399'}}>{fmt(closedMRR)}</div>
-                    <div className="sub">of {fmt(mrrQuota)}/mo quota â {pct(mrrP)} attained</div>
+                    <div className="sub">of {fmt(mrrQuota)}/mo quota — {pct(mrrP)} attained</div>
                     <div className="sa-bar"><div className="sa-bar-fill" style={{width:mrrP*100+'%',background:'#34d399'}}/></div>
                     <div style={{fontSize:11,color:'#fff',marginTop:4}}>Pace: {pct(CM/12)}</div>
                   </>
@@ -889,7 +889,7 @@ function ArrCalcTab(){
       <div className="sa-card">
         <h2>ARR Calculator</h2>
         <div style={{fontSize:12,color:'#fff',marginBottom:16,fontStyle:'italic',lineHeight:1.7}}>
-                     <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value â not annualized. Commission = 10% of fee.<br/>
+                     <strong style={{color:'#818cf8'}}>Professional Services:</strong> One-time project fee. Fee is the value — not annualized. Commission = 10% of fee.<br/>
           <strong style={{color:'#38bdf8'}}>FinOps:</strong> Recurring. ARR = MRR x months remaining. Commission = 7% of 1st month MRR.<br/>
           <strong style={{color:'#34d399'}}>Managed Services:</strong> Recurring. ARR = MRR x months remaining. Commission = 1x MRR (flat).<br/>
           January close = 12 months = max ARR. November close = 2 months.
@@ -909,7 +909,7 @@ function ArrCalcTab(){
           {calcCat!=='PS'&&(
             <div><label className="sa-label">Month Closed</label>
               <select className="sa-select" value={calcMonth} onChange={e=>setCalcMonth(Number(e.target.value))}>
-                                {MN.map((m,i)=><option key={i} value={i+1}>{m} â {13-(i+1)} months remaining</option>)}
+                                {MN.map((m,i)=><option key={i} value={i+1}>{m} — {13-(i+1)} months remaining</option>)}
               </select>
             </div>
           )}
@@ -945,7 +945,7 @@ function ArrCalcTab(){
                 const isCur=i+1===Number(calcMonth);
                 return(
                   <tr key={i} style={isCur?{background:'rgba(99,102,241,.08)'}:{}}>
-                                        <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' â¼':''}</td>
+                                        <td style={isCur?{color:'#818cf8',fontWeight:600}:{}}>{m}{isCur?' ▼':''}</td>
                     <td>{r}</td>
                     <td style={{fontWeight:isCur?700:400,color:'#fff'}}>{fmt(a)}</td>
                     <td style={{color:'#34d399'}}>{fmt(c)}</td>
@@ -955,7 +955,7 @@ function ArrCalcTab(){
             </tbody>
           </table>
           <div style={{fontSize:11,color:'#a5b4fc',marginTop:8,fontStyle:'italic'}}>
-                         {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR â same regardless of month closed.':'Note: Commission = 1x MRR flat â same regardless of month closed.'}
+                         {calcCat==='FO'?'Note: Commission = 7% of 1st month MRR — same regardless of month closed.':'Note: Commission = 1x MRR flat — same regardless of month closed.'}
           </div>
         </div>
       )}
@@ -1082,7 +1082,7 @@ function CommTab({data, filterRep, setFilterRep, showComm}){
                     {filterRep==='All'&&<td style={{color:'#f1f5f9',fontWeight:500}}>{repById[d.repId]||d.repId}</td>}
                     <td style={{color:'#f1f5f9',fontWeight:500}}>{d.client}</td>
                     <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.cat==='PS'?'rgba(139,92,246,.2)':d.cat==='FO'?'rgba(59,130,246,.2)':'rgba(16,185,129,.2)',color:d.cat==='PS'?'#a78bfa':d.cat==='FO'?'#60a5fa':'#34d399'}}>{CAT_LABEL[d.cat]||d.cat}</span></td>
-                    <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.stage==='Closed Won'?'rgba(16,185,129,.15)':d.stage==='Forecasted'?'rgba(245,158,11,.15)':d.stage==='SOW Sent'?'rgba(239,68,68,.2)':'rgba(100,116,139,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Forecasted'?'#fbbf24':d.stage==='SOW Sent'?'#f87171':'#94a3b8'}}>{d.stage||'â'}</span></td>
+                    <td><span style={{display:'inline-block',padding:'2px 8px',borderRadius:20,fontSize:11,fontWeight:700,background:d.stage==='Closed Won'?'rgba(16,185,129,.15)':d.stage==='Forecasted'?'rgba(245,158,11,.15)':d.stage==='SOW Sent'?'rgba(239,68,68,.2)':'rgba(100,116,139,.15)',color:d.stage==='Closed Won'?'#34d399':d.stage==='Forecasted'?'#fbbf24':d.stage==='SOW Sent'?'#f87171':'#94a3b8'}}>{d.stage||'—'}</span></td>
                     {filterMonth==='All'&&<td>{MN[(d.month||1)-1]}</td>}
                     <td>{d.cat==='PS'?fmt(d.amount):fmt(d.mrr)+'/mo'}</td>
                     <td style={{fontWeight:700,color:'#34d399'}}>{fmt(dealComm(d))}</td>
@@ -1117,7 +1117,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   const wb=XL.utils.book_new();
   // SHEET 1: REP SCORECARDS (always YTD)
   const sc=[];
-  sc.push(['COMMISSION STATEMENT â YTD '+YEAR+' ('+repLabel+')','','','','','','','']);
+  sc.push(['COMMISSION STATEMENT — YTD '+YEAR+' ('+repLabel+')','','','','','','','']);
   sc.push(['Generated: '+new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+'  |  Scorecard: Full YTD  |  Deal detail filter: '+moLabel,'','','','','','','']);
   sc.push(['']);
   filteredReps.forEach((r,idx)=>{
@@ -1133,14 +1133,14 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     const ytdPct=(filterMonth !== 'All' ? Number(filterMonth) : CM)/12;
     const attain=totQ>0?(totA/(totQ*ytdPct)*100).toFixed(1)+'%':'--';
     const status=totQ>0?(totA/(totQ*ytdPct)>=1?'On Track':'Behind Pace'):'--';
-    sc.push(['ââ '+r.name.toUpperCase()+' ââ','','','','','','','']);
-    sc.push(['Department:',r.dept||r.department||'Sales','','Total Deals Won (YTD):',myDeals.length,'','YTD Period:','Jan â '+MN[CM-1]+' '+YEAR]);
+    sc.push(['── '+r.name.toUpperCase()+' ──','','','','','','','']);
+    sc.push(['Department:',r.dept||r.department||'Sales','','Total Deals Won (YTD):',myDeals.length,'','YTD Period:','Jan – '+MN[CM-1]+' '+YEAR]);
     sc.push(['']);
-    sc.push(['KPI SUMMARY â YTD (All Months)','','','','','','','']);
+    sc.push(['KPI SUMMARY — YTD (All Months)','','','','','','','']);
     sc.push(['Total ARR Closed','Total Commission','Quota Attainment','Status','YTD Pace','PS Commission','FO Commission','MS Commission']);
     sc.push([totA,comm.tot,attain,status,(ytdPct*100).toFixed(1)+'%',comm.ps,comm.fo,comm.ms]);
     sc.push(['']);
-    sc.push(['CATEGORY BREAKDOWN â YTD','','','','','','','']);
+    sc.push(['CATEGORY BREAKDOWN — YTD','','','','','','','']);
     sc.push(['Category','ARR Closed (YTD)','Annual Quota','YTD Quota','Attainment %','Commission (YTD)','Commission Rate','Deals (YTD)']);
     ['PS','FO','MS'].forEach(cat=>{
       const cA=myDeals.filter(d=>d.cat===cat&&d.stage==='Closed Won').reduce((s,d)=>s+(cat==='PS'?dealARR(d):d.mrr||0),0);
@@ -1151,7 +1151,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
     sc.push(['TOTAL',totA,totQ,totQ*(CM/12),attain,comm.tot,'',myDeals.length]);
     sc.push(['']);
     const dealRows=monthFilteredDeals.filter(d=>d.repId===r.id);
-    sc.push(['DEAL BREAKDOWN â '+moLabel,'','','','','','','']);
+    sc.push(['DEAL BREAKDOWN — '+moLabel,'','','','','','','']);
     sc.push(['Client','Category','Month Closed','Fee / MRR','ARR Value','Commission','Commission Rate','Mo. Remaining']);
     [...dealRows].sort((a,b)=>(a.month||1)-(b.month||1)).forEach(d=>{
       sc.push([d.client,CAT_FULL[d.cat]||d.cat,MN[(d.month||1)-1],d.cat==='PS'?d.amount:d.mrr,dealARR(d),dealComm(d),CAT_RATE[d.cat]||'',d.cat==='PS'?'N/A':mrem(d.month||1)]);
@@ -1164,7 +1164,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   XL.utils.book_append_sheet(wb,wsS,'Rep Scorecards');
   // SHEET 2: DEAL DETAIL (month-filtered)
   const dd=[];
-  dd.push(['DEAL DETAIL â '+repLabel+' â '+moLabel+' â '+YEAR,'','','','','','','','','']);
+  dd.push(['DEAL DETAIL — '+repLabel+' — '+moLabel+' — '+YEAR,'','','','','','','','','']);
   dd.push(['']);
   dd.push(['Rep Name','Department','Client','Category','Month Closed','Fee / MRR','ARR Value','Mo. Remaining','Commission','Commission Rate']);
   const sorted=[...monthFilteredDeals].sort((a,b)=>{ const rA=(reps.find(r=>r.id===a.repId)||{name:''}).name; const rB=(reps.find(r=>r.id===b.repId)||{name:''}).name; if(rA!==rB) return rA.localeCompare(rB); return (a.month||1)-(b.month||1); });
@@ -1178,7 +1178,7 @@ async function exportCommissionXLSX({data,filterRep,filterMonth}){
   // SHEET 3: MONTHLY BREAKDOWN (YTD)
   const ams=[...new Set(repFilteredDeals.map(d=>d.month||1))].sort((a,b)=>a-b);
   const mr=[];
-  mr.push(['MONTHLY BREAKDOWN â YTD '+YEAR+' ('+repLabel+')','','','','','','','','','']);
+  mr.push(['MONTHLY BREAKDOWN — YTD '+YEAR+' ('+repLabel+')','','','','','','','','','']);
   mr.push(['']);
   mr.push(['Month','PS Commission','FO Commission','MS Commission','Total Commission','PS Deals','FO Deals','MS Deals','Total Deals','Total ARR']);
   ams.forEach(m=>{ const mD=repFilteredDeals.filter(d=>(d.month||1)===m); const ps=mD.filter(d=>d.cat==='PS').reduce((s,d)=>s+dealComm(d),0); const fo=mD.filter(d=>d.cat==='FO').reduce((s,d)=>s+dealComm(d),0); const ms=mD.filter(d=>d.cat==='MS').reduce((s,d)=>s+dealComm(d),0); mr.push([MN[m-1],ps,fo,ms,ps+fo+ms,mD.filter(d=>d.cat==='PS').length,mD.filter(d=>d.cat==='FO').length,mD.filter(d=>d.cat==='MS').length,mD.length,mD.reduce((s,d)=>s+dealARR(d),0)]); });
@@ -1284,7 +1284,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
 
   let sections = '';
   if(isCROPdf){
-    // ââ CRO VIEW: single consolidated section ââââââââââââââââââââââââââââââââ
+    // ── CRO VIEW: single consolidated section ────────────────────────────────
     const allDeals = deals.filter(d => repList.some(rep => dealIsRep(d,rep)) && dealInPeriod(d,false) && d.stage === 'Closed Won');
     let totARR=0, totMRR=0, totComm=0, totPS=0, totFO=0, totMS=0;
     allDeals.forEach(d=>{
@@ -1353,7 +1353,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
 <table><thead><tr><th>Client</th><th>Rep</th><th>Category</th><th>Amount/MRR</th><th>CRO Commission</th><th>Month</th></tr></thead><tbody>${dealRows}</tbody></table>
 </div>`;
   } else {
-    // ââ INDIVIDUAL REP VIEW âââââââââââââââââââââââââââââââââââââââââââââââââââ
+    // ── INDIVIDUAL REP VIEW ───────────────────────────────────────────────────
     repList.forEach(rep=>{
       const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,false) && d.stage === 'Closed Won');
       let totARR=0,totMRR=0,totComm=0,totPS=0,totFO=0,totMS=0;
@@ -1423,7 +1423,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:99999;display:flex;flex-direction:column;';
   const toolbar=document.createElement('div');
   toolbar.style.cssText='background:#1e293b;color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;';
-  toolbar.innerHTML='<span style="font-weight:600;font-size:14px;">Commission Statement Preview</span><button onclick="window.frames[\'pdfFrame\'].print()" style="background:#059669;color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;">ð¨ Print / Save as PDF</button><button onclick="document.getElementById(\'pdf-preview-overlay\').remove()" style="background:#dc2626;color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;margin-left:auto;">â Close</button>';
+  toolbar.innerHTML='<span style="font-weight:600;font-size:14px;">Commission Statement Preview</span><button onclick="window.frames[\'pdfFrame\'].print()" style="background:#059669;color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;">🖨 Print / Save as PDF</button><button onclick="document.getElementById(\'pdf-preview-overlay\').remove()" style="background:#dc2626;color:#fff;border:none;padding:6px 16px;border-radius:6px;cursor:pointer;font-weight:600;margin-left:auto;">✕ Close</button>';
   const iframe=document.createElement('iframe');
   iframe.name='pdfFrame';
   iframe.style.cssText='flex:1;width:100%;border:none;background:#fff;';
