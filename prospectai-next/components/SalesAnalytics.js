@@ -3,7 +3,7 @@ import { useUser } from '@clerk/nextjs';
 const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CM = new Date().getMonth() + 1;
 const CR = { PS: 0.10, FO: 0.07, MS: 1.0 };
-const CAT_KEYS = { PS: 'Professional Services', FO: 'FinOps', MS: 'Managed Services' };
+const CAT_KEYS = { PS: 'Professional Services', FO: FinOps', MS: 'Managed Services' };
 function mrem(m){ return Math.max(1, 13 - m); }
 function fmt(n){ if(!n && n!==0) return '$0'; return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function pct(n){ return (n*100).toFixed(1)+'%'; }
@@ -1355,7 +1355,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   } else {
     // ── INDIVIDUAL REP VIEW ───────────────────────────────────────────────────
     repList.forEach(rep=>{
-      const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,false) && d.stage === 'Closed Won');
+      const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,true) && d.stage === 'Closed Won');
       let totARR=0,totMRR=0,totComm=0,totPS=0,totFO=0,totMS=0;
       repDeals.forEach(d=>{
         const cat=dealCat(d);
