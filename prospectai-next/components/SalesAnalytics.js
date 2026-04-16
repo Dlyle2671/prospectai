@@ -1355,7 +1355,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
   } else {
     // ── INDIVIDUAL REP VIEW ───────────────────────────────────────────────────
     repList.forEach(rep=>{
-      const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,true) && d.stage === 'Closed Won');
+      const repDeals = deals.filter(d=>dealIsRep(d,rep) && dealInPeriod(d,false) && d.stage === 'Closed Won');
       let totARR=0,totMRR=0,totComm=0,totPS=0,totFO=0,totMS=0;
       repDeals.forEach(d=>{
         const cat=dealCat(d);
