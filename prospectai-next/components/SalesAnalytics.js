@@ -1389,7 +1389,7 @@ function exportCommissionPDF({data,filterRep,filterMonth}){
         });
         const cQ=getQ(rep,c.id);
         const ytdQ=Math.round(cQ*ytdPct);
-        const cAtt=ytdQ>0?Math.round(cMRR/ytdQ*100):0;
+        const cYtdMRR=ytdDeals.filter(d=>dealCat(d)===c.id).reduce((s,d)=>s+(c.id==='PS'?Number(d.amount||d.fee||0):Number(d.mrr||0)),0);const cAtt=ytdQ>0?Math.round(cYtdMRR/ytdQ*100):0;
         catRows+=`<tr><td>${c.name}</td><td class="num">${fmt(cMRR)}</td><td class="num green">${fmt(cComm)}</td><td class="num">${fmt(cQ)}</td><td class="num">${fmt(ytdQ)}</td><td class="num ${cAtt>=100?'good':cAtt>=75?'warn':'bad'}">${cAtt}%</td></tr>`;
       });
       catRows+=`<tr class="total-row"><td>TOTAL</td><td class="num">${fmt(totMRR)}</td><td class="num green">${fmt(totComm)}</td><td class="num">${fmt(totQ)}</td><td class="num">${fmt(Math.round(totQ*ytdPct))}</td><td class="num ${attain>=100?'good':attain>=75?'warn':'bad'}">${attain}%</td></tr>`;
