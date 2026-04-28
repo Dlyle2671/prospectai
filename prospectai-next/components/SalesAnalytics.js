@@ -96,6 +96,58 @@ function AskAITab({messages,setMessages,input,setInput,loading,setLoading}){
   );
 }
 
+
+function MonthFilter({ selectedMonths, setSelectedMonths, availableMonths }) {
+  const MN_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const allSelected = !selectedMonths || selectedMonths.length === 0 || selectedMonths.length === availableMonths.length;
+  
+  function toggleMonth(m) {
+    if (!selectedMonths || selectedMonths.length === 0 || selectedMonths.length === availableMonths.length) {
+      setSelectedMonths([m]);
+    } else if (selectedMonths.includes(m)) {
+      const next = selectedMonths.filter(x => x !== m);
+      setSelectedMonths(next.length === 0 ? null : next);
+    } else {
+      const next = [...selectedMonths, m].sort((a,b)=>a-b);
+      setSelectedMonths(next.length === availableMonths.length ? null : next);
+    }
+  }
+  
+  const nSel = !selectedMonths || selectedMonths.length === 0 ? availableMonths.length : selectedMonths.length;
+  const effectiveMonths = !selectedMonths || selectedMonths.length === 0 ? availableMonths : selectedMonths;
+  const pctToProrata = availableMonths.length > 0 ? (nSel / availableMonths.length * 100).toFixed(0) : 0;
+  
+  return (
+    <div style={{background:'#1a1f2e',border:'1px solid #2a3050',borderRadius:12,padding:'12px 20px',marginBottom:20,display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+      <div style={{color:'#8892b0',fontSize:12,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',whiteSpace:'nowrap'}}>Month Filter</div>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        {availableMonths.map(m => {
+          const isSelected = !selectedMonths || selectedMonths.length === 0 || selectedMonths.includes(m);
+          return (
+            <button key={m} onClick={()=>toggleMonth(m)}
+              style={{background:isSelected?'#3b4fd4':'#252d42',border:'1px solid '+((isSelected)?'#5a70f0':'#3a4565'),borderRadius:8,color:isSelected?'#fff':'#8892b0',cursor:'pointer',fontSize:13,fontWeight:500,padding:'6px 14px',transition:'all 0.15s'}}>
+              {MN_SHORT[m-1]} (M{m})
+            </button>
+          );
+        })}
+      </div>
+      <div style={{width:1,height:24,background:'#2a3050',margin:'0 4px'}}/>
+      <button onClick={()=>setSelectedMonths(null)} style={{background:'transparent',border:'1px solid #3a4565',borderRadius:8,color:'#8892b0',cursor:'pointer',fontSize:12,padding:'6px 12px'}}>All</button>
+      <button onClick={()=>setSelectedMonths([])} style={{background:'transparent',border:'1px solid #3a4565',borderRadius:8,color:'#8892b0',cursor:'pointer',fontSize:12,padding:'6px 12px'}}>Clear</button>
+      <div style={{width:1,height:24,background:'#2a3050',margin:'0 4px'}}/>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',marginLeft:8}}>
+        <div style={{fontSize:10,color:'#6c7a9c',textTransform:'uppercase',letterSpacing:'0.06em',fontWeight:600}}>Total % to Quota</div>
+        <div style={{fontSize:20,fontWeight:700,color:'#e06c6c'}}>{nSel} of {availableMonths.length} months</div>
+        <div style={{fontSize:10,color:'#6c7a9c'}}>{allSelected ? 'YTD' : effectiveMonths.map(m=>MN_SHORT[m-1]).join(', ')}</div>
+      </div>
+      <div style={{marginLeft:'auto',color:'#6c7a9c',fontSize:12}}>
+        {allSelected ? <span>Showing <strong style={{color:'#a0b4e0'}}>all {availableMonths.length} months</strong> YTD</span> : 
+         <span>Showing <strong style={{color:'#a0b4e0'}}>{effectiveMonths.map(m=>MN_SHORT[m-1]).join(', ')}</strong> ({nSel} of {availableMonths.length} months)</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function SalesAnalytics({onBack}){
   const { user } = useUser();
   const [tab, setTab] = useState('dash');
@@ -106,6 +158,7 @@ export default function SalesAnalytics({onBack}){
   const [aiInput, setAiInput] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [showComm, setShowComm] = useState(function(){ try{ return localStorage.getItem('sa_showComm')!=='false'; }catch(e){ return true; } });
+  const [selectedMonths, setSelectedMonths] = useState(null);
   useEffect(() => {
     fetch('/api/sales-data').then(r => r.json()).then(d => {
       setData(d);
@@ -197,13 +250,20 @@ function DashTab({data, showComm, setShowComm}){
   return(
     <div>
       <div style={{display:'flex',justifyContent:'flex-end',marginBottom:8}}><button onClick={function(){ var v=!showComm; setShowComm(v); try{localStorage.setItem('sa_showComm',String(v));}catch(e){} }} style={{background:'transparent',border:'1px solid rgba(99,102,241,.4)',color:showComm?'#a5b4fc':'#64748b',padding:'5px 12px',borderRadius:8,cursor:'pointer',fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:6}}>{showComm ? '👁 Hide Commission' : '👁 Show Commission'}</button></div>
+      <MonthFilter
+        selectedMonths={selectedMonths}
+        setSelectedMonths={setSelectedMonths}
+        availableMonths={[...new Set((data.deals||[]).map(d=>d.month))].sort((a,b)=>a-b)}
+      />
       <div className="sa-g3">
         {cats.map(c => {
-          const closed = getTotalActualFromDeals(c.id, reps, deals);
+          const filteredDeals = selectedMonths && selectedMonths.length > 0 ? deals.filter(d => selectedMonths.includes(d.month)) : deals;
+          const closed = getTotalActualFromDeals(c.id, reps, filteredDeals);
           const quota = (data.companyQuotas && data.companyQuotas[c.id]) ? data.companyQuotas[c.id] : reps.reduce((s,r) => s + getQuota(r,c.id), 0);
           const p = quota > 0 ? Math.min(1, closed/quota) : 0;
           const pace = CM/12;
-          const ytdQ = quota * CM / 12;
+          const mCount = selectedMonths && selectedMonths.length > 0 ? selectedMonths.length : CM;
+          const ytdQ = quota * mCount / 12;
           const ytdPct2 = ytdQ > 0 ? Math.min(closed / ytdQ, 9.99) : 0;
           const behind = closed < quota*pace;
           return(
@@ -211,7 +271,7 @@ function DashTab({data, showComm, setShowComm}){
               <div className="lbl">{c.label}</div>
               <div className="val" style={{color:'#34d399'}}>{fmt(closed)}</div>
               <div className="sub">of {fmt(quota)} quota ({pct(p)} attained)</div>
-              <div className="sub" style={{marginTop:3}}>YTD: {fmt(ytdQ)} target ({pct(ytdPct2)} attained)</div>
+              <div className="sub" style={{marginTop:3}}>{selectedMonths && selectedMonths.length > 0 && selectedMonths.length < CM ? selectedMonths.map(m => MN[m-1]).join('+') : 'YTD'}: {fmt(ytdQ)} target ({pct(ytdPct2)} attained)</div>
                             <div className="sa-bar"><div className="sa-bar-fill" style={{width:p*100+'%',background:'#34d399'}}/></div>
               <div style={{display:'flex',justifyContent:'space-between',marginTop:6}}>
                 <span style={{fontSize:11,color:'#fff'}}>Pace: {pct(pace)}</span>
