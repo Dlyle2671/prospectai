@@ -223,7 +223,7 @@ export default function SalesAnalytics({onBack}){
         ))}
       </div>
       <div className="sa-body">
-        {tab==='dash'&&<DashTab data={data} showComm={showComm} setShowComm={setShowComm}/>}
+        {tab==='dash'&&<DashTab data={data} showComm={showComm} setShowComm={setShowComm} selectedMonths={selectedMonths} setSelectedMonths={setSelectedMonths}/>}
         {tab==='deals'&&<DealsTab data={data} save={save}/>}
         {tab==='reps'&&<RepsTab data={data} save={save}/>}
         {tab==='catperf'&&<CatPerfTab data={data} filterRep={filterRep} setFilterRep={setFilterRep} showComm={showComm}/>}
@@ -235,7 +235,7 @@ export default function SalesAnalytics({onBack}){
     </div>
   </>);
 }
-function DashTab({data, showComm, setShowComm}){
+function DashTab({data, showComm, setShowComm, selectedMonths, setSelectedMonths}){
   const reps = data.reps;
   const deals = data.deals || [];
   const cats = [
